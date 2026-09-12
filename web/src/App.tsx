@@ -19,18 +19,33 @@ import {
   INITIAL_SESSIONS 
 } from './data/mockData';
 import { UserProfile, Post } from './types';
-import { Smartphone, Monitor, ShieldCheck, Info, X } from 'lucide-react';
+import { 
+  Smartphone, 
+  Monitor, 
+  ShieldCheck, 
+  Calendar, 
+  Briefcase, 
+  Sparkles, 
+  UserPlus, 
+  X, 
+  Send, 
+  CheckCircle2, 
+  TrendingUp,
+  Stethoscope,
+  GraduationCap
+} from 'lucide-react';
 
 export const App: React.FC = () => {
   // Application State
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
   const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
-  const [stories, setStories] = useState(INITIAL_STORIES);
+  const [stories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [clips, setClips] = useState(INITIAL_CLIPS);
-  const [jobs, setJobs] = useState(INITIAL_JOBS);
-  const [opportunities, setOpportunities] = useState(INITIAL_OPPORTUNITIES);
+  const [jobs] = useState(INITIAL_JOBS);
+  const [opportunities] = useState(INITIAL_OPPORTUNITIES);
   const [sessions, setSessions] = useState(INITIAL_SESSIONS);
+  const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
 
   // Active Navigation Tab (Slide 5: Home, Medclips, Search, Opportunities, Profile)
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -41,6 +56,13 @@ export const App: React.FC = () => {
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [showMessagesDrawer, setShowMessagesDrawer] = useState(false);
   const [isMobileFrameMode, setIsMobileFrameMode] = useState(false);
+
+  // Direct Message State
+  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string; time: string; isMe: boolean }[]>([
+    { sender: 'Dr. Priya Nair', text: 'Hello Dr. Ramesh, reviewed your catheterization case study. Remarkable result on the bifurcation!', time: '10:42 AM', isMe: false },
+    { sender: 'You', text: 'Thank you Dr. Priya! The IVUS imaging was pivotal in deciding the stent sizing.', time: '10:45 AM', isMe: true }
+  ]);
+  const [chatInput, setChatInput] = useState('');
 
   // Post Actions
   const handleLikePost = (postId: string) => {
@@ -128,6 +150,18 @@ export const App: React.FC = () => {
     alert("Session successfully revoked. The target device has been logged out.");
   };
 
+  const handleSendMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!chatInput.trim()) return;
+    setChatMessages([...chatMessages, { sender: 'You', text: chatInput.trim(), time: 'Just now', isMe: true }]);
+    setChatInput('');
+  };
+
+  const filteredPosts = posts.filter(p => {
+    if (feedFilterTag === 'All') return true;
+    return p.clinicalTags.some(t => t.toLowerCase() === feedFilterTag.toLowerCase());
+  });
+
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center">
       
@@ -147,7 +181,7 @@ export const App: React.FC = () => {
             className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-medium text-[11px]"
           >
             {isMobileFrameMode ? <Monitor className="w-3.5 h-3.5 text-sky-400" /> : <Smartphone className="w-3.5 h-3.5 text-sky-400" />}
-            <span>{isMobileFrameMode ? 'Wide Web Mode' : 'Mobile App Frame Preview'}</span>
+            <span>{isMobileFrameMode ? 'Desktop 3-Column View' : 'Mobile Phone Preview'}</span>
           </button>
 
           <button
@@ -163,7 +197,7 @@ export const App: React.FC = () => {
       <div className={`w-full transition-all duration-300 ${
         isMobileFrameMode
           ? 'max-w-[420px] my-6 bg-white shadow-2xl rounded-[40px] border-[8px] border-slate-900 overflow-hidden min-h-[850px]'
-          : 'max-w-4xl min-h-screen bg-white shadow-sm'
+          : 'max-w-6xl min-h-screen bg-slate-50/50 shadow-sm'
       }`}>
         
         {/* Top Header Bar (Slide 5: Create +, Medmedia, Notification bell, Message chat bubble) */}
@@ -178,98 +212,264 @@ export const App: React.FC = () => {
         />
 
         {/* Content Area Routed by Bottom Navigation Tab */}
-        <main className="p-4 sm:p-6">
-          
-          {/* TAB 1: HOME FEED (Slide 5 & 7: Stories, Text, tweets, Images, Links, Discussions - No reels) */}
-          {currentTab === 'home' && (
-            <div>
-              {/* Stories Bar (Slide 5: Story update - Accessory feature) */}
-              <StoriesBar
-                stories={stories}
-                currentUser={currentUser}
-                onAddStory={() => alert("Story creation camera opened. Capture your 24h clinical update.")}
-              />
+        <div className="p-3 sm:p-6">
+          <div className={`${!isMobileFrameMode ? 'grid grid-cols-1 lg:grid-cols-12 gap-6' : 'w-full'}`}>
+            
+            {/* DESKTOP LEFT SIDEBAR (Only in wide mode) */}
+            {!isMobileFrameMode && (
+              <aside className="hidden lg:block lg:col-span-3 space-y-4">
+                {/* Profile Card */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm text-center">
+                  <div className="relative inline-block">
+                    <img
+                      src={currentUser.avatarUrl}
+                      alt=""
+                      className="w-20 h-20 rounded-full object-cover border-2 border-sky-500 mx-auto shadow-sm"
+                    />
+                    <div className={`absolute bottom-0 right-0 p-1 rounded-full text-white ${
+                      currentUser.role === 'DOCTOR' ? 'bg-sky-600' : 'bg-emerald-600'
+                    }`}>
+                      <ShieldCheck className="w-3.5 h-3.5" />
+                    </div>
+                  </div>
+                  <h3 className="text-sm font-bold text-slate-900 mt-2">{currentUser.fullName}</h3>
+                  <p className="text-xs font-semibold text-sky-600">@{currentUser.username}</p>
+                  <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{currentUser.bio}</p>
 
-              {/* Feed Header info */}
-              <div className="flex items-center justify-between mb-3 px-1">
-                <div className="flex items-center gap-1 text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  <span>Clinical & Medical Discussions Feed</span>
+                  <div className="flex justify-around mt-3 pt-3 border-t border-slate-100 text-xs">
+                    <div>
+                      <span className="font-bold text-slate-800">{posts.filter(p => p.authorId === currentUser.id).length}</span>
+                      <span className="block text-[10px] text-slate-400">Posts</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-800">{currentUser.stats.followersCount}</span>
+                      <span className="block text-[10px] text-slate-400">Followers</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-slate-800">{currentUser.stats.connectionsCount}</span>
+                      <span className="block text-[10px] text-slate-400">Network</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => setCurrentTab('profile')}
+                    className="w-full mt-3 py-1.5 bg-slate-50 hover:bg-slate-100 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 transition"
+                  >
+                    View Verified Portfolio
+                  </button>
                 </div>
-                <span className="text-[11px] text-slate-400">
-                  (Clean feed • No shorts/reels)
-                </span>
-              </div>
 
-              {/* Home Feed Post Cards */}
-              <div className="space-y-4">
-                {posts.map((post) => (
-                  <PostCard
-                    key={post.id}
-                    post={post}
+                {/* Quick Navigation Shortcuts */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-3 shadow-sm space-y-1">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-3">Sections</span>
+                  {[
+                    { id: 'home', label: 'Clinical Home Feed', icon: Stethoscope },
+                    { id: 'medclips', label: 'Medclips Video Feed', icon: TrendingUp },
+                    { id: 'search', label: 'Alumni & Search', icon: Sparkles },
+                    { id: 'opportunities', label: 'Jobs & Research Hub', icon: Briefcase }
+                  ].map(tab => {
+                    const Icon = tab.icon;
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => setCurrentTab(tab.id as any)}
+                        className={`w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-xs font-semibold transition ${
+                          currentTab === tab.id
+                            ? 'bg-sky-50 text-sky-700 font-bold'
+                            : 'text-slate-600 hover:bg-slate-50'
+                        }`}
+                      >
+                        <Icon className="w-4 h-4" />
+                        <span>{tab.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </aside>
+            )}
+
+            {/* MAIN CENTER COLUMN */}
+            <main className={`${!isMobileFrameMode ? 'lg:col-span-6' : 'w-full'}`}>
+              
+              {/* TAB 1: HOME FEED (Slide 5 & 7: Stories, Text, tweets, Images, Links, Discussions - No reels) */}
+              {currentTab === 'home' && (
+                <div>
+                  {/* Stories Bar (Slide 5: Story update - Accessory feature) */}
+                  <StoriesBar
+                    stories={stories}
                     currentUser={currentUser}
-                    onLike={handleLikePost}
-                    onSave={handleSavePost}
-                    onVotePoll={handleVotePoll}
-                    onConnectAuthor={(authorId) => {
-                      const author = users.find(u => u.id === authorId);
-                      alert(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
-                    }}
+                    onAddStory={() => alert("Story creation camera opened. Capture your 24h clinical update.")}
                   />
-                ))}
-              </div>
-            </div>
-          )}
 
-          {/* TAB 2: MEDCLIPS (Slide 6: Medclips, social update / clinical updates / following, side actions) */}
-          {currentTab === 'medclips' && (
-            <div className="py-2">
-              <MedclipsPlayer
-                clips={clips}
-                currentUser={currentUser}
-                onLikeClip={handleLikeClip}
-                onSaveClip={handleSaveClip}
-                onConnectAuthor={(name) => alert(`Connection request sent to ${name}!`)}
-              />
-            </div>
-          )}
+                  {/* Filter Pills Bar */}
+                  <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 py-1">
+                    {['All', '#Cardiology', '#ECGChallenge', '#Neurosurgery', '#Pharmacology', '#IntensiveCare'].map(tag => (
+                      <button
+                        key={tag}
+                        onClick={() => setFeedFilterTag(tag)}
+                        className={`text-xs px-3 py-1 rounded-full font-semibold transition whitespace-nowrap ${
+                          feedFilterTag === tag
+                            ? 'bg-sky-600 text-white shadow-sm'
+                            : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    ))}
+                  </div>
 
-          {/* TAB 3: SEARCH & NETWORKING (Slide 10: Accounts, Community, Associations, Posts, Job Offers, Hospital) */}
-          {currentTab === 'search' && (
-            <SearchAndNetworking
-              currentUser={currentUser}
-              onSelectUser={(u) => {
-                setCurrentUser(u);
-                setCurrentTab('profile');
-              }}
-              onConnectSuggestion={(name) => alert(`Networking request sent to ${name}!`)}
-            />
-          )}
+                  {/* Home Feed Post Cards */}
+                  <div className="space-y-4">
+                    {filteredPosts.map((post) => (
+                      <PostCard
+                        key={post.id}
+                        post={post}
+                        currentUser={currentUser}
+                        onLike={handleLikePost}
+                        onSave={handleSavePost}
+                        onVotePoll={handleVotePoll}
+                        onConnectAuthor={(authorId) => {
+                          const author = users.find(u => u.id === authorId);
+                          alert(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
+                        }}
+                      />
+                    ))}
+                  </div>
+                </div>
+              )}
 
-          {/* TAB 4: OPPORTUNITIES (Slide 8 & 9: Research, Freelancing, Job Offers, Events, Courses, Community) */}
-          {currentTab === 'opportunities' && (
-            <OpportunitiesHub
-              jobs={jobs}
-              opportunities={opportunities}
-              currentUser={currentUser}
-            />
-          )}
+              {/* TAB 2: MEDCLIPS (Slide 6: Medclips, social update / clinical updates / following, side actions) */}
+              {currentTab === 'medclips' && (
+                <div className="py-2">
+                  <MedclipsPlayer
+                    clips={clips}
+                    currentUser={currentUser}
+                    onLikeClip={handleLikeClip}
+                    onSaveClip={handleSaveClip}
+                    onConnectAuthor={(name) => alert(`Connection request sent to ${name}!`)}
+                  />
+                </div>
+              )}
 
-          {/* TAB 5: PROFILE (Slide 3 Doctor & Slide 4 Student Professional Portfolio) */}
-          {currentTab === 'profile' && (
-            <ProfileView
-              user={currentUser}
-              posts={posts.filter(p => p.authorId === currentUser.id)}
-              currentUser={currentUser}
-              deviceSessions={sessions}
-              onRevokeSession={handleRevokeSession}
-              onLikePost={handleLikePost}
-              onSavePost={handleSavePost}
-              onConnectUser={(id) => alert(`Connected with user #${id}!`)}
-              onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
-            />
-          )}
+              {/* TAB 3: SEARCH & NETWORKING (Slide 10: Accounts, Community, Associations, Posts, Job Offers, Hospital) */}
+              {currentTab === 'search' && (
+                <SearchAndNetworking
+                  currentUser={currentUser}
+                  onSelectUser={(u) => {
+                    setCurrentUser(u);
+                    setCurrentTab('profile');
+                  }}
+                  onConnectSuggestion={(name) => alert(`Networking request sent to ${name}!`)}
+                />
+              )}
 
-        </main>
+              {/* TAB 4: OPPORTUNITIES (Slide 8 & 9: Research, Freelancing, Job Offers, Events, Courses, Community) */}
+              {currentTab === 'opportunities' && (
+                <OpportunitiesHub
+                  jobs={jobs}
+                  opportunities={opportunities}
+                  currentUser={currentUser}
+                />
+              )}
+
+              {/* TAB 5: PROFILE (Slide 3 Doctor & Slide 4 Student Professional Portfolio) */}
+              {currentTab === 'profile' && (
+                <ProfileView
+                  user={currentUser}
+                  posts={posts.filter(p => p.authorId === currentUser.id)}
+                  currentUser={currentUser}
+                  deviceSessions={sessions}
+                  onRevokeSession={handleRevokeSession}
+                  onLikePost={handleLikePost}
+                  onSavePost={handleSavePost}
+                  onConnectUser={(id) => alert(`Connected with user #${id}!`)}
+                  onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
+                />
+              )}
+
+            </main>
+
+            {/* DESKTOP RIGHT SIDEBAR (Only in wide mode) */}
+            {!isMobileFrameMode && (
+              <aside className="hidden lg:block lg:col-span-3 space-y-4">
+                
+                {/* Upcoming CME Events Widget (Slide 8) */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-sky-600" />
+                      Upcoming CME Events
+                    </h4>
+                    <span className="text-[10px] text-sky-600 font-bold">Slide 8</span>
+                  </div>
+                  <div className="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs">
+                    <p className="font-bold text-slate-800">77th Annual Medical Congress</p>
+                    <p className="text-[10px] text-slate-500 mt-0.5">Nov 14-16 • 6 CME Credits</p>
+                    <button
+                      onClick={() => setCurrentTab('opportunities')}
+                      className="mt-2 text-[10px] text-sky-600 font-bold hover:underline"
+                    >
+                      View Venue & RSVP →
+                    </button>
+                  </div>
+                </div>
+
+                {/* Alumni Suggestions Widget (Slide 10) */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm space-y-3">
+                  <div className="flex items-center justify-between">
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                      Alumni Connection
+                    </h4>
+                    <span className="text-[10px] text-sky-600 font-bold">Slide 10</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <img
+                      src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&h=100&fit=crop"
+                      alt=""
+                      className="w-10 h-10 rounded-full object-cover"
+                    />
+                    <div className="flex-1">
+                      <p className="text-xs font-bold text-slate-900">Dr. Sandeep Kulkarni</p>
+                      <p className="text-[10px] text-slate-500">Cardiothoracic Surgeon</p>
+                      <span className="text-[9px] text-sky-700 bg-sky-50 px-1.5 py-0.5 rounded font-semibold">
+                        AIIMS Alumni
+                      </span>
+                    </div>
+                    <button
+                      onClick={() => alert("Connected with Dr. Sandeep Kulkarni!")}
+                      className="p-1.5 rounded-lg bg-sky-50 text-sky-600 hover:bg-sky-100"
+                    >
+                      <UserPlus className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Urgent Locum Shift Widget (Slide 8 & 9) */}
+                <div className="bg-white border border-slate-200 rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-center justify-between mb-2">
+                    <h4 className="text-xs font-bold text-slate-900 flex items-center gap-1.5">
+                      <Briefcase className="w-3.5 h-3.5 text-emerald-600" />
+                      Urgent Locum Duty
+                    </h4>
+                    <span className="text-[10px] text-emerald-600 font-bold">Open</span>
+                  </div>
+                  <p className="text-xs font-medium text-slate-700">Manipal Hospital Emergency Casualty</p>
+                  <p className="text-[10px] text-slate-500">Weekend 12h Trauma Coverage</p>
+                  <button
+                    onClick={() => setCurrentTab('opportunities')}
+                    className="mt-2 w-full py-1 bg-emerald-50 text-emerald-700 text-xs font-bold rounded-lg border border-emerald-200 hover:bg-emerald-100 transition"
+                  >
+                    Apply for Shift
+                  </button>
+                </div>
+
+              </aside>
+            )}
+
+          </div>
+        </div>
 
         {/* Bottom Navigation Dock (Slide 5: Home, Medclips, Search, Opportunities, Profile) */}
         <BottomNav
@@ -308,32 +508,50 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Direct Messages Drawer */}
+      {/* Interactive Direct Messages Drawer (Slide 5: Messages) */}
       {showMessagesDrawer && (
         <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-sm bg-white h-full p-5 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-200">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-200">
-              <h3 className="font-bold text-sm text-slate-900">Clinical Messages</h3>
+          <div className="w-full max-w-sm bg-white h-full flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200">
+            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <img src="https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop" className="w-8 h-8 rounded-full object-cover" alt="" />
+                <div>
+                  <h4 className="text-xs font-bold text-slate-900">Dr. Priya Nair</h4>
+                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
+                  </span>
+                </div>
+              </div>
               <button onClick={() => setShowMessagesDrawer(false)} className="p-1 rounded-full hover:bg-slate-100">
                 <X className="w-5 h-5 text-slate-500" />
               </button>
             </div>
-            <div className="space-y-3 py-4">
-              <div className="p-3.5 bg-slate-50 hover:bg-sky-50 rounded-2xl border border-slate-200 cursor-pointer transition flex items-center gap-3">
-                <img src="https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop" className="w-10 h-10 rounded-full object-cover" alt="" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Dr. Priya Nair</h4>
-                  <p className="text-[11px] text-slate-500 truncate max-w-[180px]">Regarding the ETV surgical protocol...</p>
+
+            <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-slate-50">
+              {chatMessages.map((msg, i) => (
+                <div key={i} className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
+                  <div className={`max-w-[80%] p-3 rounded-2xl text-xs ${
+                    msg.isMe ? 'bg-sky-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-xs'
+                  }`}>
+                    <p className="leading-relaxed">{msg.text}</p>
+                  </div>
+                  <span className="text-[9px] text-slate-400 mt-1 px-1">{msg.time}</span>
                 </div>
-              </div>
-              <div className="p-3.5 bg-slate-50 hover:bg-sky-50 rounded-2xl border border-slate-200 cursor-pointer transition flex items-center gap-3">
-                <img src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop" className="w-10 h-10 rounded-full object-cover" alt="" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Rohan Verma</h4>
-                  <p className="text-[11px] text-slate-500 truncate max-w-[180px]">Thank you for the cardiology mentoring advice, Doctor!</p>
-                </div>
-              </div>
+              ))}
             </div>
+
+            <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 bg-white flex gap-2">
+              <input
+                type="text"
+                placeholder="Type a clinical message..."
+                value={chatInput}
+                onChange={(e) => setChatInput(e.target.value)}
+                className="flex-1 text-xs px-3 py-2 border border-slate-200 rounded-full focus:outline-none focus:ring-1 focus:ring-sky-500"
+              />
+              <button type="submit" className="p-2 bg-sky-600 text-white rounded-full">
+                <Send className="w-4 h-4" />
+              </button>
+            </form>
           </div>
         </div>
       )}
