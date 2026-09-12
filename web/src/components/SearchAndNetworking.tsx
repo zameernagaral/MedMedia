@@ -111,7 +111,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
     <div className="space-y-5 pb-24 max-w-2xl mx-auto">
       
       {/* 1. Slide 10 Search Bar with Smart Category Pills */}
-      <div className="bg-white border border-slate-200/90 rounded-3xl p-4 shadow-sm space-y-3">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 shadow-xs space-y-3 transition-colors duration-200">
         <div className="relative">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
           <input
@@ -119,7 +119,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
             placeholder="Search medical professors, HODs, clinical internships, college alumni..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-11 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-2xl text-xs sm:text-sm text-slate-800 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+            className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
           />
         </div>
 
@@ -131,8 +131,8 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
               onClick={() => setActiveFilter(tab)}
               className={`px-3.5 py-1.5 rounded-full text-xs font-semibold whitespace-nowrap transition cursor-pointer ${
                 activeFilter === tab
-                  ? 'bg-sky-600 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-sky-600 text-white shadow-xs'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
               {tab}
@@ -143,22 +143,22 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
 
       {/* 2. MEDICAL PROFESSORS & MENTOR MATCHING (LinkedIn-Style Professional Matching) */}
       {(activeFilter === 'Professors & Mentors' || activeFilter === 'All Accounts') && (
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-sky-50 flex items-center justify-center text-sky-600">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
                 <GraduationCap className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Medical Professors & Research Mentors</h3>
-                <p className="text-[11px] text-slate-500">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Medical Professors & Research Mentors</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {currentUser.role === 'STUDENT'
                     ? `Recommended for your ${currentUser.studentDetails?.futureSpecialty || 'Clinical'} specialty goals`
                     : 'Colleague academic chairs & faculty collaborators'}
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 text-sky-700 border border-sky-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
               AI Match Engine
             </span>
           </div>
@@ -167,7 +167,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
             {filteredMentors.map((prof) => (
               <div
                 key={prof.id}
-                className="p-4 rounded-2xl border border-slate-200/80 bg-slate-50/60 hover:bg-slate-50 transition space-y-3"
+                className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div 
@@ -181,22 +181,22 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                         className="w-13 h-13 rounded-2xl object-cover ring-2 ring-sky-500/30 group-hover:ring-sky-500 transition shadow-sm"
                       />
                       {prof.doctorDetails?.isProfessor && (
-                        <div className="absolute -bottom-1 -right-1 bg-sky-600 text-white p-0.5 rounded-full ring-2 ring-white" title="Verified Professor">
+                        <div className="absolute -bottom-1 -right-1 bg-sky-600 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900" title="Verified Professor">
                           <GraduationCap className="w-3 h-3" />
                         </div>
                       )}
                     </div>
                     <div className="min-w-0">
                       <div className="flex items-center gap-1.5 flex-wrap">
-                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 group-hover:text-sky-600 transition truncate">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition truncate">
                           {prof.fullName}
                         </h4>
-                        <ShieldCheck className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+                        <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
                       </div>
-                      <p className="text-[11px] font-semibold text-slate-700 mt-0.5 truncate">
+                      <p className="text-[11px] font-semibold text-slate-700 dark:text-slate-300 mt-0.5 truncate">
                         {prof.doctorDetails?.academicTitle || prof.doctorDetails?.specialization}
                       </p>
-                      <p className="text-[11px] text-slate-500 truncate">
+                      <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
                         {prof.doctorDetails?.hospitalAffiliation}
                       </p>
                     </div>
@@ -205,7 +205,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                   {/* Open Slots Pill */}
                   {prof.doctorDetails?.isAcceptingMentees && (
                     <div className="flex-shrink-0 text-right">
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                         <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
                         {prof.doctorDetails.mentorshipSlots?.available ?? 2} Slots Open
                       </span>
@@ -214,9 +214,9 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                 </div>
 
                 {/* Algorithm Reason Banner */}
-                <div className="px-3 py-1.5 bg-sky-100/60 rounded-xl text-[11px] text-sky-900 font-medium flex items-center justify-between">
+                <div className="px-3 py-1.5 bg-sky-100/60 dark:bg-sky-950/50 rounded-xl text-[11px] text-sky-900 dark:text-sky-200 font-medium flex items-center justify-between border border-sky-200/40 dark:border-sky-800/40">
                   <span>{prof.mentorMatchReason}</span>
-                  <span className="text-[10px] font-bold text-sky-700">{prof.matchScore}% Match</span>
+                  <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">{prof.matchScore}% Match</span>
                 </div>
 
                 {/* Card Action Buttons */}
@@ -270,18 +270,18 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
 
       {/* 3. CLINICAL INTERNSHIPS & OBSERVERSHIPS SECTION */}
       {(activeFilter === 'Clinical Internships' || activeFilter === 'All Accounts') && (
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+              <div className="w-8 h-8 rounded-xl bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <Briefcase className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Clinical Internships & Observerships</h3>
-                <p className="text-[11px] text-slate-500">Hospital rotations, ICMR research cohorts & surgical observerships</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Clinical Internships & Observerships</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Hospital rotations, ICMR research cohorts & surgical observerships</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
               Verified Openings
             </span>
           </div>
@@ -290,23 +290,23 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
             {filteredInternships.map((job) => (
               <div
                 key={job.id}
-                className="p-4 rounded-2xl border border-slate-200 bg-slate-50/70 hover:bg-slate-50 transition space-y-3"
+                className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition space-y-3"
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-start gap-3">
                     <img
                       src={job.hospitalLogoUrl}
                       alt=""
-                      className="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200 flex-shrink-0 bg-white"
+                      className="w-12 h-12 rounded-xl object-cover ring-1 ring-slate-200 dark:ring-slate-700 flex-shrink-0 bg-white dark:bg-slate-800"
                     />
                     <div>
-                      <h4 className="text-xs sm:text-sm font-bold text-slate-900">{job.title}</h4>
-                      <p className="text-[11px] text-slate-600 font-medium">{job.companyName} • {job.place}</p>
+                      <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{job.title}</h4>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">{job.companyName} • {job.place}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded">
+                        <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-100/70 dark:bg-emerald-950/60 px-2 py-0.5 rounded">
                           {job.stipend || job.salary}
                         </span>
-                        <span className="text-[10px] text-slate-500 font-medium">
+                        <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
                           {job.duration || 'Rotational'}
                         </span>
                       </div>
@@ -314,12 +314,12 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                   </div>
                 </div>
 
-                <p className="text-xs text-slate-600 leading-relaxed">
+                <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                   {job.description}
                 </p>
 
                 <div className="flex items-center justify-between pt-1">
-                  <span className="text-[10px] text-slate-400">
+                  <span className="text-[10px] text-slate-400 dark:text-slate-500">
                     Eligible: {job.experience}
                   </span>
 
@@ -341,22 +341,22 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
 
       {/* 4. ALUMNI MATCHING ENGINE */}
       {(activeFilter === 'Alumni Matching' || activeFilter === 'All Accounts') && (
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-amber-50 flex items-center justify-center text-amber-600">
+              <div className="w-8 h-8 rounded-xl bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-600 dark:text-amber-400">
                 <Sparkles className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Institutional Alumni Match</h3>
-                <p className="text-[11px] text-slate-500">
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Institutional Alumni Match</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {currentUser.role === 'STUDENT'
                     ? `Doctors & Professors graduated from ${currentUser.studentDetails?.collegeName || 'your college'}`
                     : 'Alumni colleagues & students from your alma mater'}
                 </p>
               </div>
             </div>
-            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200">
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
               Shared Alma Mater
             </span>
           </div>
@@ -365,7 +365,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
             {algorithmicMentors.filter(m => m.isAlumniMatch || m.id === 'prof-1').map((item) => (
               <div
                 key={`alumni-${item.id}`}
-                className="p-3.5 rounded-2xl border border-slate-100 bg-slate-50/70 hover:bg-slate-50 transition flex items-center justify-between gap-3"
+                className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition flex items-center justify-between gap-3"
               >
                 <div 
                   onClick={() => onSelectUser(item)}
@@ -378,15 +378,15 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                   />
                   <div>
                     <div className="flex items-center gap-1.5">
-                      <h4 className="text-xs font-bold text-slate-900 group-hover:text-amber-700 transition">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white group-hover:text-amber-600 dark:group-hover:text-amber-400 transition">
                         {item.fullName}
                       </h4>
-                      <ShieldCheck className="w-3.5 h-3.5 text-sky-600" />
+                      <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                     </div>
-                    <p className="text-[11px] text-slate-600 font-medium">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 font-medium">
                       {item.doctorDetails?.academicTitle || item.doctorDetails?.specialization}
                     </p>
-                    <p className="text-[10px] text-amber-800 font-semibold mt-0.5 bg-amber-100/70 px-2 py-0.5 rounded-md inline-block">
+                    <p className="text-[10px] text-amber-800 dark:text-amber-300 font-semibold mt-0.5 bg-amber-100/70 dark:bg-amber-950/60 border border-amber-200/50 dark:border-amber-800/50 px-2 py-0.5 rounded-md inline-block">
                       🏛️ Alumni: {item.doctorDetails?.alumniCollege || 'KIMS'}
                     </p>
                   </div>
@@ -405,8 +405,8 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                     onClick={() => handleConnect(`alumni-${item.id}`, item.fullName)}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 flex-shrink-0 cursor-pointer ${
                       connectedMap[`alumni-${item.id}`]
-                        ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                        : 'bg-slate-900 hover:bg-slate-800 text-white shadow-xs'
+                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-slate-900 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white shadow-xs'
                     }`}
                   >
                     {connectedMap[`alumni-${item.id}`] ? 'Connected' : 'Connect'}
@@ -420,18 +420,18 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
 
       {/* 5. ASSOCIATIONS & COMMUNITY CHAPTERS */}
       {(activeFilter === 'Associations & Chapters' || activeFilter === 'All Accounts') && (
-        <div className="bg-white border border-slate-200/90 rounded-3xl p-5 shadow-sm space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center text-teal-600">
+              <div className="w-8 h-8 rounded-xl bg-teal-50 dark:bg-teal-950/60 flex items-center justify-center text-teal-600 dark:text-teal-400">
                 <Users className="w-4 h-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-slate-900">Community Chapters & Associations</h3>
-                <p className="text-[11px] text-slate-500">Official medical state branches & student councils</p>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">Community Chapters & Associations</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">Official medical state branches & student councils</p>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-teal-700 bg-teal-50 px-2.5 py-1 rounded-full border border-teal-200">
+            <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-2.5 py-1 rounded-full border border-teal-200 dark:border-teal-800">
               Official Bodies
             </span>
           </div>
@@ -440,21 +440,21 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
             {communityBranches.map((branch) => (
               <div
                 key={branch.id}
-                className="p-4 rounded-2xl border border-slate-100 bg-slate-50/70 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                className="p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
               >
                 <div>
-                  <span className="text-[10px] font-bold text-teal-700 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-teal-700 dark:text-teal-400 uppercase tracking-wider">
                     {branch.branch}
                   </span>
-                  <h4 className="text-xs font-bold text-slate-900 mt-0.5">{branch.name}</h4>
-                  <p className="text-[11px] text-slate-500 mt-1">
-                    {branch.members} • Recent: <span className="text-slate-700">{branch.recentTopic}</span>
+                  <h4 className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">{branch.name}</h4>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    {branch.members} • Recent: <span className="text-slate-700 dark:text-slate-300">{branch.recentTopic}</span>
                   </p>
                 </div>
 
                 <button
                   onClick={() => alert(`Joined ${branch.branch} of ${branch.name}!`)}
-                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 self-end sm:self-center cursor-pointer"
+                  className="px-4 py-1.5 bg-slate-900 hover:bg-slate-800 dark:bg-teal-600 dark:hover:bg-teal-500 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5 self-end sm:self-center cursor-pointer"
                 >
                   <span>Join Chapter</span>
                   <ArrowRight className="w-3.5 h-3.5" />

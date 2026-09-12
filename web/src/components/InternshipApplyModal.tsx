@@ -54,10 +54,10 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200 transition-colors duration-200">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-emerald-900 via-teal-900 to-slate-900 p-5 text-white relative">
+        <div className="bg-gradient-to-r from-emerald-950 via-teal-950 to-slate-950 p-5 text-white relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-emerald-500/20 border border-emerald-400/30 text-emerald-300">
@@ -71,7 +71,7 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -82,7 +82,7 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
             <img
               src={job.hospitalLogoUrl}
               alt=""
-              className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-400 bg-white"
+              className="w-12 h-12 rounded-xl object-cover ring-2 ring-emerald-400 bg-white dark:bg-slate-800"
             />
             <div className="flex-1 min-w-0">
               <p className="font-bold text-xs truncate">{job.title}</p>
@@ -105,11 +105,11 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
         {/* Content Body */}
         {isSubmitted ? (
           <div className="p-8 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h4 className="text-base font-bold text-slate-900">Internship Application Submitted!</h4>
-            <p className="text-xs text-slate-600 max-w-sm mx-auto">
+            <h4 className="text-base font-bold text-slate-900 dark:text-white">Internship Application Submitted!</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
               Your verified application and credentials have been submitted to the Medical Academic Director at <strong>{job.companyName}</strong>. Tracking status is now set to <strong>Under Review</strong>.
             </p>
           </div>
@@ -117,26 +117,26 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
           <form onSubmit={handleSubmit} className="p-5 space-y-4">
             
             {/* Applicant Summary */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs flex items-center justify-between">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Verified Applicant</span>
-                <p className="font-bold text-slate-800">{applicant.fullName}</p>
-                <p className="text-[11px] text-slate-500">{applicant.studentDetails?.collegeName || applicant.bio}</p>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Verified Applicant</span>
+                <p className="font-bold text-slate-800 dark:text-slate-200">{applicant.fullName}</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{applicant.studentDetails?.collegeName || applicant.bio}</p>
               </div>
-              <span className="px-2.5 py-1 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-lg">
+              <span className="px-2.5 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] rounded-lg">
                 Verified Candidate
               </span>
             </div>
 
             {/* Availability */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                 Earliest Starting Availability:
               </label>
               <select
                 value={availableFrom}
                 onChange={(e) => setAvailableFrom(e.target.value)}
-                className="w-full text-xs p-2.5 border border-slate-200 rounded-xl bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800"
+                className="w-full text-xs p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 dark:text-slate-200 cursor-pointer"
               >
                 <option value="Immediately (Within 7 Days)">Immediately (Within 7 Days)</option>
                 <option value="Next Month (After Semester Exams)">Next Month (After Semester Exams)</option>
@@ -147,9 +147,9 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
 
             {/* Brief Letter of Intent */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5 flex items-center justify-between">
                 <span>Clinical Experience & Statement of Motivation:</span>
-                <span className="text-[10px] text-slate-400 font-normal">Min 40 chars</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Min 40 chars</span>
               </label>
               <textarea
                 rows={3}
@@ -157,23 +157,23 @@ export const InternshipApplyModal: React.FC<InternshipApplyModalProps> = ({
                 value={statement}
                 onChange={(e) => setStatement(e.target.value)}
                 placeholder="Briefly state your clinical rotations completed, diagnostic skills, and why you are enthusiastic about this hospital department..."
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-400 text-slate-800"
+                className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-emerald-500 placeholder-slate-400 dark:placeholder-slate-500"
               />
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!statement.trim()}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
+                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit Clinical Application</span>

@@ -65,17 +65,17 @@ export const PostCard: React.FC<PostCardProps> = ({
   };
 
   return (
-    <article className="bg-white border border-slate-200/90 rounded-2xl mb-4 overflow-hidden shadow-sm hover:shadow-md transition duration-200">
+    <article className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl mb-4 overflow-hidden shadow-xs hover:shadow-md dark:shadow-slate-950/40 transition-all duration-200">
       
       {/* Algorithmic Reason Pill */}
       {(post as any).matchReasonBadge && (
-        <div className="mx-4 mt-3 px-3 py-1.5 bg-gradient-to-r from-sky-50 to-indigo-50/60 border border-sky-100/90 rounded-xl text-[11px] text-sky-900 font-medium flex items-center justify-between">
+        <div className="mx-4 mt-3 px-3 py-1.5 bg-gradient-to-r from-sky-50 to-indigo-50/60 dark:from-sky-950/40 dark:to-indigo-950/30 border border-sky-100/90 dark:border-sky-800/50 rounded-xl text-[11px] text-sky-900 dark:text-sky-200 font-medium flex items-center justify-between">
           <div className="flex items-center gap-1.5">
-            <Sparkles className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+            <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
             <span>{(post as any).matchReasonBadge}</span>
           </div>
           {(post as any).algorithmScore && (
-            <span className="text-[10px] font-bold text-sky-700 bg-sky-100/80 px-1.5 py-0.5 rounded">
+            <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-100/80 dark:bg-sky-900/60 px-1.5 py-0.5 rounded">
               {(post as any).algorithmScore}% match
             </span>
           )}
@@ -93,7 +93,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             <img
               src={post.authorAvatar}
               alt={post.authorName}
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-sky-400 transition"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800 group-hover:ring-sky-400 transition"
             />
             <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full ${
               post.authorRole === 'DOCTOR' ? 'bg-sky-600 text-white' : 'bg-emerald-600 text-white'
@@ -108,24 +108,24 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-sm font-bold text-slate-900 group-hover:text-sky-600 transition">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
                 {post.authorName}
               </h3>
               {post.isVerified && (
                 <span title="Verified Medical Practitioner" className="inline-flex items-center">
-                  <ShieldCheck className="w-4 h-4 text-sky-600 inline" />
+                  <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400 inline" />
                 </span>
               )}
               {post.authorIsProfessor && (
-                <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 font-bold border border-indigo-200 dark:border-indigo-800">
                   Professor
                 </span>
               )}
-              <span className="text-xs text-slate-400">• {post.createdAt}</span>
+              <span className="text-xs text-slate-400 dark:text-slate-500">• {post.createdAt}</span>
             </div>
             
-            <p className="text-xs text-slate-500 font-medium">
-              @{post.authorUsername} • <span className="text-slate-600">{post.authorSpecializationOrDiscipline}</span>
+            <p className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              @{post.authorUsername} • <span className="text-slate-600 dark:text-slate-300">{post.authorSpecializationOrDiscipline}</span>
             </p>
           </div>
         </div>
@@ -135,15 +135,15 @@ export const PostCard: React.FC<PostCardProps> = ({
           {post.authorId !== currentUser.id && (
             <button
               onClick={() => setIsFollowing(!isFollowing)}
-              className={`text-xs font-semibold px-3 py-1.5 rounded-full transition flex items-center gap-1 ${
+              className={`text-xs font-semibold px-3 py-1.5 rounded-full transition flex items-center gap-1 cursor-pointer ${
                 isFollowing
-                  ? 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-                  : 'bg-sky-50 text-sky-600 hover:bg-sky-100 border border-sky-200'
+                  ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                  : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900/40 border border-sky-200 dark:border-sky-800'
               }`}
             >
               {isFollowing ? (
                 <>
-                  <UserCheck className="w-3.5 h-3.5 text-sky-600" />
+                  <UserCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                   <span>Following</span>
                 </>
               ) : (
@@ -158,7 +158,7 @@ export const PostCard: React.FC<PostCardProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowMoreMenu(!showMoreMenu)}
-              className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition"
+              className="p-1.5 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition cursor-pointer"
               title="More Actions"
             >
               <MoreHorizontal className="w-5 h-5" />
@@ -166,12 +166,12 @@ export const PostCard: React.FC<PostCardProps> = ({
 
             {/* Slide 6 & 7 "More" Popover Menu */}
             {showMoreMenu && (
-              <div className="absolute right-0 mt-1 w-48 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-30 animate-in fade-in zoom-in-95">
+              <div className="absolute right-0 mt-1 w-48 bg-white dark:bg-slate-800 rounded-xl shadow-xl border border-slate-200 dark:border-slate-700 py-1.5 z-30 animate-in fade-in zoom-in-95">
                 <button
                   onClick={handleCopyLink}
-                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                 >
-                  <Copy className="w-4 h-4 text-slate-500" />
+                  <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   {copiedLink ? "Link Copied!" : "Copy Link"}
                 </button>
                 {onConnectAuthor && (
@@ -180,9 +180,9 @@ export const PostCard: React.FC<PostCardProps> = ({
                       onConnectAuthor(post.authorId);
                       setShowMoreMenu(false);
                     }}
-                    className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                    className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                   >
-                    <UserPlus className="w-4 h-4 text-sky-600" />
+                    <UserPlus className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     Connect Professionally
                   </button>
                 )}
@@ -191,20 +191,20 @@ export const PostCard: React.FC<PostCardProps> = ({
                     alert("Marked as interested. Your clinical feed algorithm has been prioritized.");
                     setShowMoreMenu(false);
                   }}
-                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                 >
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   Interested in Topic
                 </button>
-                <div className="border-t border-slate-100 my-1"></div>
+                <div className="border-t border-slate-100 dark:border-slate-700 my-1"></div>
                 <button
                   onClick={() => {
                     alert("Clinical case submitted to MedMedia ethical moderation board.");
                     setShowMoreMenu(false);
                   }}
-                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-rose-600 hover:bg-rose-50 flex items-center gap-2"
+                  className="w-full px-3.5 py-2 text-left text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer"
                 >
-                  <Flag className="w-4 h-4 text-rose-500" />
+                  <Flag className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                   Report Case / HIPAA
                 </button>
               </div>
@@ -215,7 +215,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* 2. Main Content Body (Slide 5: Text, tweets, Images, Links, Discussions) */}
       <div className="px-4 pb-3">
-        <p className="text-sm text-slate-800 whitespace-pre-line leading-relaxed font-normal">
+        <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-normal">
           {post.content}
         </p>
 
@@ -225,7 +225,7 @@ export const PostCard: React.FC<PostCardProps> = ({
             {post.clinicalTags.map((tag, idx) => (
               <span
                 key={idx}
-                className="text-xs font-semibold px-2 py-0.5 rounded-md bg-sky-50 text-sky-700 hover:bg-sky-100 cursor-pointer transition"
+                className="text-xs font-semibold px-2 py-0.5 rounded-md bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 hover:bg-sky-100 dark:hover:bg-sky-900/60 cursor-pointer transition border border-sky-100/60 dark:border-sky-800/40"
               >
                 {tag}
               </span>
@@ -236,8 +236,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Case Poll / Diagnostic Discussion Widget */}
       {post.casePoll && (
-        <div className="mx-4 mb-3 p-3.5 bg-slate-50 border border-slate-200 rounded-xl">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 mb-2.5">
+        <div className="mx-4 mb-3 p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/80 rounded-xl">
+          <div className="flex items-center gap-1.5 text-xs font-bold text-slate-700 dark:text-slate-200 mb-2.5">
             <AlertCircle className="w-4 h-4 text-amber-500" />
             <span>{post.casePoll.question}</span>
           </div>
@@ -253,29 +253,29 @@ export const PostCard: React.FC<PostCardProps> = ({
                 <button
                   key={opt.id}
                   onClick={() => onVotePoll && onVotePoll(post.id, opt.id)}
-                  className={`w-full text-left relative overflow-hidden p-2.5 rounded-lg border text-xs font-medium transition ${
+                  className={`w-full text-left relative overflow-hidden p-2.5 rounded-lg border text-xs font-medium transition cursor-pointer ${
                     isVoted
-                      ? 'border-sky-500 bg-sky-50 font-bold text-sky-900'
-                      : 'border-slate-200 hover:border-slate-300 bg-white text-slate-800'
+                      ? 'border-sky-500 dark:border-sky-400 bg-sky-50 dark:bg-sky-950/50 font-bold text-sky-900 dark:text-sky-200'
+                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200'
                   }`}
                 >
                   <div
-                    className="absolute inset-0 bg-sky-100/60 transition-all duration-500"
+                    className="absolute inset-0 bg-sky-100/60 dark:bg-sky-900/40 transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
                   <div className="relative flex items-center justify-between z-10">
                     <span className="flex items-center gap-2">
-                      {isVoted && <CheckCircle2 className="w-3.5 h-3.5 text-sky-600" />}
+                      {isVoted && <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />}
                       {opt.text}
                     </span>
-                    <span className="text-slate-500 text-[11px] font-semibold">{percentage}% ({opt.votes})</span>
+                    <span className="text-slate-500 dark:text-slate-400 text-[11px] font-semibold">{percentage}% ({opt.votes})</span>
                   </div>
                 </button>
               );
             })}
           </div>
 
-          <p className="text-[10px] text-slate-400 text-right mt-2">
+          <p className="text-[10px] text-slate-400 dark:text-slate-500 text-right mt-2">
             Total {post.casePoll.totalVotes} verified peer votes
           </p>
         </div>
@@ -283,7 +283,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* Media Images (No shorts/reels) */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
-        <div className="border-t border-b border-slate-100 bg-slate-900">
+        <div className="border-t border-b border-slate-100 dark:border-slate-800 bg-slate-900">
           <img
             src={post.mediaUrls[0]}
             alt="Clinical visual"
@@ -294,31 +294,31 @@ export const PostCard: React.FC<PostCardProps> = ({
 
       {/* External Journal / Article Link Preview */}
       {post.linkUrl && post.linkMeta && (
-        <div className="mx-4 mb-3 border border-slate-200 rounded-xl overflow-hidden hover:bg-slate-50 transition cursor-pointer">
+        <div className="mx-4 mb-3 border border-slate-200 dark:border-slate-700/80 rounded-xl overflow-hidden hover:bg-slate-50 dark:hover:bg-slate-800/50 transition cursor-pointer">
           <div className="p-3">
-            <div className="flex items-center justify-between text-[11px] text-sky-600 font-bold mb-1">
+            <div className="flex items-center justify-between text-[11px] text-sky-600 dark:text-sky-400 font-bold mb-1">
               <span>{post.linkMeta.source}</span>
               <ExternalLink className="w-3.5 h-3.5" />
             </div>
-            <h4 className="text-xs font-bold text-slate-900 leading-snug">{post.linkMeta.title}</h4>
-            <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">{post.linkMeta.description}</p>
+            <h4 className="text-xs font-bold text-slate-900 dark:text-white leading-snug">{post.linkMeta.title}</h4>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">{post.linkMeta.description}</p>
           </div>
         </div>
       )}
 
       {/* 3. Action Footer Bar (Slide 7: Like/comment/save/share, more) */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-slate-100">
+      <div className="px-4 py-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
         <div className="flex items-center gap-4 sm:gap-6">
           
           {/* Like */}
           <button
             onClick={() => onLike(post.id)}
-            className={`flex items-center gap-1.5 text-xs font-semibold transition group ${
-              post.isLiked ? 'text-rose-600' : 'text-slate-600 hover:text-rose-600'
+            className={`flex items-center gap-1.5 text-xs font-semibold transition group cursor-pointer ${
+              post.isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400'
             }`}
           >
             <Heart className={`w-5 h-5 transition transform group-active:scale-125 ${
-              post.isLiked ? 'fill-rose-600 text-rose-600' : 'text-slate-500 group-hover:text-rose-600'
+              post.isLiked ? 'fill-rose-600 dark:fill-rose-400 text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-600'
             }`} />
             <span>{post.likesCount}</span>
           </button>
@@ -326,19 +326,19 @@ export const PostCard: React.FC<PostCardProps> = ({
           {/* Comment */}
           <button
             onClick={() => setShowCommentBox(!showCommentBox)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-sky-600 transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
           >
-            <MessageCircle className="w-5 h-5 text-slate-500 hover:text-sky-600" />
+            <MessageCircle className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-sky-600" />
             <span>{post.commentsCount + (comments.length - 2)}</span>
           </button>
 
           {/* Share */}
           <button
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-sky-600 transition"
+            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
             title="Share Post"
           >
-            <Share2 className="w-5 h-5 text-slate-500 hover:text-sky-600" />
+            <Share2 className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-sky-600" />
             <span className="hidden sm:inline">{post.sharesCount}</span>
           </button>
         </div>
@@ -346,29 +346,29 @@ export const PostCard: React.FC<PostCardProps> = ({
         {/* Save / Bookmark (Slide 7) */}
         <button
           onClick={() => onSave(post.id)}
-          className={`p-1.5 rounded-full transition ${
-            post.isSaved ? 'text-sky-600' : 'text-slate-400 hover:text-slate-700'
+          className={`p-1.5 rounded-full transition cursor-pointer ${
+            post.isSaved ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
           }`}
           title="Save to Clinical Library"
         >
-          <Bookmark className={`w-5 h-5 ${post.isSaved ? 'fill-sky-600' : ''}`} />
+          <Bookmark className={`w-5 h-5 ${post.isSaved ? 'fill-sky-600 dark:fill-sky-400' : ''}`} />
         </button>
       </div>
 
       {/* Threaded Comment Section */}
       {showCommentBox && (
-        <div className="bg-slate-50/80 p-4 border-t border-slate-100 space-y-3">
+        <div className="bg-slate-50/80 dark:bg-slate-800/40 p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
           <form onSubmit={handleAddComment} className="flex gap-2">
             <input
               type="text"
               placeholder="Add to the medical discussion..."
               value={commentInput}
               onChange={(e) => setCommentInput(e.target.value)}
-              className="flex-1 bg-white border border-slate-200 rounded-full px-4 py-2 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
             />
             <button
               type="submit"
-              className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-full transition"
+              className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-full transition cursor-pointer"
             >
               Post
             </button>
@@ -376,8 +376,8 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <div className="space-y-2 pt-1">
             {comments.map((comment, i) => (
-              <div key={i} className="bg-white p-2.5 rounded-xl border border-slate-200/60 text-xs text-slate-700 leading-relaxed">
-                <span className="font-bold text-slate-900 mr-1.5">Dr. Peer Colleague:</span>
+              <div key={i} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                <span className="font-bold text-slate-900 dark:text-white mr-1.5">Dr. Peer Colleague:</span>
                 {comment}
               </div>
             ))}

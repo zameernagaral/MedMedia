@@ -233,27 +233,27 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
-      <div className="w-full max-w-2xl bg-white h-full shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in slide-in-from-right duration-200">
+      <div className="w-full max-w-2xl bg-white dark:bg-slate-900 h-full shadow-2xl flex flex-col md:flex-row overflow-hidden animate-in slide-in-from-right duration-200 transition-colors duration-200">
         
         {/* LEFT COLUMN: CONVERSATIONS LIST (Slide 5 Messages Drawer) */}
-        <div className="w-full md:w-72 bg-slate-50 border-r border-slate-200 flex flex-col h-1/3 md:h-full">
+        <div className="w-full md:w-72 bg-slate-50 dark:bg-slate-950 border-r border-slate-200 dark:border-slate-800 flex flex-col h-1/3 md:h-full">
           
           {/* Header */}
-          <div className="p-3.5 border-b border-slate-200 flex items-center justify-between bg-white">
+          <div className="p-3.5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900">
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-              <h3 className="font-bold text-sm text-slate-900">Clinical Messages</h3>
+              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Clinical Messages</h3>
             </div>
             <button
               onClick={onClose}
-              className="md:hidden p-1 rounded-full hover:bg-slate-100 text-slate-500"
+              className="md:hidden p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
           </div>
 
           {/* Search Contacts */}
-          <div className="p-2.5 bg-white border-b border-slate-200">
+          <div className="p-2.5 bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800">
             <div className="relative">
               <Search className="w-3.5 h-3.5 text-slate-400 absolute left-3 top-2.5" />
               <input
@@ -261,13 +261,13 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                 placeholder="Search colleagues..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-500"
+                className="w-full pl-8 pr-3 py-1.5 text-xs bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-500"
               />
             </div>
           </div>
 
           {/* Conversations Scroll */}
-          <div className="flex-1 overflow-y-auto divide-y divide-slate-100">
+          <div className="flex-1 overflow-y-auto divide-y divide-slate-100 dark:divide-slate-800/60">
             {filteredConversations.map((conv) => {
               const isActive = conv.id === activeConvId;
               return (
@@ -275,37 +275,39 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                   key={conv.id}
                   onClick={() => setActiveConvId(conv.id)}
                   className={`p-3 flex items-start gap-3 cursor-pointer transition ${
-                    isActive ? 'bg-sky-50/80 border-l-4 border-sky-600' : 'hover:bg-slate-100/70 bg-white'
+                    isActive
+                      ? 'bg-sky-50/80 dark:bg-sky-950/50 border-l-4 border-sky-600'
+                      : 'hover:bg-slate-100/70 dark:hover:bg-slate-850 bg-white dark:bg-slate-900'
                   }`}
                 >
                   <div className="relative flex-shrink-0">
                     <img
                       src={conv.avatar}
                       alt={conv.name}
-                      className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200"
+                      className="w-10 h-10 rounded-full object-cover ring-1 ring-slate-200 dark:ring-slate-700"
                     />
                     {conv.isOnline && (
-                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                      <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
                     )}
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between">
-                      <h4 className="text-xs font-bold text-slate-900 truncate flex items-center gap-1">
+                      <h4 className="text-xs font-bold text-slate-900 dark:text-white truncate flex items-center gap-1">
                         {conv.name}
                         {conv.role === 'DOCTOR' ? (
-                          <Stethoscope className="w-3 h-3 text-sky-600 inline" />
+                          <Stethoscope className="w-3 h-3 text-sky-600 dark:text-sky-400 inline" />
                         ) : (
-                          <GraduationCap className="w-3 h-3 text-emerald-600 inline" />
+                          <GraduationCap className="w-3 h-3 text-emerald-600 dark:text-emerald-400 inline" />
                         )}
                       </h4>
-                      <span className="text-[10px] text-slate-400 whitespace-nowrap">{conv.lastTime}</span>
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 whitespace-nowrap">{conv.lastTime}</span>
                     </div>
 
-                    <p className="text-[10px] text-slate-500 font-medium truncate mt-0.5">
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 font-medium truncate mt-0.5">
                       {conv.specialtyOrDiscipline}
                     </p>
-                    <p className="text-[11px] text-slate-600 truncate mt-1">
+                    <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate mt-1">
                       {conv.lastMessage}
                     </p>
                   </div>
@@ -315,12 +317,12 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
           </div>
 
           {/* Bottom Current User Tag */}
-          <div className="p-3 bg-white border-t border-slate-200 flex items-center justify-between text-xs">
+          <div className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 truncate">
               <img src={currentUser.avatarUrl} alt="" className="w-7 h-7 rounded-full object-cover" />
-              <span className="font-bold text-slate-800 text-[11px] truncate">{currentUser.fullName}</span>
+              <span className="font-bold text-slate-800 dark:text-slate-200 text-[11px] truncate">{currentUser.fullName}</span>
             </div>
-            <span className="text-[10px] font-bold text-sky-700 bg-sky-50 px-2 py-0.5 rounded">
+            <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-2 py-0.5 rounded">
               Verified
             </span>
           </div>
@@ -328,30 +330,30 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
         </div>
 
         {/* RIGHT COLUMN: ACTIVE CHAT THREAD */}
-        <div className="flex-1 flex flex-col h-2/3 md:h-full bg-white">
+        <div className="flex-1 flex flex-col h-2/3 md:h-full bg-white dark:bg-slate-900">
           
           {/* Active Chat Header */}
-          <div className="p-3 sm:p-4 border-b border-slate-200 flex items-center justify-between bg-white shadow-xs">
+          <div className="p-3 sm:p-4 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-white dark:bg-slate-900 shadow-xs">
             <div className="flex items-center gap-3">
               <div className="relative">
                 <img
                   src={activeConversation.avatar}
                   alt=""
-                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100"
+                  className="w-10 h-10 rounded-full object-cover ring-2 ring-slate-100 dark:ring-slate-800"
                 />
                 {activeConversation.isOnline && (
-                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white" />
+                  <span className="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" />
                 )}
               </div>
 
               <div>
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-sm font-bold text-slate-900">{activeConversation.name}</h3>
-                  <ShieldCheck className="w-4 h-4 text-sky-600" />
+                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">{activeConversation.name}</h3>
+                  <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                 </div>
-                <p className="text-[11px] text-slate-500">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {activeConversation.specialtyOrDiscipline} • {activeConversation.isOnline ? (
-                    <span className="text-emerald-600 font-bold">Online</span>
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">Online</span>
                   ) : (
                     <span>Last active yesterday</span>
                   )}
@@ -363,22 +365,22 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
             <div className="flex items-center gap-1 sm:gap-2">
               <button
                 onClick={() => setCallModal('audio')}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-600"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer"
                 title="Voice Consultation"
               >
                 <Phone className="w-4 h-4" />
               </button>
               <button
                 onClick={() => setCallModal('video')}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-600"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer"
                 title="Video Consultation"
               >
                 <Video className="w-4 h-4" />
               </button>
-              <div className="h-4 w-px bg-slate-200 mx-1"></div>
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-slate-800"
+                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
                 title="Close Drawer"
               >
                 <X className="w-5 h-5" />
@@ -387,9 +389,9 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
           </div>
 
           {/* Messages Scroll Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#f8fafc]">
+          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-[#f8fafc] dark:bg-slate-950">
             <div className="text-center my-2">
-              <span className="text-[10px] font-bold text-slate-400 bg-white border border-slate-200 px-3 py-1 rounded-full shadow-xs">
+              <span className="text-[10px] font-bold text-slate-400 dark:text-slate-500 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full shadow-xs">
                 🔒 End-to-End Encrypted HIPAA Clinical Messaging
               </span>
             </div>
@@ -403,14 +405,14 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                   className={`max-w-[85%] sm:max-w-[75%] p-3.5 rounded-2xl text-xs sm:text-sm leading-relaxed shadow-xs ${
                     msg.isMe
                       ? 'bg-sky-600 text-white rounded-br-xs'
-                      : 'bg-white border border-slate-200 text-slate-800 rounded-bl-xs'
+                      : 'bg-white dark:bg-slate-850 border border-slate-200 dark:border-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-xs'
                   }`}
                 >
                   <p>{msg.text}</p>
 
                   {/* Attachment card */}
                   {msg.attachment && (
-                    <div className="mt-2 p-2.5 bg-black/10 rounded-xl border border-white/20 flex items-center gap-2">
+                    <div className="mt-2 p-2.5 bg-black/10 dark:bg-black/30 rounded-xl border border-white/20 flex items-center gap-2">
                       <FileText className="w-4 h-4 text-white flex-shrink-0" />
                       <span className="text-[11px] font-semibold text-white truncate">
                         {msg.attachment.title}
@@ -420,15 +422,15 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                 </div>
 
                 <div className="flex items-center gap-1 mt-1 px-1">
-                  <span className="text-[9px] text-slate-400">{msg.time}</span>
-                  {msg.isMe && <CheckCheck className="w-3.5 h-3.5 text-sky-600" />}
+                  <span className="text-[9px] text-slate-400 dark:text-slate-500">{msg.time}</span>
+                  {msg.isMe && <CheckCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />}
                 </div>
               </div>
             ))}
 
             {/* Peer typing indicator */}
             {isTypingPeer && (
-              <div className="flex items-center gap-2 text-xs text-slate-500 bg-white p-2.5 rounded-2xl border border-slate-200 w-fit">
+              <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 bg-white dark:bg-slate-850 p-2.5 rounded-2xl border border-slate-200 dark:border-slate-800 w-fit">
                 <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping"></span>
                 <span>{activeConversation.name} is replying...</span>
               </div>
@@ -438,7 +440,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
           </div>
 
           {/* Quick Medical Reply Suggestion Chips */}
-          <div className="px-3 pt-2 pb-1 bg-white border-t border-slate-100 flex gap-1.5 overflow-x-auto no-scrollbar">
+          <div className="px-3 pt-2 pb-1 bg-white dark:bg-slate-900 border-t border-slate-100 dark:border-slate-800 flex gap-1.5 overflow-x-auto no-scrollbar">
             {[
               "Agree with diagnosis 👍",
               "Please share the lab values",
@@ -448,7 +450,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
               <button
                 key={idx}
                 onClick={() => setInputText(chip)}
-                className="text-[11px] font-medium bg-slate-100 hover:bg-sky-50 text-slate-600 hover:text-sky-700 px-3 py-1 rounded-full border border-slate-200 whitespace-nowrap transition"
+                className="text-[11px] font-medium bg-slate-100 dark:bg-slate-800 hover:bg-sky-50 dark:hover:bg-sky-950/60 text-slate-600 dark:text-slate-300 hover:text-sky-700 dark:hover:text-sky-300 px-3 py-1 rounded-full border border-slate-200 dark:border-slate-700 whitespace-nowrap transition cursor-pointer"
               >
                 {chip}
               </button>
@@ -458,12 +460,12 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
           {/* Bottom Chat Input Bar */}
           <form
             onSubmit={handleSendMessage}
-            className="p-3 bg-white border-t border-slate-200 flex items-center gap-2"
+            className="p-3 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 flex items-center gap-2"
           >
             <button
               type="button"
               onClick={handleAttachClinicalDocument}
-              className="p-2 rounded-full hover:bg-slate-100 text-slate-500 hover:text-sky-600 transition"
+              className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
               title="Attach Diagnostic Case or ECG"
             >
               <Paperclip className="w-5 h-5" />
@@ -474,13 +476,13 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
               placeholder={`Message ${activeConversation.name.split(' ')[0]}...`}
               value={inputText}
               onChange={(e) => setInputText(e.target.value)}
-              className="flex-1 text-xs sm:text-sm px-4 py-2.5 bg-slate-50 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
+              className="flex-1 text-xs sm:text-sm px-4 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-full focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
             />
 
             <button
               type="submit"
               disabled={!inputText.trim()}
-              className="p-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-full transition shadow-sm"
+              className="p-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white rounded-full transition shadow-xs cursor-pointer"
               title="Send Message"
             >
               <Send className="w-4 h-4" />

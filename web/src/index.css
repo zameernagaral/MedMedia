@@ -4,7 +4,7 @@
 
 @layer base {
   body {
-    @apply bg-[#f8fafc] text-slate-800 min-h-screen overflow-x-hidden;
+    @apply bg-slate-100 text-slate-800 dark:bg-slate-950 dark:text-slate-100 min-h-screen overflow-x-hidden transition-colors duration-200;
   }
 }
 

@@ -28,10 +28,10 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-      <div className="relative w-full max-w-2xl bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95">
+      <div className="relative w-full max-w-2xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-8 animate-in fade-in zoom-in-95 transition-colors duration-200">
         
         {/* Header */}
-        <div className="p-6 bg-gradient-to-br from-slate-900 via-sky-950 to-slate-900 text-white relative">
+        <div className="p-6 bg-gradient-to-br from-slate-950 via-sky-950 to-slate-900 text-white relative">
           <button
             onClick={onClose}
             className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
@@ -43,7 +43,7 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
             <img
               src={job.hospitalLogoUrl}
               alt=""
-              className="w-16 h-16 rounded-2xl object-cover bg-white p-1 border-2 border-sky-400/40"
+              className="w-16 h-16 rounded-2xl object-cover bg-white dark:bg-slate-800 p-1 border-2 border-sky-400/40"
             />
             <div>
               <div className="flex items-center gap-2">
@@ -80,35 +80,35 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           
           {/* Overview & Description */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
               Job Description & Overview
             </h4>
-            <p className="text-sm text-slate-700 leading-relaxed">
+            <p className="text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
               {job.description}
             </p>
           </div>
 
           {/* Preference Education */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-1.5">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-1.5">
               Educational Qualifications & Eligibility
             </h4>
-            <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 flex items-start gap-2">
-              <Award className="w-4 h-4 text-sky-600 mt-0.5 flex-shrink-0" />
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-800 rounded-xl text-xs font-medium text-slate-800 dark:text-slate-200 flex items-start gap-2">
+              <Award className="w-4 h-4 text-sky-600 dark:text-sky-400 mt-0.5 flex-shrink-0" />
               <span>{job.preferenceEducation}</span>
             </div>
           </div>
 
           {/* Required Skills */}
           <div>
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 mb-2">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
               Required Clinical Skills & Competencies
             </h4>
             <div className="flex flex-wrap gap-2">
               {job.skills.map((skill, i) => (
                 <span
                   key={i}
-                  className="text-xs font-semibold px-3 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-100"
+                  className="text-xs font-semibold px-3 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-800 dark:text-sky-300 border border-sky-100 dark:border-sky-800/50"
                 >
                   ✓ {skill}
                 </span>
@@ -117,25 +117,25 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
           </div>
 
           {/* 1-Click Application Box */}
-          <div className="pt-3 border-t border-slate-100">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
             {hasApplied ? (
-              <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-emerald-800">
-                <CheckCircle2 className="w-6 h-6 text-emerald-600 flex-shrink-0" />
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3 text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="w-6 h-6 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
                 <div>
                   <h5 className="text-xs font-bold">Application Submitted!</h5>
-                  <p className="text-[11px] text-emerald-700">
+                  <p className="text-[11px] text-emerald-700 dark:text-emerald-400">
                     Your verified MedMedia portfolio and credentials have been transmitted to {job.companyName}.
                   </p>
                 </div>
               </div>
             ) : (
               <form onSubmit={handleApplication} className="space-y-3">
-                <div className="p-3 bg-sky-50/70 border border-sky-100 rounded-xl text-xs text-sky-900 flex items-center justify-between">
+                <div className="p-3 bg-sky-50/70 dark:bg-sky-950/50 border border-sky-100 dark:border-sky-800/60 rounded-xl text-xs text-sky-900 dark:text-sky-200 flex items-center justify-between">
                   <span className="flex items-center gap-2 font-medium">
-                    <FileText className="w-4 h-4 text-sky-600" />
+                    <FileText className="w-4 h-4 text-sky-600 dark:text-sky-400" />
                     Applying as: <strong>{currentUser.fullName}</strong> ({currentUser.badgeTitle})
                   </span>
-                  <span className="text-[10px] font-bold text-sky-700 bg-white px-2 py-0.5 rounded border border-sky-200">
+                  <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-sky-200 dark:border-sky-800">
                     Verified Badge Attached
                   </span>
                 </div>
@@ -145,12 +145,12 @@ export const JobDetailModal: React.FC<JobDetailModalProps> = ({
                   placeholder="Optional cover note to the medical recruiting panel..."
                   value={coverNote}
                   onChange={(e) => setCoverNote(e.target.value)}
-                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
 
                 <button
                   type="submit"
-                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <Send className="w-4 h-4" />
                   Submit 1-Click Verified Application

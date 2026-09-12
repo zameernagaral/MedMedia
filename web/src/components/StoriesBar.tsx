@@ -106,15 +106,15 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
   };
 
   return (
-    <section className="bg-white border border-slate-200/90 py-3.5 px-4 mb-4 shadow-xs rounded-2xl">
+    <section className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 py-3.5 px-4 mb-4 shadow-xs rounded-2xl transition-colors duration-200">
       <div className="flex items-center justify-between mb-2.5 px-1">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 tracking-wide uppercase">
-          <Stethoscope className="w-3.5 h-3.5 text-sky-600" />
-          <span>Story Updates <span className="text-[10px] font-normal text-slate-400 capitalize">(Slide 5 Accessory)</span></span>
+        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wide uppercase">
+          <Stethoscope className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+          <span>Story Updates <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 capitalize">(Slide 5 Accessory)</span></span>
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="text-[11px] text-sky-600 font-bold hover:underline flex items-center gap-1"
+          className="text-[11px] text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
         >
           <Plus className="w-3.5 h-3.5" /> Post Story
         </button>
@@ -129,17 +129,17 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
           className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
           title="Share a 24-hour clinical story update"
         >
-          <div className="relative w-16 h-16 rounded-full p-0.5 border-2 border-dashed border-sky-400 group-hover:border-sky-600 transition">
+          <div className="relative w-16 h-16 rounded-full p-0.5 border-2 border-dashed border-sky-400 dark:border-sky-500 group-hover:border-sky-600 transition">
             <img
               src={currentUser.avatarUrl}
               alt="My Story"
               className="w-full h-full rounded-full object-cover group-hover:scale-95 transition"
             />
-            <div className="absolute bottom-0 right-0 w-5 h-5 bg-sky-600 text-white rounded-full flex items-center justify-center border-2 border-white shadow-sm">
+            <div className="absolute bottom-0 right-0 w-5 h-5 bg-sky-600 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
               <Plus className="w-3.5 h-3.5 stroke-[3]" />
             </div>
           </div>
-          <span className="text-[11px] font-medium text-slate-700 mt-1 max-w-[68px] truncate">
+          <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
             Your Update
           </span>
         </div>
@@ -153,10 +153,10 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
           >
             <div className={`w-16 h-16 rounded-full p-0.5 transition transform group-hover:scale-105 ${
               story.isViewed
-                ? 'border-2 border-slate-300'
+                ? 'border-2 border-slate-300 dark:border-slate-700'
                 : 'bg-gradient-to-tr from-sky-500 via-teal-400 to-indigo-500 p-[2.5px]'
             }`}>
-              <div className="w-full h-full rounded-full bg-white p-0.5">
+              <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-0.5">
                 <img
                   src={story.userAvatar}
                   alt={story.userName}
@@ -164,7 +164,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                 />
               </div>
             </div>
-            <span className="text-[11px] font-medium text-slate-700 mt-1 max-w-[68px] truncate">
+            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
               {story.userName.split(' ')[story.userName.startsWith('Dr.') ? 1 : 0]}
             </span>
           </div>
@@ -174,15 +174,15 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
       {/* CREATE STORY MODAL */}
       {showCreateModal && (
         <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden animate-in fade-in zoom-in-95">
-            <div className="p-4 bg-gradient-to-r from-sky-900 to-slate-900 text-white flex items-center justify-between">
+          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="p-4 bg-gradient-to-r from-sky-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-sky-400" />
                 <h3 className="text-sm font-bold">Add Clinical Story Update (24h)</h3>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1 rounded-full text-white/80 hover:text-white"
+                className="p-1 rounded-full text-white/80 hover:text-white cursor-pointer"
               >
                 <X className="w-5 h-5" />
               </button>
@@ -190,7 +190,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
 
             <form onSubmit={handleCreateStory} className="p-5 space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-2">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
                   1. Select Clinical Media:
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -199,7 +199,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                       key={i}
                       onClick={() => setSelectedImage(img.url)}
                       className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition ${
-                        selectedImage === img.url ? 'border-sky-600 ring-2 ring-sky-300' : 'border-slate-200'
+                        selectedImage === img.url ? 'border-sky-600 ring-2 ring-sky-300 dark:ring-sky-800' : 'border-slate-200 dark:border-slate-700'
                       }`}
                     >
                       <img src={img.url} alt="" className="w-full h-20 object-cover" />
@@ -212,7 +212,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
                   2. Caption / Procedure Update:
                 </label>
                 <textarea
@@ -221,7 +221,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                   placeholder="e.g. Cath lab rounds finished. Preparing patient for complex PCI..."
                   value={newCaption}
                   onChange={(e) => setNewCaption(e.target.value)}
-                  className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
@@ -229,13 +229,13 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
-                  className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-md transition"
+                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
                 >
                   Publish to Story Ring
                 </button>

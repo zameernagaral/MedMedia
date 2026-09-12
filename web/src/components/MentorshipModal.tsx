@@ -55,10 +55,10 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
-      <div className="w-full max-w-lg bg-white rounded-3xl shadow-2xl border border-slate-200 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-auto animate-in fade-in zoom-in-95 duration-200 transition-colors duration-200">
         
         {/* Header */}
-        <div className="bg-gradient-to-r from-sky-900 via-indigo-900 to-slate-900 p-5 text-white relative">
+        <div className="bg-gradient-to-r from-sky-950 via-indigo-950 to-slate-950 p-5 text-white relative">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <span className="p-1.5 rounded-xl bg-sky-500/20 border border-sky-400/30 text-sky-300">
@@ -72,7 +72,7 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
 
             <button
               onClick={onClose}
-              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+              className="p-1.5 rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
             >
               <X className="w-5 h-5" />
             </button>
@@ -106,11 +106,11 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
         {/* Content Body */}
         {isSubmitted ? (
           <div className="p-8 text-center space-y-3">
-            <div className="w-14 h-14 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto">
+            <div className="w-14 h-14 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mx-auto">
               <CheckCircle2 className="w-8 h-8" />
             </div>
-            <h4 className="text-base font-bold text-slate-900">Mentorship Application Dispatched!</h4>
-            <p className="text-xs text-slate-600 max-w-sm mx-auto">
+            <h4 className="text-base font-bold text-slate-900 dark:text-white">Mentorship Application Dispatched!</h4>
+            <p className="text-xs text-slate-600 dark:text-slate-300 max-w-sm mx-auto">
               Your academic profile, college credentials, and statement of purpose have been forwarded directly to <strong>{professor.fullName}</strong>. You will receive an alert once accepted.
             </p>
           </div>
@@ -119,7 +119,7 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
             
             {/* Guidance Focus Selector */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5">
                 1. Select Mentorship Focus Area:
               </label>
               <div className="grid grid-cols-2 gap-2 text-xs">
@@ -134,10 +134,10 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
                     key={item.id}
                     type="button"
                     onClick={() => setFocusArea(item.id as MentorshipRequest['focusArea'])}
-                    className={`p-2.5 rounded-xl border text-left font-medium transition ${
+                    className={`p-2.5 rounded-xl border text-left font-medium transition cursor-pointer ${
                       focusArea === item.id
-                        ? 'border-sky-600 bg-sky-50/70 text-sky-900 ring-1 ring-sky-500 font-bold'
-                        : 'border-slate-200 text-slate-700 hover:bg-slate-50'
+                        ? 'border-sky-600 dark:border-sky-500 bg-sky-50/70 dark:bg-sky-950/60 text-sky-900 dark:text-sky-200 ring-1 ring-sky-500 font-bold'
+                        : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
                     {item.label}
@@ -147,22 +147,22 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
             </div>
 
             {/* Student Verified Profile Preview */}
-            <div className="p-3 bg-slate-50 rounded-2xl border border-slate-200 text-xs flex items-center justify-between">
+            <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-2xl border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
               <div>
-                <span className="text-[10px] text-slate-400 uppercase font-bold block">Applicant Credentials</span>
-                <p className="font-bold text-slate-800">{student.fullName} (Year {student.studentDetails?.academicYear || 4})</p>
-                <p className="text-[11px] text-slate-500">{student.studentDetails?.collegeName}</p>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 uppercase font-bold block">Applicant Credentials</span>
+                <p className="font-bold text-slate-800 dark:text-slate-200">{student.fullName} (Year {student.studentDetails?.academicYear || 4})</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">{student.studentDetails?.collegeName}</p>
               </div>
-              <span className="px-2 py-1 bg-emerald-100 text-emerald-800 font-bold text-[10px] rounded-lg">
+              <span className="px-2 py-1 bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 font-bold text-[10px] rounded-lg">
                 Verified Student ID
               </span>
             </div>
 
             {/* Statement of Purpose */}
             <div>
-              <label className="text-xs font-bold text-slate-700 block mb-1.5 flex items-center justify-between">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1.5 flex items-center justify-between">
                 <span>2. Statement of Purpose & Academic Goals:</span>
-                <span className="text-[10px] text-slate-400 font-normal">Min 50 chars</span>
+                <span className="text-[10px] text-slate-400 dark:text-slate-500 font-normal">Min 50 chars</span>
               </label>
               <textarea
                 rows={3}
@@ -170,7 +170,7 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
                 value={statement}
                 onChange={(e) => setStatement(e.target.value)}
                 placeholder="Explain why you wish to be mentored by this professor, your previous research exposure, and what you aim to achieve..."
-                className="w-full text-xs p-3 border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-400 text-slate-800"
+                className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 placeholder-slate-400 dark:placeholder-slate-500"
               />
             </div>
 
@@ -181,26 +181,26 @@ export const MentorshipModal: React.FC<MentorshipModalProps> = ({
                 id="noc-check"
                 checked={hasCollegeNoc}
                 onChange={(e) => setHasCollegeNoc(e.target.checked)}
-                className="w-4 h-4 text-sky-600 rounded border-slate-300 focus:ring-sky-500"
+                className="w-4 h-4 text-sky-600 rounded border-slate-300 dark:border-slate-600 focus:ring-sky-500 cursor-pointer"
               />
-              <label htmlFor="noc-check" className="text-xs text-slate-600 font-medium">
+              <label htmlFor="noc-check" className="text-xs text-slate-600 dark:text-slate-400 font-medium cursor-pointer">
                 I confirm I have college approval/NOC for external academic mentorship & clinical electives.
               </label>
             </div>
 
             {/* Actions */}
-            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition"
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition cursor-pointer"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={!statement.trim()}
-                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5"
+                className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
                 <span>Submit Mentorship Request</span>

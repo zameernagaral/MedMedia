@@ -501,14 +501,14 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
       {/* Slide 6 Comments Drawer Modal */}
       {showCommentsModal && (
-        <div className="absolute inset-x-0 bottom-0 z-40 bg-white rounded-t-3xl p-4 max-h-[440px] flex flex-col justify-between shadow-2xl animate-in slide-in-from-bottom">
-          <div className="flex items-center justify-between pb-2 border-b border-slate-200">
-            <span className="text-xs font-bold text-slate-800">
+        <div className="absolute inset-x-0 bottom-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl p-4 max-h-[440px] flex flex-col justify-between shadow-2xl animate-in slide-in-from-bottom transition-colors duration-200">
+          <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">
+            <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
               Clinical Observations ({clipComments.length})
             </span>
             <button
               onClick={() => setShowCommentsModal(false)}
-              className="text-xs font-bold text-slate-500 hover:text-slate-800"
+              className="text-xs font-bold text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
             >
               ✕
             </button>
@@ -516,24 +516,24 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
           <div className="overflow-y-auto space-y-2 py-2 flex-1">
             {clipComments.map((c, i) => (
-              <div key={i} className="text-xs p-2.5 bg-slate-50 rounded-xl border border-slate-100">
-                <span className="font-bold text-slate-900 mr-1.5">Colleague:</span>
+              <div key={i} className="text-xs p-2.5 bg-slate-50 dark:bg-slate-800/80 rounded-xl border border-slate-100 dark:border-slate-700/80 text-slate-700 dark:text-slate-300">
+                <span className="font-bold text-slate-900 dark:text-white mr-1.5">Colleague:</span>
                 {c}
               </div>
             ))}
           </div>
 
-          <form onSubmit={handleAddComment} className="flex gap-2 pt-2 border-t border-slate-100">
+          <form onSubmit={handleAddComment} className="flex gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
             <input
               type="text"
               placeholder="Add your observation..."
               value={commentText}
               onChange={(e) => setCommentText(e.target.value)}
-              className="flex-1 text-xs border border-slate-200 rounded-full px-3.5 py-2 text-slate-800 focus:outline-none focus:ring-1 focus:ring-sky-500"
+              className="flex-1 text-xs border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 rounded-full px-3.5 py-2 text-slate-800 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
             />
             <button
               type="submit"
-              className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center gap-1"
+              className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-full transition flex items-center gap-1 cursor-pointer shadow-xs"
             >
               <Send className="w-3 h-3" />
             </button>

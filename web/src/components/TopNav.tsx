@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Bell, MessageSquare, ShieldCheck, Stethoscope, GraduationCap, ChevronDown, Check } from 'lucide-react';
+import { Plus, Bell, MessageSquare, ShieldCheck, Stethoscope, GraduationCap, ChevronDown, Check, Sun, Moon } from 'lucide-react';
 import { UserProfile } from '../types';
 
 interface TopNavProps {
@@ -10,6 +10,8 @@ interface TopNavProps {
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
   onOpenAuth: () => void;
+  isDarkMode: boolean;
+  onToggleDarkMode: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -19,14 +21,16 @@ export const TopNav: React.FC<TopNavProps> = ({
   onCreatePost,
   onOpenNotifications,
   onOpenMessages,
-  onOpenAuth
+  onOpenAuth,
+  isDarkMode,
+  onToggleDarkMode
 }) => {
   const [showSwitchDropdown, setShowSwitchDropdown] = useState(false);
   const [unreadNotifications, setUnreadNotifications] = useState(3);
   const [unreadMessages, setUnreadMessages] = useState(2);
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-slate-200 shadow-sm">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs transition-colors duration-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         
         {/* Left: Create Button & Medmedia Logo (Slide 5) */}
@@ -40,33 +44,46 @@ export const TopNav: React.FC<TopNavProps> = ({
           </button>
 
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 to-teal-500 flex items-center justify-center text-white font-black text-lg shadow-sm">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-sky-600 via-teal-500 to-indigo-600 flex items-center justify-center text-white font-black text-lg shadow-sm">
               M
             </div>
             <div className="flex flex-col">
-              <span className="font-extrabold text-xl tracking-tight text-slate-900 flex items-center gap-1.5">
+              <span className="font-extrabold text-xl tracking-tight text-slate-900 dark:text-white flex items-center gap-1.5">
                 Medmedia
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 text-sky-700 uppercase tracking-wider">
+                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300 uppercase tracking-wider border border-sky-200 dark:border-sky-800">
                   Verified
                 </span>
               </span>
-              <span className="text-[10px] text-slate-500 hidden sm:inline -mt-1 font-medium">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 hidden sm:inline -mt-1 font-medium">
                 Healthcare & Student Professional Network
               </span>
             </div>
           </div>
         </div>
 
-        {/* Right Action Icons: Notification, Message, User Profile Switcher */}
-        <div className="flex items-center gap-2 sm:gap-4">
+        {/* Right Action Icons: Dark Mode Toggle, Notification, Message, User Profile Switcher */}
+        <div className="flex items-center gap-1.5 sm:gap-3">
           
+          {/* Dark Mode Toggle Button */}
+          <button
+            onClick={onToggleDarkMode}
+            className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
+            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
+          >
+            {isDarkMode ? (
+              <Sun className="w-5 h-5 text-amber-400 animate-in spin-in-90 duration-300" />
+            ) : (
+              <Moon className="w-5 h-5 text-slate-700" />
+            )}
+          </button>
+
           {/* Notifications Button (Slide 5) */}
           <button
             onClick={() => {
               setUnreadNotifications(0);
               onOpenNotifications();
             }}
-            className="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-700 transition"
+            className="relative p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
             title="Notifications"
           >
             <Bell className="w-5 h-5" />
@@ -83,7 +100,7 @@ export const TopNav: React.FC<TopNavProps> = ({
               setUnreadMessages(0);
               onOpenMessages();
             }}
-            className="relative p-2.5 rounded-full hover:bg-slate-100 text-slate-700 transition"
+            className="relative p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
             title="Clinical Discussions & Direct Messages"
           >
             <MessageSquare className="w-5 h-5" />
@@ -94,13 +111,13 @@ export const TopNav: React.FC<TopNavProps> = ({
             )}
           </button>
 
-          <div className="h-6 w-px bg-slate-200 mx-1 hidden sm:block"></div>
+          <div className="h-6 w-px bg-slate-200 dark:bg-slate-800 mx-1 hidden sm:block"></div>
 
           {/* User Persona Switcher & Profile Quick View */}
           <div className="relative">
             <button
               onClick={() => setShowSwitchDropdown(!showSwitchDropdown)}
-              className="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-100 border border-slate-200 transition"
+              className="flex items-center gap-2 p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-800 transition cursor-pointer"
             >
               <img
                 src={currentUser.avatarUrl}
@@ -108,12 +125,12 @@ export const TopNav: React.FC<TopNavProps> = ({
                 className="w-8 h-8 rounded-full object-cover ring-2 ring-sky-500/30"
               />
               <div className="hidden md:flex flex-col text-left pr-1">
-                <span className="text-xs font-semibold text-slate-800 leading-tight flex items-center gap-1">
+                <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-tight flex items-center gap-1">
                   {currentUser.role === 'DOCTOR' ? 'Dr.' : ''} {currentUser.fullName.split(' ')[currentUser.role === 'DOCTOR' ? 1 : 0]}
                   <ShieldCheck className="w-3.5 h-3.5 text-sky-600 inline" />
                 </span>
-                <span className="text-[10px] text-slate-500 font-medium">
-                  {currentUser.role === 'DOCTOR' ? 'Verified Physician' : currentUser.studentDetails?.discipline.replace('_', ' ')}
+                <span className="text-[10px] text-slate-500 dark:text-slate-400 font-medium">
+                  {currentUser.role === 'DOCTOR' ? (currentUser.doctorDetails?.isProfessor ? 'Professor & HOD' : 'Verified Physician') : currentUser.studentDetails?.discipline.replace('_', ' ')}
                 </span>
               </div>
               <ChevronDown className="w-4 h-4 text-slate-400 mr-1" />
@@ -121,15 +138,15 @@ export const TopNav: React.FC<TopNavProps> = ({
 
             {/* Dropdown for role switching & verification testing */}
             {showSwitchDropdown && (
-              <div className="absolute right-0 mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-slate-200 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
-                <div className="px-4 py-2 border-b border-slate-100">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400">Current Role Mode</p>
-                  <p className="text-xs font-medium text-slate-600 mt-0.5">
-                    Toggle between Doctor and Student personas to test tiered privileges.
+              <div className="absolute right-0 mt-2 w-72 bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 py-2 z-50 animate-in fade-in zoom-in-95 duration-100">
+                <div className="px-4 py-2 border-b border-slate-100 dark:border-slate-800">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">Current Role Mode</p>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300 mt-0.5">
+                    Toggle between Doctor, Professor, and Student personas.
                   </p>
                 </div>
 
-                <div className="py-1">
+                <div className="py-1 max-h-80 overflow-y-auto no-scrollbar">
                   {availableUsers.map((user) => (
                     <button
                       key={user.id}
@@ -137,19 +154,19 @@ export const TopNav: React.FC<TopNavProps> = ({
                         onSwitchUser(user);
                         setShowSwitchDropdown(false);
                       }}
-                      className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-slate-50 transition ${
-                        user.id === currentUser.id ? 'bg-sky-50/60' : ''
+                      className={`w-full px-4 py-2.5 text-left flex items-center justify-between hover:bg-slate-50 dark:hover:bg-slate-800/80 transition cursor-pointer ${
+                        user.id === currentUser.id ? 'bg-sky-50/60 dark:bg-sky-950/40' : ''
                       }`}
                     >
                       <div className="flex items-center gap-3">
                         <img src={user.avatarUrl} alt="" className="w-8 h-8 rounded-full object-cover" />
                         <div>
-                          <p className="text-xs font-bold text-slate-800 flex items-center gap-1">
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1">
                             {user.role === 'DOCTOR' ? <Stethoscope className="w-3.5 h-3.5 text-sky-600" /> : <GraduationCap className="w-3.5 h-3.5 text-emerald-600" />}
                             {user.fullName}
                           </p>
-                          <p className="text-[10px] text-slate-500">
-                            {user.role === 'DOCTOR' ? user.doctorDetails?.specialization : user.studentDetails?.discipline.replace('_', ' ')}
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">
+                            {user.role === 'DOCTOR' ? (user.doctorDetails?.academicTitle || user.doctorDetails?.specialization) : user.studentDetails?.discipline.replace('_', ' ')}
                           </p>
                         </div>
                       </div>
@@ -158,13 +175,13 @@ export const TopNav: React.FC<TopNavProps> = ({
                   ))}
                 </div>
 
-                <div className="border-t border-slate-100 mt-1 pt-1 px-3">
+                <div className="border-t border-slate-100 dark:border-slate-800 mt-1 pt-1 px-3">
                   <button
                     onClick={() => {
                       setShowSwitchDropdown(false);
                       onOpenAuth();
                     }}
-                    className="w-full text-center py-2 text-xs font-semibold text-sky-600 hover:bg-sky-50 rounded-lg transition"
+                    className="w-full text-center py-2 text-xs font-semibold text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-slate-800 rounded-lg transition cursor-pointer"
                   >
                     Manage Account & Verification Status →
                   </button>
