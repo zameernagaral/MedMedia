@@ -9,6 +9,7 @@ import { ProfileView } from './components/ProfileView';
 import { SearchAndNetworking } from './components/SearchAndNetworking';
 import { AuthModal } from './components/AuthModal';
 import { CreatePostModal } from './components/CreatePostModal';
+import { ClinicalChatDrawer } from './components/ClinicalChatDrawer';
 import { 
   INITIAL_USERS, 
   INITIAL_STORIES, 
@@ -28,8 +29,6 @@ import {
   Sparkles, 
   UserPlus, 
   X, 
-  Send, 
-  CheckCircle2, 
   TrendingUp,
   Stethoscope,
   GraduationCap
@@ -56,13 +55,6 @@ export const App: React.FC = () => {
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [showMessagesDrawer, setShowMessagesDrawer] = useState(false);
   const [isMobileFrameMode, setIsMobileFrameMode] = useState(false);
-
-  // Direct Message State
-  const [chatMessages, setChatMessages] = useState<{ sender: string; text: string; time: string; isMe: boolean }[]>([
-    { sender: 'Dr. Priya Nair', text: 'Hello Dr. Ramesh, reviewed your catheterization case study. Remarkable result on the bifurcation!', time: '10:42 AM', isMe: false },
-    { sender: 'You', text: 'Thank you Dr. Priya! The IVUS imaging was pivotal in deciding the stent sizing.', time: '10:45 AM', isMe: true }
-  ]);
-  const [chatInput, setChatInput] = useState('');
 
   // Post Actions
   const handleLikePost = (postId: string) => {
@@ -150,12 +142,6 @@ export const App: React.FC = () => {
     alert("Session successfully revoked. The target device has been logged out.");
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!chatInput.trim()) return;
-    setChatMessages([...chatMessages, { sender: 'You', text: chatInput.trim(), time: 'Just now', isMe: true }]);
-    setChatInput('');
-  };
 
   const filteredPosts = posts.filter(p => {
     if (feedFilterTag === 'All') return true;
@@ -508,53 +494,12 @@ export const App: React.FC = () => {
         </div>
       )}
 
-      {/* Interactive Direct Messages Drawer (Slide 5: Messages) */}
-      {showMessagesDrawer && (
-        <div className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-sm bg-white h-full flex flex-col justify-between shadow-2xl animate-in slide-in-from-right duration-200">
-            <div className="p-4 border-b border-slate-200 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <img src="https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop" className="w-8 h-8 rounded-full object-cover" alt="" />
-                <div>
-                  <h4 className="text-xs font-bold text-slate-900">Dr. Priya Nair</h4>
-                  <span className="text-[10px] text-emerald-600 font-bold flex items-center gap-1">
-                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500"></span> Online
-                  </span>
-                </div>
-              </div>
-              <button onClick={() => setShowMessagesDrawer(false)} className="p-1 rounded-full hover:bg-slate-100">
-                <X className="w-5 h-5 text-slate-500" />
-              </button>
-            </div>
-
-            <div className="flex-1 p-4 space-y-3 overflow-y-auto bg-slate-50">
-              {chatMessages.map((msg, i) => (
-                <div key={i} className={`flex flex-col ${msg.isMe ? 'items-end' : 'items-start'}`}>
-                  <div className={`max-w-[80%] p-3 rounded-2xl text-xs ${
-                    msg.isMe ? 'bg-sky-600 text-white rounded-br-none' : 'bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-xs'
-                  }`}>
-                    <p className="leading-relaxed">{msg.text}</p>
-                  </div>
-                  <span className="text-[9px] text-slate-400 mt-1 px-1">{msg.time}</span>
-                </div>
-              ))}
-            </div>
-
-            <form onSubmit={handleSendMessage} className="p-3 border-t border-slate-200 bg-white flex gap-2">
-              <input
-                type="text"
-                placeholder="Type a clinical message..."
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                className="flex-1 text-xs px-3 py-2 border border-slate-200 rounded-full focus:outline-none focus:ring-1 focus:ring-sky-500"
-              />
-              <button type="submit" className="p-2 bg-sky-600 text-white rounded-full">
-                <Send className="w-4 h-4" />
-              </button>
-            </form>
-          </div>
-        </div>
-      )}
+      {/* Full-Featured Multi-Conversation Clinical Chat Suite (Slide 5: Messages) */}
+      <ClinicalChatDrawer
+        isOpen={showMessagesDrawer}
+        currentUser={currentUser}
+        onClose={() => setShowMessagesDrawer(false)}
+      />
 
       {/* Auth & Verification Modal (Slide 2, 3, 4) */}
       <AuthModal
