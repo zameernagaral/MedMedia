@@ -270,8 +270,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
               </div>
 
               <div className="flex items-center justify-between">
-                <button
-                  type="button"
+                <div
                   onClick={(e) => {
                     e.stopPropagation();
                     const targetUserId = activeStory.userId;
@@ -280,26 +279,23 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                       onSelectUser(targetUserId);
                     }
                   }}
-                  className="flex items-center gap-2.5 text-left group hover:opacity-95 transition focus:outline-none cursor-pointer"
-                  title={`View ${activeStory.userName}'s verified medical profile`}
+                  className="flex items-center gap-2.5 text-left cursor-pointer group select-none active:opacity-80"
+                  title={`Open ${activeStory.userName}'s medical profile`}
                 >
                   <div className="relative">
                     <img
                       src={activeStory.userAvatar}
                       alt={activeStory.userName}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-sky-300 transition"
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-white transition"
                     />
                   </div>
-                  <div>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-white text-xs font-bold leading-tight group-hover:underline">{activeStory.userName}</p>
-                      <span className="text-[9px] bg-sky-500/40 text-sky-200 px-1.5 py-0.5 rounded font-semibold border border-sky-400/40">
-                        View Profile →
-                      </span>
-                    </div>
+                  <div className="flex flex-col">
+                    <p className="text-white text-xs font-bold leading-tight group-hover:underline group-hover:text-sky-200 transition">
+                      {activeStory.userName}
+                    </p>
                     <p className="text-white/70 text-[10px]">{activeStory.timestamp}</p>
                   </div>
-                </button>
+                </div>
 
                 <button
                   onClick={() => setActiveStoryIndex(null)}

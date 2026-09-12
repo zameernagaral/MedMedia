@@ -28,6 +28,7 @@ interface MedclipsPlayerProps {
   onLikeClip: (clipId: string) => void;
   onSaveClip: (clipId: string) => void;
   onConnectAuthor: (authorName: string) => void;
+  onSelectUser?: (userId: string) => void;
 }
 
 export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
@@ -35,7 +36,8 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   currentUser,
   onLikeClip,
   onSaveClip,
-  onConnectAuthor
+  onConnectAuthor,
+  onSelectUser
 }) => {
   const [activeCategory, setActiveCategory] = useState<'all' | 'clinical updates' | 'social update' | 'following'>('clinical updates');
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -372,23 +374,29 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
         
         {/* Author Info & Follow Button */}
         <div className="flex items-center gap-2 mb-2">
-          <img
-            src={currentClip.authorAvatar}
-            alt={currentClip.authorName}
-            className="w-10 h-10 rounded-full object-cover ring-2 ring-sky-400"
-          />
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5">
-              <span className="text-white text-xs font-bold leading-tight">
-                {currentClip.authorName}
+          <div 
+            onClick={() => onSelectUser && onSelectUser(currentClip.authorId)}
+            className="flex items-center gap-2 cursor-pointer group select-none active:opacity-80"
+            title={`Open ${currentClip.authorName}'s medical profile`}
+          >
+            <img
+              src={currentClip.authorAvatar}
+              alt={currentClip.authorName}
+              className="w-10 h-10 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-white transition"
+            />
+            <div className="flex flex-col">
+              <div className="flex items-center gap-1.5">
+                <span className="text-white text-xs font-bold leading-tight group-hover:underline group-hover:text-sky-200 transition">
+                  {currentClip.authorName}
+                </span>
+                {currentClip.isVerified && (
+                  <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
+                )}
+              </div>
+              <span className="text-[10px] text-white/70 font-medium">
+                {currentClip.authorSpecialty}
               </span>
-              {currentClip.isVerified && (
-                <ShieldCheck className="w-3.5 h-3.5 text-sky-400" />
-              )}
             </div>
-            <span className="text-[10px] text-white/70 font-medium">
-              {currentClip.authorSpecialty}
-            </span>
           </div>
 
           <button

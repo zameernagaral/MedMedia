@@ -86,8 +86,8 @@ export const PostCard: React.FC<PostCardProps> = ({
       <div className="p-4 flex items-center justify-between">
         <div 
           onClick={() => onSelectUser && onSelectUser(post.authorId)}
-          className="flex items-center gap-3 cursor-pointer group"
-          title={`View ${post.authorName}'s full medical portfolio`}
+          className="flex items-center gap-3 cursor-pointer group select-none active:opacity-80"
+          title={`Open ${post.authorName}'s medical profile`}
         >
           <div className="relative">
             <img
@@ -108,7 +108,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 group-hover:underline transition cursor-pointer">
                 {post.authorName}
               </h3>
               {post.isVerified && (

@@ -173,14 +173,20 @@ export const App: React.FC = () => {
 
   const handleSelectUser = (userOrId: UserProfile | string) => {
     if (typeof userOrId === 'string') {
-      const found = users.find(u => u.id === userOrId);
+      const found = users.find(u => 
+        u.id === userOrId || 
+        u.username.toLowerCase() === userOrId.toLowerCase() || 
+        u.fullName.toLowerCase() === userOrId.toLowerCase()
+      );
       if (found) {
         setSelectedProfileUser(found);
         setCurrentTab('profile');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
     } else {
       setSelectedProfileUser(userOrId);
       setCurrentTab('profile');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };
 
@@ -407,6 +413,7 @@ export const App: React.FC = () => {
                     currentUser={currentUser}
                     onLikeClip={handleLikeClip}
                     onSaveClip={handleSaveClip}
+                    onSelectUser={handleSelectUser}
                     onConnectAuthor={(name) => {
                       setToastMessage(`Connection request sent to ${name}!`);
                       setTimeout(() => setToastMessage(null), 3000);
