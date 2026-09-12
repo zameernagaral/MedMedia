@@ -47,7 +47,7 @@ export const BottomNav: React.FC<BottomNavProps> = ({
                 <div className="relative">
                   <Icon className={`w-6 h-6 ${isActive ? 'stroke-[2.5]' : 'stroke-[1.8]'}`} />
                   {tab.isSpecial && (
-                    <span className="absolute -top-1 -right-1.5 w-2 h-2 rounded-full bg-gradient-to-r from-rose-500 to-amber-500 animate-ping"></span>
+                    <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-rose-500 ring-2 ring-white dark:ring-slate-900 shadow-sm shadow-rose-500/60" title="New reels from followed creators"></span>
                   )}
                 </div>
               )}

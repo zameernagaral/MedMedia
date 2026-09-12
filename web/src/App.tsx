@@ -214,7 +214,7 @@ export const App: React.FC = () => {
       {/* Top Banner: Algorithm Persona Switcher & Device Frame Preview */}
       <div className="w-full bg-slate-900 text-white px-3 sm:px-4 py-2 text-xs flex flex-wrap items-center justify-between z-50 border-b border-slate-800 gap-2">
         <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
           <span className="font-bold tracking-wide uppercase text-[10px] text-sky-400">
             MedMedia AI Algorithm Mode
           </span>

@@ -39,7 +39,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   onConnectAuthor,
   onSelectUser
 }) => {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'clinical updates' | 'social update' | 'following'>('clinical updates');
+  const [activeCategory, setActiveCategory] = useState<'all' | 'clinical updates' | 'social update' | 'following'>('all');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -52,7 +52,11 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   ]);
   const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({
     "clip-1": true,
-    "clip-2": true
+    "clip-2": true,
+    "clip-4": true,
+    "clip-5": true,
+    "clip-7": true,
+    "clip-8": true
   });
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
@@ -64,6 +68,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
   const filteredClips = clips.filter(c => {
     if (activeCategory === 'all') return true;
+    if (activeCategory === 'following') return c.isFollowing || followingMap[c.id];
     return c.clinicalCategory.toLowerCase() === activeCategory.toLowerCase();
   });
 
@@ -74,39 +79,36 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     setTimeout(() => setToastMessage(''), 2200);
   };
 
+  // Continuous seamless loop scrolling (reels never get stuck)
   const handleNext = useCallback(() => {
-    if (currentIndex < filteredClips.length - 1) {
-      setCurrentIndex(prev => prev + 1);
-      setShowMoreDrawer(false);
-      setShowCommentsModal(false);
-    } else {
-      showToast("You've caught up with all clinical clips in this stream!");
-    }
-  }, [currentIndex, filteredClips.length]);
+    if (filteredClips.length === 0) return;
+    setCurrentIndex(prev => (prev < filteredClips.length - 1 ? prev + 1 : 0));
+    setShowMoreDrawer(false);
+    setShowCommentsModal(false);
+  }, [filteredClips.length]);
 
   const handlePrev = useCallback(() => {
-    if (currentIndex > 0) {
-      setCurrentIndex(prev => prev - 1);
-      setShowMoreDrawer(false);
-      setShowCommentsModal(false);
-    }
-  }, [currentIndex]);
+    if (filteredClips.length === 0) return;
+    setCurrentIndex(prev => (prev > 0 ? prev - 1 : filteredClips.length - 1));
+    setShowMoreDrawer(false);
+    setShowCommentsModal(false);
+  }, [filteredClips.length]);
 
-  // Mouse wheel snap scrolling (Instagram Reels / TikTok experience)
+  // Smooth mouse wheel scrolling
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
-    if (now - lastScrollTime.current < 600) return; // Debounce 600ms
+    if (now - lastScrollTime.current < 450) return; // Debounce 450ms for smooth 1-reel scroll
 
-    if (e.deltaY > 40) {
+    if (e.deltaY > 20) {
       lastScrollTime.current = now;
       handleNext();
-    } else if (e.deltaY < -40) {
+    } else if (e.deltaY < -20) {
       lastScrollTime.current = now;
       handlePrev();
     }
   };
 
-  // Touch Swipe (Mobile touch devices)
+  // Touch Swipe for mobile devices
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -115,11 +117,9 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     const touchEndY = e.changedTouches[0].clientY;
     const diff = touchStartY.current - touchEndY;
 
-    if (diff > 50) {
-      // Swiped UP -> Next
+    if (diff > 35) {
       handleNext();
-    } else if (diff < -50) {
-      // Swiped DOWN -> Prev
+    } else if (diff < -35) {
       handlePrev();
     }
   };
@@ -173,6 +173,8 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     );
   }
 
+  const isFollowedReel = currentClip.isFollowing || followingMap[currentClip.id];
+
   return (
     <div 
       ref={containerRef}
@@ -182,107 +184,146 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
       className="relative max-w-sm mx-auto h-[calc(100vh-140px)] sm:h-[730px] bg-black rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border border-slate-800 select-none"
     >
       
-      {/* 1. Category Switcher Bar (Slide 6: social update / clinical updates / following (Main)) */}
+      {/* 1. Category Switcher Bar with Attractive Red Followed Indicator */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-3 pb-5 px-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-1 bg-black/50 backdrop-blur-md p-1 rounded-full border border-white/20">
-          {(['clinical updates', 'social update', 'following'] as const).map((cat) => (
+        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md p-1 rounded-full border border-white/20">
+          {(['all', 'following', 'clinical updates', 'social update'] as const).map((cat) => (
             <button
               key={cat}
               onClick={() => {
                 setActiveCategory(cat);
                 setCurrentIndex(0);
               }}
-              className={`text-[11px] font-semibold px-3 py-1 rounded-full capitalize transition ${
+              className={`text-[11px] font-semibold px-3 py-1 rounded-full capitalize transition flex items-center gap-1.5 cursor-pointer ${
                 activeCategory === cat
                   ? 'bg-sky-600 text-white shadow-md'
                   : 'text-white/80 hover:text-white'
               }`}
             >
-              {cat}
+              {cat === 'following' && (
+                <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/60" title="New reels from followed doctors"></span>
+              )}
+              <span>{cat}</span>
             </button>
           ))}
         </div>
 
         {/* Scroll Helper Indicator */}
-        <div className="flex items-center gap-2 text-[10px] text-white/60 font-semibold">
+        <div className="flex items-center gap-2 text-[10px] text-white/70 font-medium">
           <span>{currentIndex + 1} of {filteredClips.length}</span>
           <span>•</span>
-          <span>Scroll wheel / Swipe vertical to browse</span>
+          <span>Swipe or scroll to browse</span>
         </div>
       </div>
 
-      {/* 2. Video & Visual Canvas */}
-      <div 
-        onClick={() => setIsPlaying(!isPlaying)}
-        onDoubleClick={handleDoubleTap}
-        className="relative w-full h-full flex items-center justify-center cursor-pointer bg-slate-950"
-      >
-        {/* Fallback image poster behind video */}
-        <img
-          src={currentClip.thumbnailUrl}
-          alt=""
-          className="absolute inset-0 w-full h-full object-cover"
-        />
-
-        <video
-          key={currentClip.videoUrl}
-          src={currentClip.videoUrl}
-          poster={currentClip.thumbnailUrl}
-          autoPlay={isPlaying}
-          muted={isMuted}
-          loop
-          playsInline
-          className="relative z-10 w-full h-full object-cover"
-        />
-
-        {/* Double-tap Heart Pop Animation */}
-        {showHeartAnimation && (
-          <div className="absolute z-30 inset-0 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
-            <div className="w-24 h-24 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-2xl scale-125 transition">
-              <Heart className="w-14 h-14 fill-white" />
-            </div>
-          </div>
-        )}
-
-        {/* Play/Pause Overlay Indicator */}
-        {!isPlaying && (
-          <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center">
-            <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center text-white">
-              <Play className="w-8 h-8 ml-1 fill-white" />
-            </div>
-          </div>
-        )}
-
-        {/* Mute/Unmute Quick Toggle */}
-        <button
-          onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-          className="absolute top-16 right-4 z-30 p-2 rounded-full bg-black/50 text-white hover:bg-black/75 backdrop-blur-sm"
-          title={isMuted ? "Unmute Audio" : "Mute Audio"}
+      {/* 2. Seamless Vertical Slide Track (Zero Blinking, Zero Black Flashes) */}
+      <div className="absolute inset-0 w-full h-full overflow-hidden">
+        <div 
+          className="w-full h-full flex flex-col transition-transform duration-350 ease-out"
+          style={{ transform: `translateY(-${currentIndex * 100}%)` }}
         >
-          {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
-        </button>
+          {filteredClips.map((clip, idx) => {
+            const isActive = idx === currentIndex;
+            return (
+              <div 
+                key={clip.id}
+                onClick={() => setIsPlaying(!isPlaying)}
+                onDoubleClick={handleDoubleTap}
+                className="relative w-full h-full flex-shrink-0 flex items-center justify-center cursor-pointer bg-slate-950 overflow-hidden"
+              >
+                {/* Poster image always present behind video - ensures zero unpainted blink */}
+                <img
+                  src={clip.thumbnailUrl}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover select-none"
+                  loading={Math.abs(idx - currentIndex) <= 1 ? "eager" : "lazy"}
+                />
 
-        {/* Floating Quick Next / Previous Vertical Arrow Buttons */}
-        <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
-          {currentIndex > 0 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-              className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95"
-              title="Previous Clip (Up)"
-            >
-              <ChevronUp className="w-5 h-5 stroke-[2.5]" />
-            </button>
-          )}
-          {currentIndex < filteredClips.length - 1 && (
-            <button
-              onClick={(e) => { e.stopPropagation(); handleNext(); }}
-              className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95"
-              title="Next Clip (Down)"
-            >
-              <ChevronDown className="w-5 h-5 stroke-[2.5]" />
-            </button>
-          )}
+                {/* Preloaded smooth video playback for active & adjacent reels */}
+                {Math.abs(idx - currentIndex) <= 1 && (
+                  <video
+                    src={clip.videoUrl}
+                    poster={clip.thumbnailUrl}
+                    autoPlay={isActive && isPlaying}
+                    muted={isMuted}
+                    loop
+                    playsInline
+                    className={`relative z-10 w-full h-full object-cover transition-opacity duration-200 ${
+                      isActive ? 'opacity-100' : 'opacity-0 pointer-events-none'
+                    }`}
+                  />
+                )}
+              </div>
+            );
+          })}
         </div>
+      </div>
+
+      {/* Attractive Red Badge on Followed Doctor's Reel */}
+      {isFollowedReel && (
+        <div className="absolute top-16 left-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-bold shadow-lg shadow-rose-600/50 border border-rose-400/50 backdrop-blur-md">
+          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
+          <span>New from Followed Doctor</span>
+        </div>
+      )}
+
+      {/* Double-tap Heart Pop Animation */}
+      {showHeartAnimation && (
+        <div className="absolute z-30 inset-0 flex items-center justify-center pointer-events-none animate-in zoom-in-50 fade-in duration-300">
+          <div className="w-24 h-24 rounded-full bg-rose-600/90 text-white flex items-center justify-center shadow-2xl scale-125 transition">
+            <Heart className="w-14 h-14 fill-white" />
+          </div>
+        </div>
+      )}
+
+      {/* Play/Pause Overlay Indicator */}
+      {!isPlaying && (
+        <div className="absolute inset-0 z-20 bg-black/40 flex items-center justify-center pointer-events-none">
+          <div className="w-16 h-16 rounded-full bg-white/30 backdrop-blur-md flex items-center justify-center text-white">
+            <Play className="w-8 h-8 ml-1 fill-white" />
+          </div>
+        </div>
+      )}
+
+      {/* Mute/Unmute Quick Toggle */}
+      <button
+        onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
+        className="absolute top-16 right-4 z-30 p-2 rounded-full bg-black/50 text-white hover:bg-black/75 backdrop-blur-sm cursor-pointer"
+        title={isMuted ? "Unmute Audio" : "Mute Audio"}
+      >
+        {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
+      </button>
+
+      {/* Floating Quick Next / Previous Vertical Arrow Buttons */}
+      <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
+        <button
+          onClick={(e) => { e.stopPropagation(); handlePrev(); }}
+          className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95 cursor-pointer"
+          title="Previous Clip (Up)"
+        >
+          <ChevronUp className="w-5 h-5 stroke-[2.5]" />
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); handleNext(); }}
+          className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95 cursor-pointer"
+          title="Next Clip (Down)"
+        >
+          <ChevronDown className="w-5 h-5 stroke-[2.5]" />
+        </button>
+      </div>
+
+      {/* Vertical Reel Pagination Dots on Right Edge */}
+      <div className="absolute right-1 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1 items-center py-2 px-1 bg-black/40 backdrop-blur-xs rounded-full">
+        {filteredClips.map((_, i) => (
+          <button
+            key={i}
+            onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
+            className={`rounded-full transition-all duration-200 cursor-pointer ${
+              i === currentIndex ? 'w-1.5 h-3.5 bg-white shadow-xs' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
+            }`}
+            title={`Go to reel ${i + 1}`}
+          />
+        ))}
       </div>
 
       {/* 3. Right Side Interaction Bar (Slide 6: Like, comment, Share, Save, more) */}
@@ -379,11 +420,20 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
             className="flex items-center gap-2 cursor-pointer group select-none active:opacity-80"
             title={`Open ${currentClip.authorName}'s medical profile`}
           >
-            <img
-              src={currentClip.authorAvatar}
-              alt={currentClip.authorName}
-              className="w-10 h-10 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-white transition"
-            />
+            <div className="relative">
+              <img
+                src={currentClip.authorAvatar}
+                alt={currentClip.authorName}
+                className={`w-10 h-10 rounded-full object-cover transition ${
+                  isFollowedReel
+                    ? 'ring-2 ring-rose-500 shadow-sm shadow-rose-500/60'
+                    : 'ring-2 ring-sky-400 group-hover:ring-white'
+                }`}
+              />
+              {isFollowedReel && (
+                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-950 rounded-full" title="New Reel from Followed Doctor"></span>
+              )}
+            </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
                 <span className="text-white text-xs font-bold leading-tight group-hover:underline group-hover:text-sky-200 transition">
