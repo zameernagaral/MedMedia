@@ -17,7 +17,10 @@ import {
   Share2, 
   CheckCircle2, 
   Sparkles,
-  ChevronRight
+  ChevronRight,
+  Settings,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { UserProfile, Post, DeviceSession } from '../types';
 import { PostCard } from './PostCard';
@@ -33,6 +36,8 @@ interface ProfileViewProps {
   onConnectUser: (userId: string) => void;
   onOpenHelpCenter: () => void;
   onRequestMentorship?: (professor: UserProfile) => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -45,9 +50,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onSavePost,
   onConnectUser,
   onOpenHelpCenter,
-  onRequestMentorship
+  onRequestMentorship,
+  isDarkMode,
+  onToggleDarkMode
 }) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'sessions' | 'help'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'settings' | 'sessions' | 'help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
   const [isFollowing, setIsFollowing] = useState(false);
 
@@ -92,9 +99,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               </div>
             </div>
 
-            {/* Social Actions: Follow | Connect (Slide 3 & 4) */}
+            {/* Social Actions: Follow | Connect OR Settings for own profile */}
             <div className="flex items-center gap-2">
-              {!isSelf && (
+              {isSelf ? (
+                <button
+                  onClick={() => setActiveTab('settings')}
+                  className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
+                >
+                  <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>Settings & Theme</span>
+                </button>
+              ) : (
                 <>
                   <button
                     onClick={() => {
@@ -225,10 +240,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
 
         {/* Tab Selection */}
-        <div className="flex border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 text-xs font-bold">
+        <div className="flex border-t border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-950/70 text-xs font-bold overflow-x-auto no-scrollbar">
           <button
             onClick={() => setActiveTab('posts')}
-            className={`flex-1 py-3 text-center transition cursor-pointer ${
+            className={`flex-1 min-w-[80px] py-3 text-center transition cursor-pointer ${
               activeTab === 'posts'
                 ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
@@ -239,35 +254,47 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           
           <button
             onClick={() => setActiveTab('about')}
-            className={`flex-1 py-3 text-center transition cursor-pointer ${
+            className={`flex-1 min-w-[110px] py-3 text-center transition cursor-pointer ${
               activeTab === 'about'
                 ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Professional Portfolio
+            Portfolio
+          </button>
+
+          <button
+            onClick={() => setActiveTab('settings')}
+            className={`flex-1 min-w-[100px] py-3 text-center transition cursor-pointer flex items-center justify-center gap-1.5 ${
+              activeTab === 'settings'
+                ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            <Settings className="w-3.5 h-3.5" />
+            <span>Settings</span>
           </button>
 
           <button
             onClick={() => setActiveTab('sessions')}
-            className={`flex-1 py-3 text-center transition cursor-pointer ${
+            className={`flex-1 min-w-[90px] py-3 text-center transition cursor-pointer ${
               activeTab === 'sessions'
                 ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Device Mgmt
+            Devices
           </button>
 
           <button
             onClick={() => setActiveTab('help')}
-            className={`flex-1 py-3 text-center transition cursor-pointer ${
+            className={`flex-1 min-w-[85px] py-3 text-center transition cursor-pointer ${
               activeTab === 'help'
                 ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
                 : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
             }`}
           >
-            Help Center
+            Help
           </button>
         </div>
       </div>
@@ -454,6 +481,125 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </>
           )}
 
+        </div>
+      )}
+
+      {/* 3.5 SUBTAB: ACCOUNT SETTINGS & THEME */}
+      {activeTab === 'settings' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-6 transition-colors duration-200">
+          <div>
+            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+              <Settings className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+              Settings & Preferences
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              Customize visual appearance, display preferences, and clinical confidentiality.
+            </p>
+          </div>
+
+          {/* Theme & Display Section */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
+              Appearance & Theme Mode
+            </h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              {/* Light Mode Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (isDarkMode && onToggleDarkMode) onToggleDarkMode();
+                }}
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  !isDarkMode
+                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 ring-2 ring-sky-500/20 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center">
+                    <Sun className="w-5 h-5" />
+                  </div>
+                  {!isDarkMode && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-600 text-white">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Medical Daylight</h5>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    High clarity for daylight rounds, clean documentation, and daytime reading.
+                  </p>
+                </div>
+              </button>
+
+              {/* Dark Mode Option */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!isDarkMode && onToggleDarkMode) onToggleDarkMode();
+                }}
+                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                  isDarkMode
+                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 ring-2 ring-sky-500/20 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
+                }`}
+              >
+                <div className="flex items-center justify-between mb-3">
+                  <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-400 flex items-center justify-center">
+                    <Moon className="w-5 h-5" />
+                  </div>
+                  {isDarkMode && (
+                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-600 text-white">
+                      Active
+                    </span>
+                  )}
+                </div>
+                <div>
+                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Clinical Dark Mode</h5>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                    Reduced eye fatigue during night shifts, OT imaging review, and low-light wards.
+                  </p>
+                </div>
+              </button>
+            </div>
+          </div>
+
+          {/* Account Details */}
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
+            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+              Verified Account Overview
+            </h4>
+            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Full Name</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{user.fullName}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Handle / Username</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">@{user.username}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">Role Status</span>
+                <span className="font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-1">
+                  <ShieldCheck className="w-3.5 h-3.5" />
+                  {user.badgeTitle}
+                </span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-slate-500 dark:text-slate-400">HIPAA & Clinical Consent</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Active & Verified</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Clinical Privacy Notice */}
+          <div className="p-3.5 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-[11px] text-amber-800 dark:text-amber-300 flex items-start gap-2.5">
+            <ShieldCheck className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
+            <p>
+              Your clinical data, case posts, and mentorship interactions are shielded by MedMedia Medical Privacy Shield. Patient anonymization is strictly enforced on all case studies.
+            </p>
+          </div>
         </div>
       )}
 

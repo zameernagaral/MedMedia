@@ -10,8 +10,8 @@ interface TopNavProps {
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
   onOpenAuth: () => void;
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
+  isDarkMode?: boolean;
+  onToggleDarkMode?: () => void;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -61,22 +61,9 @@ export const TopNav: React.FC<TopNavProps> = ({
           </div>
         </div>
 
-        {/* Right Action Icons: Dark Mode Toggle, Notification, Message, User Profile Switcher */}
+        {/* Right Action Icons: Notification, Message, User Profile Switcher */}
         <div className="flex items-center gap-1.5 sm:gap-3">
           
-          {/* Dark Mode Toggle Button */}
-          <button
-            onClick={onToggleDarkMode}
-            className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
-            title={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"}
-          >
-            {isDarkMode ? (
-              <Sun className="w-5 h-5 text-amber-400 animate-in spin-in-90 duration-300" />
-            ) : (
-              <Moon className="w-5 h-5 text-slate-700" />
-            )}
-          </button>
-
           {/* Notifications Button (Slide 5) */}
           <button
             onClick={() => {

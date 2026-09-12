@@ -478,6 +478,8 @@ export const App: React.FC = () => {
                     }}
                     onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
                     onRequestMentorship={(prof) => setMentoringProfessor(prof)}
+                    isDarkMode={isDarkMode}
+                    onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
                   />
                 </div>
               )}
@@ -614,10 +616,48 @@ export const App: React.FC = () => {
       <AuthModal
         isOpen={showAuthModal}
         onClose={() => setShowAuthModal(false)}
-        onLoginSuccess={(newUser) => {
+        onLoginSuccess={(newUser, initialPostContent) => {
           setUsers([newUser, ...users]);
           setCurrentUser(newUser);
+          if (initialPostContent && initialPostContent.trim()) {
+            const introPost: Post = {
+              id: `post-${Date.now()}`,
+              authorId: newUser.id,
+              authorName: newUser.fullName,
+              authorUsername: newUser.username,
+              authorAvatar: newUser.avatarUrl,
+              authorRole: newUser.role,
+              authorSpecializationOrDiscipline: newUser.role === 'DOCTOR' 
+                ? (newUser.doctorDetails?.specialization || 'Clinical Specialist')
+                : (newUser.studentDetails?.discipline.replace('_', ' ') || 'Medical Student'),
+              isVerified: newUser.verificationStatus === 'VERIFIED',
+              postType: 'CLINICAL_DISCUSSION',
+              content: initialPostContent.trim(),
+              clinicalTags: [
+                newUser.role === 'DOCTOR' ? 'ClinicalPractice' : 'StudentIntro',
+                'MedMediaCommunity',
+                'PeerDiscussion'
+              ],
+              likesCount: 0,
+              commentsCount: 0,
+              savesCount: 0,
+              sharesCount: 0,
+              isLiked: false,
+              isSaved: false,
+              targetAudience: 'ALL',
+              recommendationReason: 'Welcome Introductory Post',
+              createdAt: 'Just now'
+            };
+            setPosts([introPost, ...posts]);
+            setToastMessage(`Welcome ${newUser.fullName}! Your introductory clinical post is live.`);
+            setTimeout(() => setToastMessage(null), 4000);
+          } else {
+            setToastMessage(`Welcome to MedMedia, ${newUser.fullName}!`);
+            setTimeout(() => setToastMessage(null), 3000);
+          }
         }}
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
       />
 
       {/* Create Post Modal (Slide 5: Create + button) */}
