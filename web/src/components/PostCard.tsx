@@ -18,6 +18,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Post, UserProfile } from '../types';
+import { PostCommentsModal } from './PostCommentsModal';
 
 interface PostCardProps {
   post: Post;
@@ -39,21 +40,11 @@ export const PostCard: React.FC<PostCardProps> = ({
   onSelectUser
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [showCommentBox, setShowCommentBox] = useState(false);
-  const [commentInput, setCommentInput] = useState('');
-  const [comments, setComments] = useState<string[]>([
-    "Agree with RCA involvement. Given the complete heart block, pacing readiness is paramount.",
-    "Excellent teaching case. Thank you for sharing the clear reciprocal lead changes!"
-  ]);
+  const [showCommentsModal, setShowCommentsModal] = useState(false);
+  const [commentCount, setCommentCount] = useState(post.commentsCount || 2);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
 
-  const handleAddComment = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!commentInput.trim()) return;
-    setComments([...comments, commentInput.trim()]);
-    setCommentInput('');
-  };
 
   const handleCopyLink = () => {
     navigator.clipboard?.writeText?.(`https://medmedia.health/posts/${post.id}`);
@@ -188,7 +179,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                 )}
                 <button
                   onClick={() => {
-                    alert("Marked as interested. Your clinical feed algorithm has been prioritized.");
+                    alert("Marked as interested. Your feed preferences have been updated.");
                     setShowMoreMenu(false);
                   }}
                   className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
@@ -325,11 +316,12 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           {/* Comment */}
           <button
-            onClick={() => setShowCommentBox(!showCommentBox)}
+            onClick={() => setShowCommentsModal(true)}
             className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
+            title="Open Medical Discussion & Comments"
           >
             <MessageCircle className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-sky-600" />
-            <span>{post.commentsCount + (comments.length - 2)}</span>
+            <span>{commentCount}</span>
           </button>
 
           {/* Share */}
@@ -355,35 +347,24 @@ export const PostCard: React.FC<PostCardProps> = ({
         </button>
       </div>
 
-      {/* Threaded Comment Section */}
-      {showCommentBox && (
-        <div className="bg-slate-50/80 dark:bg-slate-800/40 p-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-          <form onSubmit={handleAddComment} className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Add to the medical discussion..."
-              value={commentInput}
-              onChange={(e) => setCommentInput(e.target.value)}
-              className="flex-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-4 py-2 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
-            />
-            <button
-              type="submit"
-              className="bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold px-4 py-2 rounded-full transition cursor-pointer"
-            >
-              Post
-            </button>
-          </form>
+      {/* Instagram-style "View all comments" link & quick trigger */}
+      <div className="px-4 pb-3">
+        <button
+          onClick={() => setShowCommentsModal(true)}
+          className="text-xs text-slate-500 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 font-semibold cursor-pointer flex items-center gap-1 transition"
+        >
+          <span>View all {commentCount} peer comments and replies...</span>
+        </button>
+      </div>
 
-          <div className="space-y-2 pt-1">
-            {comments.map((comment, i) => (
-              <div key={i} className="bg-white dark:bg-slate-800 p-2.5 rounded-xl border border-slate-200/60 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
-                <span className="font-bold text-slate-900 dark:text-white mr-1.5">Dr. Peer Colleague:</span>
-                {comment}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      {/* Instagram-style Full Comments Drawer / Modal */}
+      <PostCommentsModal
+        isOpen={showCommentsModal}
+        post={post}
+        currentUser={currentUser}
+        onClose={() => setShowCommentsModal(false)}
+        onCommentCountChange={(newCnt) => setCommentCount(newCnt)}
+      />
     </article>
   );
 };

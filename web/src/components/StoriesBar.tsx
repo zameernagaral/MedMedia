@@ -1,6 +1,20 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Plus, X, Stethoscope, ChevronLeft, ChevronRight, Send, Check, Image as ImageIcon, Sparkles } from 'lucide-react';
+import { 
+  Plus, 
+  X, 
+  Stethoscope, 
+  ChevronLeft, 
+  ChevronRight, 
+  Send, 
+  Check, 
+  Sparkles, 
+  Upload, 
+  Hash, 
+  Image as ImageIcon,
+  Trash2
+} from 'lucide-react';
 import { Story, UserProfile } from '../types';
+import { apiService } from '../services/api';
 
 interface StoriesBarProps {
   stories: Story[];
@@ -16,6 +30,21 @@ const SAMPLE_STORY_IMAGES = [
   { label: 'Medical Ward Rounds', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=700&h=1000&fit=crop' }
 ];
 
+const SUGGESTED_MEDICAL_TAGS = [
+  '#Surgery',
+  '#Cardiology',
+  '#MedicalStudent',
+  '#BedsideRounds',
+  '#Internship',
+  '#ClinicalPearl',
+  '#USMLE',
+  '#NEETPG',
+  '#Pediatrics',
+  '#EmergencyMedicine',
+  '#Pharmacology',
+  '#Radiology'
+];
+
 export const StoriesBar: React.FC<StoriesBarProps> = ({
   stories,
   currentUser,
@@ -28,12 +57,18 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [newCaption, setNewCaption] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(SAMPLE_STORY_IMAGES[0].url);
+  const [deviceFileName, setDeviceFileName] = useState<string | null>(null);
+  const [selectedTags, setSelectedTags] = useState<string[]>(['#BedsideRounds']);
+  const [customTagInput, setCustomTagInput] = useState<string>('');
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [replyText, setReplyText] = useState<string>('');
   const [replyFeedback, setReplyFeedback] = useState<string>('');
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   const activeStory = activeStoryIndex !== null ? stories[activeStoryIndex] : null;
 
-  // Auto-advance timer for stories (Instagram style 5 seconds per story)
+  // Auto-advance timer for stories (~5 seconds per story)
   useEffect(() => {
     if (activeStoryIndex === null || isPaused) return;
 
@@ -48,7 +83,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
             return 0;
           }
         }
-        return prev + 2; // ~5 seconds (50 ticks * 100ms)
+        return prev + 2;
       });
     }, 100);
 
@@ -77,24 +112,69 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
     }
   };
 
-  const handleCreateStory = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCaption.trim()) return;
+  // Device File Upload Handler
+  const handleDeviceFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
 
-    const newStory: Story = {
-      id: `story-${Date.now()}`,
-      userId: currentUser.id,
-      userName: currentUser.fullName,
-      userAvatar: currentUser.avatarUrl,
-      mediaUrl: selectedImage,
-      caption: newCaption.trim(),
-      timestamp: 'Just now',
-      isViewed: false
+    setDeviceFileName(file.name);
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      if (reader.result) {
+        setSelectedImage(reader.result as string);
+      }
     };
+    reader.readAsDataURL(file);
+  };
 
-    onAddStorySuccess(newStory);
-    setShowCreateModal(false);
-    setNewCaption('');
+  const handleToggleTag = (tag: string) => {
+    if (selectedTags.includes(tag)) {
+      setSelectedTags(selectedTags.filter(t => t !== tag));
+    } else {
+      setSelectedTags([...selectedTags, tag]);
+    }
+  };
+
+  const handleAddCustomTag = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter' || e.key === ',') {
+      e.preventDefault();
+      let cleaned = customTagInput.trim();
+      if (!cleaned) return;
+      if (!cleaned.startsWith('#')) cleaned = `#${cleaned}`;
+      if (!selectedTags.includes(cleaned)) {
+        setSelectedTags([...selectedTags, cleaned]);
+      }
+      setCustomTagInput('');
+    }
+  };
+
+  // Create Story & Persist to MySQL + Local Laptop DB
+  const handleCreateStory = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedImage) return;
+
+    setIsSubmitting(true);
+    try {
+      const created = await apiService.createStory({
+        userId: currentUser.id,
+        userName: currentUser.fullName,
+        userAvatar: currentUser.avatarUrl,
+        mediaUrl: selectedImage,
+        caption: newCaption.trim() || 'Clinical update from ward rounds',
+        clinicalTags: selectedTags
+      });
+
+      onAddStorySuccess(created);
+      setShowCreateModal(false);
+      setNewCaption('');
+      setSelectedTags(['#BedsideRounds']);
+      setDeviceFileName(null);
+      setSelectedImage(SAMPLE_STORY_IMAGES[0].url);
+    } catch (err) {
+      console.error('Error creating story:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleSendReply = (e: React.FormEvent) => {
@@ -110,14 +190,8 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
       <div className="flex items-center justify-between mb-2.5 px-1">
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wide uppercase">
           <Stethoscope className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-          <span>Story Updates <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 capitalize">(Slide 5 Accessory)</span></span>
+          <span>Story Updates <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 capitalize">(24h Clinical Pearls)</span></span>
         </div>
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="text-[11px] text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
-        >
-          <Plus className="w-3.5 h-3.5" /> Post Story
-        </button>
       </div>
 
       {/* Horizontal Story Bubble Row */}
@@ -127,7 +201,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
         <div
           onClick={() => setShowCreateModal(true)}
           className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
-          title="Share a 24-hour clinical story update"
+          title="Share a 24-hour clinical story update from your device"
         >
           <div className="relative w-16 h-16 rounded-full p-0.5 border-2 border-dashed border-sky-400 dark:border-sky-500 group-hover:border-sky-600 transition">
             <img
@@ -171,61 +245,199 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
         ))}
       </div>
 
-      {/* CREATE STORY MODAL */}
+      {/* CREATE STORY MODAL (With Device Media Upload, Caption & Hashtags) */}
       {showCreateModal && (
-        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden animate-in fade-in zoom-in-95">
+        <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
+          <div className="relative w-full max-w-lg bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95">
+            
+            {/* Modal Header */}
             <div className="p-4 bg-gradient-to-r from-sky-900 via-indigo-950 to-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Sparkles className="w-4 h-4 text-sky-400" />
-                <h3 className="text-sm font-bold">Add Clinical Story Update (24h)</h3>
+                <div>
+                  <h3 className="text-sm font-bold">Post 24-Hour Clinical Story</h3>
+                  <p className="text-[10px] text-sky-200">Share bedside cases, procedures, and learning pearls</p>
+                </div>
               </div>
               <button
                 onClick={() => setShowCreateModal(false)}
-                className="p-1 rounded-full text-white/80 hover:text-white cursor-pointer"
+                className="p-1.5 rounded-full bg-white/10 hover:bg-rose-600 text-white transition cursor-pointer"
+                title="Close"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleCreateStory} className="p-5 space-y-4">
+            <form onSubmit={handleCreateStory} className="p-5 space-y-4 max-h-[80vh] overflow-y-auto">
+              
+              {/* SECTION 1: DEVICE UPLOAD OR SAMPLE PRESET */}
               <div>
-                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-2">
-                  1. Select Clinical Media:
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between mb-2">
+                  <span>1. Story Media (From Laptop/Device or Library):</span>
+                  {deviceFileName && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[180px]">
+                      ✓ {deviceFileName}
+                    </span>
+                  )}
                 </label>
-                <div className="grid grid-cols-2 gap-2">
-                  {SAMPLE_STORY_IMAGES.map((img, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setSelectedImage(img.url)}
-                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition ${
-                        selectedImage === img.url ? 'border-sky-600 ring-2 ring-sky-300 dark:ring-sky-800' : 'border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <img src={img.url} alt="" className="w-full h-20 object-cover" />
-                      <span className="absolute bottom-1 left-1 text-[9px] font-bold bg-black/60 text-white px-1.5 py-0.5 rounded">
-                        {img.label}
-                      </span>
+
+                {/* Prominent Device File Picker Button */}
+                <div className="mb-3">
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    accept="image/*,video/*"
+                    onChange={handleDeviceFileSelect}
+                    className="hidden"
+                  />
+                  <div
+                    onClick={() => fileInputRef.current?.click()}
+                    className="border-2 border-dashed border-sky-300 dark:border-sky-700 hover:border-sky-500 dark:hover:border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 rounded-2xl p-4 text-center cursor-pointer transition group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-300 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                      <Upload className="w-5 h-5" />
                     </div>
-                  ))}
+                    <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                      {deviceFileName ? 'Change Selected File from Device' : 'Click to Upload Image/Video from Device'}
+                    </p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                      Supports JPG, PNG, WEBP, MP4 from your laptop or phone
+                    </p>
+                  </div>
+                </div>
+
+                {/* Selected Image Preview with Delete / Reset */}
+                {selectedImage && (
+                  <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 mb-3 group h-40 bg-slate-950 flex items-center justify-center">
+                    <img src={selectedImage} alt="Story Preview" className="w-full h-full object-cover" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent flex items-end justify-between p-2.5">
+                      <span className="text-[10px] text-white font-bold bg-black/50 px-2 py-0.5 rounded-md">
+                        {deviceFileName ? `Device: ${deviceFileName}` : 'Preview'}
+                      </span>
+                      {deviceFileName && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setDeviceFileName(null);
+                            setSelectedImage(SAMPLE_STORY_IMAGES[0].url);
+                          }}
+                          className="text-[10px] text-rose-300 hover:text-rose-100 bg-rose-900/70 px-2 py-0.5 rounded-md flex items-center gap-1 cursor-pointer"
+                        >
+                          <Trash2 className="w-3 h-3" /> Reset
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Preset Clinical Library fallback */}
+                <div>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-1.5">
+                    Or choose from clinical sample library:
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {SAMPLE_STORY_IMAGES.map((img, i) => (
+                      <div
+                        key={i}
+                        onClick={() => {
+                          setSelectedImage(img.url);
+                          setDeviceFileName(null);
+                        }}
+                        className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition ${
+                          selectedImage === img.url && !deviceFileName
+                            ? 'border-sky-600 ring-2 ring-sky-300 dark:ring-sky-800 scale-95'
+                            : 'border-slate-200 dark:border-slate-700 hover:opacity-90'
+                        }`}
+                      >
+                        <img src={img.url} alt="" className="w-full h-14 object-cover" />
+                        <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-black/70 text-white px-1 py-0.5 rounded line-clamp-1">
+                          {img.label}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
 
+              {/* SECTION 2: CAPTION INPUT */}
               <div>
                 <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                  2. Caption / Procedure Update:
+                  2. Caption & Bedside Findings:
                 </label>
                 <textarea
                   rows={2}
                   required
-                  placeholder="e.g. Cath lab rounds finished. Preparing patient for complex PCI..."
+                  placeholder="e.g., Post-op day 1: Successful bedside pleural tap completed with senior resident..."
                   value={newCaption}
                   onChange={(e) => setNewCaption(e.target.value)}
                   className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-2">
+              {/* SECTION 3: RECOMMENDATION HASHTAGS */}
+              <div>
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1 mb-1.5">
+                  <Hash className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>3. Recommendation Hashtags (Boosts Discovery & Search):</span>
+                </label>
+
+                {/* Quick-tap Tag Chips */}
+                <div className="flex flex-wrap gap-1.5 mb-2">
+                  {SUGGESTED_MEDICAL_TAGS.map((tag) => {
+                    const isSelected = selectedTags.includes(tag);
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => handleToggleTag(tag)}
+                        className={`text-[11px] px-2.5 py-1 rounded-full font-semibold transition cursor-pointer ${
+                          isSelected
+                            ? 'bg-sky-600 text-white shadow-xs'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+                        }`}
+                      >
+                        {tag} {isSelected && '✓'}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Custom Hashtag Input */}
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={customTagInput}
+                    onChange={(e) => setCustomTagInput(e.target.value)}
+                    onKeyDown={handleAddCustomTag}
+                    placeholder="Type custom hashtag and press Enter (e.g. #Neurology)..."
+                    className="flex-1 text-xs p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => {
+                      let cleaned = customTagInput.trim();
+                      if (!cleaned) return;
+                      if (!cleaned.startsWith('#')) cleaned = `#${cleaned}`;
+                      if (!selectedTags.includes(cleaned)) {
+                        setSelectedTags([...selectedTags, cleaned]);
+                      }
+                      setCustomTagInput('');
+                    }}
+                    className="px-3 py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 rounded-xl cursor-pointer"
+                  >
+                    Add
+                  </button>
+                </div>
+
+                {selectedTags.length > 0 && (
+                  <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">
+                    Selected: {selectedTags.join(', ')}
+                  </p>
+                )}
+              </div>
+
+              {/* ACTION BUTTONS */}
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
                 <button
                   type="button"
                   onClick={() => setShowCreateModal(false)}
@@ -235,11 +447,20 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer"
+                  disabled={isSubmitting || !selectedImage}
+                  className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
                 >
-                  Publish to Story Ring
+                  {isSubmitting ? (
+                    <span>Saving to Database...</span>
+                  ) : (
+                    <>
+                      <Sparkles className="w-3.5 h-3.5" />
+                      <span>Share Story Update</span>
+                    </>
+                  )}
                 </button>
               </div>
+
             </form>
           </div>
         </div>
@@ -299,7 +520,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
 
                 <button
                   onClick={() => setActiveStoryIndex(null)}
-                  className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
+                  className="p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition cursor-pointer"
                   title="Close Story"
                 >
                   <X className="w-5 h-5" />
@@ -346,11 +567,22 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
               )}
             </div>
 
-            {/* Bottom Caption & Reply Bar */}
+            {/* Bottom Caption, Hashtags & Reply Bar */}
             <div className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-              <p className="text-white text-xs sm:text-sm font-medium leading-relaxed drop-shadow mb-3">
+              <p className="text-white text-xs sm:text-sm font-medium leading-relaxed drop-shadow mb-1.5">
                 {activeStory.caption}
               </p>
+
+              {/* Clinical Hashtags Display */}
+              {((activeStory as any).clinicalTags && (activeStory as any).clinicalTags.length > 0) && (
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {(activeStory as any).clinicalTags.map((tag: string, i: number) => (
+                    <span key={i} className="text-[10px] font-semibold bg-sky-500/30 text-sky-200 border border-sky-400/30 px-2 py-0.5 rounded-full">
+                      {tag}
+                    </span>
+                  ))}
+                </div>
+              )}
 
               {replyFeedback ? (
                 <div className="p-2 bg-emerald-500/90 text-white text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5">
@@ -368,7 +600,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                   />
                   <button 
                     type="submit"
-                    className="p-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition"
+                    className="p-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition cursor-pointer"
                     title="Send Reply"
                   >
                     <Send className="w-3.5 h-3.5" />

@@ -7,22 +7,25 @@ import clipsRoutes from './routes/clips';
 import opportunitiesRoutes from './routes/opportunities';
 import usersRoutes from './routes/users';
 import searchRoutes from './routes/search';
+import storiesRoutes from './routes/stories';
+import { mysqlDb } from './data/mysqlDb';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// Middleware
+// Middleware (support larger payloads for device image uploads)
 app.use(cors({ origin: '*' }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 
 // Healthcheck
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'online',
     service: 'MedMedia Healthcare API',
+    mysql: mysqlDb.getStatus(),
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
@@ -31,6 +34,7 @@ app.get('/api/health', (req, res) => {
 // Route mount points
 app.use('/api/auth', authRoutes);
 app.use('/api/posts', postsRoutes);
+app.use('/api/stories', storiesRoutes);
 app.use('/api/clips', clipsRoutes);
 app.use('/api/opportunities', opportunitiesRoutes);
 app.use('/api/users', usersRoutes);

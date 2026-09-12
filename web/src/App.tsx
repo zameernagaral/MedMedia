@@ -13,6 +13,7 @@ import { ClinicalChatDrawer } from './components/ClinicalChatDrawer';
 import { MentorshipModal } from './components/MentorshipModal';
 import { InternshipApplyModal } from './components/InternshipApplyModal';
 import { getPersonalizedFeed, getPersonalizedMedclips } from './utils/algorithmEngine';
+import { apiService } from './services/api';
 import { 
   INITIAL_USERS, 
   INITIAL_STORIES, 
@@ -62,7 +63,18 @@ export const App: React.FC = () => {
 
   // Application State
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[2]); // Default to Rohan Verma (MBBS student) to immediately demonstrate student perspective!
+  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('medmedia_current_user');
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (parsed && parsed.id) return parsed;
+        } catch {}
+      }
+    }
+    return INITIAL_USERS[2]; // Default to student scholar
+  });
   const [selectedProfileUser, setSelectedProfileUser] = useState<UserProfile | null>(null);
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -71,6 +83,38 @@ export const App: React.FC = () => {
   const [opportunities] = useState(INITIAL_OPPORTUNITIES);
   const [sessions, setSessions] = useState(INITIAL_SESSIONS);
   const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
+
+  // Load persistent data from laptop database on startup
+  useEffect(() => {
+    // 1. Fetch posts from persistent laptop database
+    apiService.getPosts().then((loadedPosts) => {
+      if (loadedPosts && loadedPosts.length > 0) {
+        setPosts(loadedPosts);
+      }
+    });
+
+    // 2. Fetch users from persistent laptop database
+    apiService.getUsers().then((loadedUsers) => {
+      if (loadedUsers && loadedUsers.length > 0) {
+        setUsers(loadedUsers);
+        const saved = localStorage.getItem('medmedia_current_user');
+        if (saved) {
+          try {
+            const parsed = JSON.parse(saved);
+            const found = loadedUsers.find(u => u.id === parsed.id || u.email === parsed.email);
+            if (found) setCurrentUser(found);
+          } catch {}
+        }
+      }
+    });
+
+    // 3. Fetch stories from persistent database & MySQL
+    apiService.getStories().then((loadedStories) => {
+      if (loadedStories && loadedStories.length > 0) {
+        setStories(loadedStories);
+      }
+    });
+  }, []);
 
   // Active Navigation Tab (Slide 5: Home, Medclips, Search, Opportunities, Profile)
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -85,7 +129,7 @@ export const App: React.FC = () => {
   const [applyingJob, setApplyingJob] = useState<Job | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Post Actions
+  // Post Actions (Persisted to database)
   const handleLikePost = (postId: string) => {
     setPosts(posts.map(p => {
       if (p.id === postId) {
@@ -98,6 +142,7 @@ export const App: React.FC = () => {
       }
       return p;
     }));
+    apiService.likePost(postId);
   };
 
   const handleSavePost = (postId: string) => {
@@ -112,6 +157,7 @@ export const App: React.FC = () => {
       }
       return p;
     }));
+    apiService.savePost(postId);
   };
 
   const handleVotePoll = (postId: string, optionId: string) => {
@@ -135,6 +181,7 @@ export const App: React.FC = () => {
       }
       return p;
     }));
+    apiService.votePoll(postId, optionId);
   };
 
   // Medclip Actions
@@ -193,7 +240,7 @@ export const App: React.FC = () => {
   const handleSwitchPersona = (user: UserProfile) => {
     setCurrentUser(user);
     setSelectedProfileUser(null);
-    setToastMessage(`Viewer algorithm adjusted for: ${user.fullName}`);
+    setToastMessage(`Switched active profile to ${user.fullName}`);
     setTimeout(() => setToastMessage(null), 3500);
   };
 
@@ -211,51 +258,7 @@ export const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-100 dark:bg-slate-950 text-slate-900 dark:text-slate-100 flex flex-col items-center transition-colors duration-200">
       
-      {/* Top Banner: Algorithm Persona Switcher & Device Frame Preview */}
-      <div className="w-full bg-slate-900 text-white px-3 sm:px-4 py-2 text-xs flex flex-wrap items-center justify-between z-50 border-b border-slate-800 gap-2">
-        <div className="flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-emerald-400"></span>
-          <span className="font-bold tracking-wide uppercase text-[10px] text-sky-400">
-            MedMedia AI Algorithm Mode
-          </span>
-          <span className="hidden md:inline text-slate-400">• Viewer-Centric Ranking</span>
-        </div>
-
-        {/* Quick Persona Selector to test algorithm live */}
-        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-          <span className="text-[10px] text-slate-400 font-bold mr-1 hidden sm:inline">Active Perspective:</span>
-          {users.map(u => (
-            <button
-              key={`persona-${u.id}`}
-              onClick={() => handleSwitchPersona(u)}
-              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
-                currentUser.id === u.id
-                  ? 'bg-sky-500 text-white shadow-xs'
-                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-              }`}
-              title={`Switch viewer perspective to ${u.fullName}`}
-            >
-              <img src={u.avatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
-              <span>{u.fullName.split(' ')[0]}</span>
-              <span className="text-[9px] opacity-75 font-normal">
-                ({u.role === 'STUDENT' ? 'Student' : u.doctorDetails?.isProfessor ? 'Professor' : 'Doctor'})
-              </span>
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setIsMobileFrameMode(!isMobileFrameMode)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-medium text-[11px] cursor-pointer"
-          >
-            {isMobileFrameMode ? <Monitor className="w-3.5 h-3.5 text-sky-400" /> : <Smartphone className="w-3.5 h-3.5 text-sky-400" />}
-            <span className="hidden sm:inline">{isMobileFrameMode ? 'Desktop View' : 'Mobile Preview'}</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Main Container: Responsive Wrapper (with optional phone bezel) */}
+      {/* Main Container: Responsive App Layout */}
       <div className={`w-full transition-all duration-300 ${
         isMobileFrameMode
           ? 'max-w-[420px] my-6 bg-white dark:bg-slate-900 shadow-2xl rounded-[40px] border-[8px] border-slate-900 dark:border-slate-800 overflow-hidden min-h-[850px]'
@@ -378,7 +381,7 @@ export const App: React.FC = () => {
                             : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        {tag === 'All' ? '🎯 For You (AI Algorithm)' : tag === '#Professors' ? '👨‍🏫 Professors & Faculty' : tag === '#Internships' ? '🏥 Clinical Internships' : tag}
+                        {tag === 'All' ? '🎯 For You' : tag === '#Professors' ? '👨‍🏫 Professors & Faculty' : tag === '#Internships' ? '🏥 Clinical Internships' : tag}
                       </button>
                     ))}
                   </div>
@@ -660,12 +663,22 @@ export const App: React.FC = () => {
         onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
       />
 
-      {/* Create Post Modal (Slide 5: Create + button) */}
+      {/* Create Post & Story Creator Studio Modal (Slide 5: Top + button) */}
       <CreatePostModal
         isOpen={showCreateModal}
         currentUser={currentUser}
         onClose={() => setShowCreateModal(false)}
-        onPostCreated={(newPost) => setPosts([newPost, ...posts])}
+        onPostCreated={(newPost) => {
+          setPosts([newPost, ...posts]);
+          apiService.createPost(newPost);
+          setToastMessage("Clinical post published & saved to laptop database & MySQL!");
+          setTimeout(() => setToastMessage(null), 3500);
+        }}
+        onStoryCreated={(newStory) => {
+          setStories([newStory, ...stories]);
+          setToastMessage("24h Story published (30s limit) & saved to MySQL!");
+          setTimeout(() => setToastMessage(null), 3500);
+        }}
       />
 
       {/* Professor Mentorship Request Modal (LinkedIn-Style Mentorship Suite) */}

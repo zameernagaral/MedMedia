@@ -246,7 +246,8 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
             </div>
             <button
               onClick={onClose}
-              className="md:hidden p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 cursor-pointer"
+              className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950 text-slate-500 hover:text-rose-600 transition cursor-pointer"
+              title="Close Messages"
             >
               <X className="w-5 h-5" />
             </button>
@@ -380,7 +381,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
               <div className="h-4 w-px bg-slate-200 dark:bg-slate-700 mx-1"></div>
               <button
                 onClick={onClose}
-                className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+                className="p-1.5 rounded-full bg-slate-100 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-950 text-slate-500 hover:text-rose-600 transition cursor-pointer"
                 title="Close Drawer"
               >
                 <X className="w-5 h-5" />
@@ -496,7 +497,14 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
       {/* Tele-Consultation Call Simulation Modal */}
       {callModal && (
         <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
-          <div className="w-full max-w-sm bg-slate-900 rounded-3xl p-6 text-center text-white space-y-4 shadow-2xl border border-slate-700 animate-in zoom-in-95">
+          <div className="relative w-full max-w-sm bg-slate-900 rounded-3xl p-6 text-center text-white space-y-4 shadow-2xl border border-slate-700 animate-in zoom-in-95">
+            <button
+              onClick={() => setCallModal(null)}
+              className="absolute top-4 right-4 p-1.5 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition cursor-pointer"
+              title="Close Call"
+            >
+              <X className="w-4 h-4" />
+            </button>
             <img
               src={activeConversation.avatar}
               alt=""

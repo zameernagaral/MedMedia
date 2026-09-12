@@ -17,6 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { UserProfile, UserRole, StudentDiscipline } from '../types';
+import { apiService } from '../services/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -84,121 +85,76 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSignupStep(3);
   };
 
-  // Complete Signup (with or without first post)
-  const handleFinalSignUp = (skipPost: boolean) => {
-    setStatusMessage("Creating verified medical account & credentials...");
+  // Complete Signup (with or without first post) - Saves to local laptop database
+  const handleFinalSignUp = async (skipPost: boolean) => {
+    setStatusMessage("Saving verified account to your laptop database...");
 
-    setTimeout(() => {
-      const newUser: UserProfile = {
-        id: `usr-${Date.now()}`,
-        fullName: fullName.trim() || (selectedRole === 'DOCTOR' ? "Dr. Healthcare Clinician" : "Medical Scholar"),
-        username: selectedRole === 'DOCTOR' 
-          ? (specialization.toLowerCase().replace(/\s+/g, '_') || 'dr_specialist')
-          : (selectedDiscipline.toLowerCase().replace(/_/g, '_') || 'med_scholar'),
-        email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone.replace(/\D/g, '')}@medmedia.health`,
-        avatarUrl: selectedRole === 'DOCTOR'
-          ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop"
-          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
-        role: selectedRole,
-        verificationStatus: fileUploaded ? "VERIFIED" : "PENDING",
-        badgeTitle: selectedRole === 'DOCTOR'
-          ? (fileUploaded ? `Verified ${specialization} Specialist` : "Doctor (Verification Pending)")
-          : (fileUploaded ? `Verified ${selectedDiscipline.replace('_', ' ')}` : "Student (Verification Pending)"),
-        bio: selectedRole === 'DOCTOR'
-          ? `Clinical specialist in ${specialization}. DOB: ${dob || 'Confidential'}. Verified medical practitioner.`
-          : `${selectedDiscipline.replace('_', ' ')} candidate at ${collegeName || 'Medical College'}. DOB: ${dob || 'Confidential'}.`,
-        doctorDetails: selectedRole === 'DOCTOR' ? {
-          specialization,
-          qualifications: ["MBBS", "MD / DNB"],
-          hospitalAffiliation: "State Medical Center",
-          location: "Central Healthcare Campus",
-          yearsExperience: 4,
-          clinicalInterests: [specialization, "Clinical Case Review"],
-          researchPublications: ["Clinical Outcome Evaluation in Tertiary Care"],
-          medicalCouncilRegNumber: medicalRegNumber || "MCI-REG-2026",
-          isAcceptingMentees: true,
-          mentorshipSlots: { available: 2, total: 3 },
-          activeResearchProject: "Clinical Outcomes & Patient Pathways"
-        } : undefined,
-        studentDetails: selectedRole === 'STUDENT' ? {
-          discipline: selectedDiscipline,
-          collegeName: collegeName || "State Medical College & Research Institute",
-          academicYear: Number(academicYear) || 4,
-          interests: ["Clinical Rounds", "Diagnostics", "Pharmacology"],
-          futureSpecialty: "Internal Medicine / Surgery",
-          researchInterests: ["Evidence-Based Clinical Audits"],
-          isSeekingInternship: true
-        } : undefined,
-        stats: {
-          postsCount: !skipPost && firstPostContent.trim() ? 1 : 0,
-          followersCount: 18,
-          connectionsCount: 9
-        }
-      };
+    const userData = {
+      fullName: fullName.trim() || (selectedRole === 'DOCTOR' ? "Dr. Healthcare Clinician" : "Medical Scholar"),
+      username: selectedRole === 'DOCTOR' 
+        ? (specialization.toLowerCase().replace(/\s+/g, '_') || 'dr_specialist')
+        : (selectedDiscipline.toLowerCase().replace(/_/g, '_') || 'med_scholar'),
+      email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone.replace(/\D/g, '')}@medmedia.health`,
+      phoneNumber: emailOrPhone.includes('@') ? undefined : emailOrPhone,
+      password,
+      dob,
+      role: selectedRole,
+      badgeTitle: selectedRole === 'DOCTOR'
+        ? (fileUploaded ? `Verified ${specialization} Specialist` : "Doctor (Verification Pending)")
+        : (fileUploaded ? `Verified ${selectedDiscipline.replace('_', ' ')}` : "Student (Verification Pending)"),
+      bio: selectedRole === 'DOCTOR'
+        ? `Clinical specialist in ${specialization}. DOB: ${dob || 'Confidential'}. Verified medical practitioner.`
+        : `${selectedDiscipline.replace('_', ' ')} candidate at ${collegeName || 'Medical College'}. DOB: ${dob || 'Confidential'}.`,
+      doctorDetails: selectedRole === 'DOCTOR' ? {
+        specialization,
+        qualifications: ["MBBS", "MD / DNB"],
+        hospitalAffiliation: "State Medical Center",
+        location: "Central Healthcare Campus",
+        yearsExperience: 4,
+        clinicalInterests: [specialization, "Clinical Case Review"],
+        researchPublications: ["Clinical Outcome Evaluation in Tertiary Care"],
+        medicalCouncilRegNumber: medicalRegNumber || "MCI-REG-2026",
+        isAcceptingMentees: true,
+        mentorshipSlots: { available: 2, total: 3 },
+        activeResearchProject: "Clinical Outcomes & Patient Pathways"
+      } : undefined,
+      studentDetails: selectedRole === 'STUDENT' ? {
+        discipline: selectedDiscipline,
+        collegeName: collegeName || "State Medical College & Research Institute",
+        academicYear: Number(academicYear) || 4,
+        interests: ["Clinical Rounds", "Diagnostics", "Pharmacology"],
+        futureSpecialty: "Internal Medicine / Surgery",
+        researchInterests: ["Evidence-Based Clinical Audits"],
+        isSeekingInternship: true
+      } : undefined
+    };
 
+    try {
+      const newUser = await apiService.registerUser(userData);
       const finalPostText = skipPost ? undefined : (firstPostContent.trim() || undefined);
       onLoginSuccess(newUser, finalPostText);
       onClose();
-    }, 850);
+    } catch {
+      onClose();
+    }
   };
 
-  // Regular Sign In / Login
-  const handleSignIn = (e: React.FormEvent) => {
+  // Regular Sign In / Login from persistent database
+  const handleSignIn = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!emailOrPhone.trim() || !password.trim()) {
       setStatusMessage("Please enter your Phone/Email and Password.");
       return;
     }
-    setStatusMessage("Authenticating with MedMedia Secure Vault...");
+    setStatusMessage("Authenticating with local database...");
 
-    setTimeout(() => {
-      const isDoc = emailOrPhone.toLowerCase().includes('doc') || !emailOrPhone.includes('student');
-      const existingUser: UserProfile = {
-        id: `usr-login-${Date.now()}`,
-        fullName: isDoc ? "Dr. Rajesh Sharma" : "Ananya Deshmukh",
-        username: isDoc ? "rajesh_cardio" : "ananya_mbbs",
-        email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone}@medmedia.health`,
-        avatarUrl: isDoc
-          ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop"
-          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
-        role: isDoc ? 'DOCTOR' : 'STUDENT',
-        verificationStatus: "VERIFIED",
-        badgeTitle: isDoc ? "Verified Cardiothoracic Specialist" : "Verified MBBS Scholar (Year 4)",
-        bio: isDoc
-          ? "Senior Cardiothoracic consultant & professor at AllMS. Passionate about surgical trials."
-          : "Final-year MBBS scholar actively seeking clinical internship and mentorship.",
-        doctorDetails: isDoc ? {
-          specialization: "Cardiothoracic Surgery",
-          qualifications: ["MBBS", "MS", "MCh"],
-          hospitalAffiliation: "Metro Heart Institute",
-          location: "New Delhi",
-          yearsExperience: 8,
-          clinicalInterests: ["Minimally Invasive Surgery", "TAVI"],
-          researchPublications: ["Modern Perfusion Techniques in Pediatric Cases"],
-          medicalCouncilRegNumber: "MCI-48291-DEL",
-          isAcceptingMentees: true,
-          mentorshipSlots: { available: 2, total: 3 },
-          activeResearchProject: "Perfusion Protocols in High-Risk Bypass"
-        } : undefined,
-        studentDetails: !isDoc ? {
-          discipline: "MEDICAL_STUDENT",
-          collegeName: "King George's Medical University",
-          academicYear: 4,
-          interests: ["Internal Medicine", "ICU Rounds"],
-          futureSpecialty: "Cardiology",
-          researchInterests: ["Preventive Cardiology Audits"],
-          isSeekingInternship: true
-        } : undefined,
-        stats: {
-          postsCount: 4,
-          followersCount: 340,
-          connectionsCount: 118
-        }
-      };
-
-      onLoginSuccess(existingUser);
+    const user = await apiService.loginUser(emailOrPhone, password);
+    if (user) {
+      onLoginSuccess(user);
       onClose();
-    }, 700);
+    } else {
+      setStatusMessage("Account not found. Please register or check your email/phone.");
+    }
   };
 
   const handleGoogleLogin = () => {

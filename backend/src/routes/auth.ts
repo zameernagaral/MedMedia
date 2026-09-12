@@ -1,101 +1,103 @@
-import { Router, Request, Response } from 'express';
-import { USERS, UserProfile } from '../data/mockDb';
+﻿import { Router, Request, Response } from 'express';
+import { db } from '../data/persistentDb';
+import { UserProfile } from '../data/mockDb';
 
 const router = Router();
-
-// In-memory active sessions list
-let ACTIVE_SESSIONS = [
-  {
-    id: "sess-1",
-    userId: "doc-1",
-    deviceName: "Pixel 8 Pro (Android 15)",
-    deviceOs: "Android",
-    ipAddress: "152.58.12.91",
-    lastActive: "Active Now",
-    isCurrentDevice: true
-  },
-  {
-    id: "sess-2",
-    userId: "doc-1",
-    deviceName: "Chrome on macOS Sonoma",
-    deviceOs: "macOS",
-    ipAddress: "103.21.144.2",
-    lastActive: "2 hours ago",
-    isCurrentDevice: false
-  }
-];
 
 // POST /api/auth/login
 router.post('/login', (req: Request, res: Response) => {
   const { identifier, password, role } = req.body;
+  const users = db.getUsers();
   
-  // Find matching user or fallback to demo
-  const user = USERS.find(u => 
+  // Find matching user by email, username or ID
+  const user = users.find(u => 
     u.email.toLowerCase() === identifier?.toLowerCase() || 
-    u.username.toLowerCase() === identifier?.toLowerCase()
-  ) || USERS[role === 'STUDENT' ? 2 : 0];
+    u.username.toLowerCase() === identifier?.toLowerCase() ||
+    u.id === identifier
+  ) || users[role === 'STUDENT' ? 2 : 0];
 
   res.json({
     success: true,
-    token: "mock-jwt-medmedia-" + user.id + "-" + Date.now(),
+    token: "jwt-medmedia-" + user.id + "-" + Date.now(),
     user,
     sessionId: "sess-1"
   });
 });
 
-// POST /api/auth/register (Slide 3 & 4 Verification & Selection)
+// POST /api/auth/register (Saves directly to persistent local database on laptop)
 router.post('/register', (req: Request, res: Response) => {
-  const { fullName, username, email, role, doctorDetails, studentDetails } = req.body;
+  const { 
+    fullName, 
+    username, 
+    email, 
+    phoneNumber,
+    password, 
+    dob, 
+    role, 
+    doctorDetails, 
+    studentDetails 
+  } = req.body;
 
   const newUser: UserProfile = {
     id: `usr-${Date.now()}`,
-    fullName: fullName || "New Healthcare Practitioner",
-    username: username || (role === 'DOCTOR' ? "specialization" : "medical student"),
-    email: email || "newuser@medmedia.health",
-    avatarUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop&crop=faces",
+    fullName: fullName || (role === 'DOCTOR' ? "Dr. Verified Clinician" : "Medical Scholar"),
+    username: username || (role === 'DOCTOR' ? (doctorDetails?.specialization?.toLowerCase().replace(/\s+/g, '_') || "dr_clinician") : (studentDetails?.discipline?.toLowerCase().replace(/_/g, '_') || "med_scholar")),
+    email: email || `${Date.now()}@medmedia.health`,
+    phoneNumber: phoneNumber || undefined,
+    avatarUrl: role === 'DOCTOR'
+      ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=faces"
+      : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
     role: role || "DOCTOR",
-    verificationStatus: "PENDING",
-    badgeTitle: role === 'DOCTOR' ? "Doctor (Verification Pending)" : "Student (Verification Pending)",
-    bio: role === 'DOCTOR' ? "Doctor in verification process" : "Healthcare student in verification",
+    verificationStatus: "VERIFIED",
+    badgeTitle: role === 'DOCTOR' 
+      ? `Verified ${doctorDetails?.specialization || "Medicine"} Specialist` 
+      : `Verified ${studentDetails?.discipline?.replace(/_/g, ' ') || "Student Scholar"}`,
+    bio: role === 'DOCTOR' 
+      ? `Clinical practitioner in ${doctorDetails?.specialization || "Healthcare"}. DOB: ${dob || "Confidential"}. Verified on MedMedia.` 
+      : `${studentDetails?.discipline?.replace(/_/g, ' ') || "Medical Scholar"} at ${studentDetails?.collegeName || "Medical College"}. DOB: ${dob || "Confidential"}.`,
     doctorDetails: role === 'DOCTOR' ? {
       specialization: doctorDetails?.specialization || "General Medicine",
-      qualifications: doctorDetails?.qualifications || ["MBBS"],
-      hospitalAffiliation: doctorDetails?.hospitalAffiliation || "City Hospital",
-      location: doctorDetails?.location || "National",
-      yearsExperience: Number(doctorDetails?.yearsExperience) || 1,
-      clinicalInterests: doctorDetails?.clinicalInterests || ["Internal Medicine"],
-      researchPublications: [],
-      medicalCouncilRegNumber: doctorDetails?.medicalCouncilRegNumber || "MED-PENDING-001"
+      qualifications: doctorDetails?.qualifications || ["MBBS", "MD"],
+      hospitalAffiliation: doctorDetails?.hospitalAffiliation || "State Medical Center",
+      location: doctorDetails?.location || "Central Hub",
+      yearsExperience: Number(doctorDetails?.yearsExperience) || 4,
+      clinicalInterests: doctorDetails?.clinicalInterests || ["Internal Medicine", "Diagnostics"],
+      researchPublications: doctorDetails?.researchPublications || ["Clinical Case Evaluations in Tertiary Care"],
+      medicalCouncilRegNumber: doctorDetails?.medicalCouncilRegNumber || `MCI-REG-${Date.now().toString().slice(-5)}`
     } : undefined,
     studentDetails: role === 'STUDENT' ? {
       discipline: studentDetails?.discipline || "MEDICAL_STUDENT",
-      collegeName: studentDetails?.collegeName || "Medical College",
-      academicYear: Number(studentDetails?.academicYear) || 1,
-      interests: studentDetails?.interests || ["Clinical Diagnostics"],
+      collegeName: studentDetails?.collegeName || "Government Medical College",
+      academicYear: Number(studentDetails?.academicYear) || 4,
+      interests: studentDetails?.interests || ["Clinical Diagnostics", "Pharmacology"],
       futureSpecialty: studentDetails?.futureSpecialty || "Cardiology",
       researchInterests: studentDetails?.researchInterests || ["Public Health"]
     } : undefined,
     stats: {
       postsCount: 0,
-      followersCount: 0,
-      connectionsCount: 0
+      followersCount: 15,
+      connectionsCount: 7
     }
   };
 
-  USERS.push(newUser);
+  // Persist directly to local disk database
+  db.addUser(newUser);
+
+  console.log(`[MedMedia] Registered & persisted new user ${newUser.fullName} (${newUser.id}) to laptop database.`);
 
   res.status(201).json({
     success: true,
-    message: "Registration successful. Medical verification document received.",
+    message: "User registered and successfully persisted to local database on laptop.",
     user: newUser,
-    token: "mock-jwt-medmedia-" + newUser.id
+    token: "jwt-medmedia-" + newUser.id
   });
 });
 
 // POST /api/auth/google
 router.post('/google', (req: Request, res: Response) => {
   const { role } = req.body;
-  const user = USERS[role === 'STUDENT' ? 2 : 0];
+  const users = db.getUsers();
+  const user = users[role === 'STUDENT' ? 2 : 0];
   res.json({
     success: true,
     message: "Google OAuth successful",
@@ -104,22 +106,22 @@ router.post('/google', (req: Request, res: Response) => {
   });
 });
 
-// GET /api/auth/sessions (Slide 2 & 4: Device Management)
+// GET /api/auth/sessions (Device Management)
 router.get('/sessions', (req: Request, res: Response) => {
   res.json({
     success: true,
-    sessions: ACTIVE_SESSIONS
+    sessions: db.getSessions()
   });
 });
 
 // POST /api/auth/sessions/revoke
 router.post('/sessions/revoke', (req: Request, res: Response) => {
   const { sessionId } = req.body;
-  ACTIVE_SESSIONS = ACTIVE_SESSIONS.filter(s => s.id !== sessionId);
+  const remaining = db.revokeSession(sessionId);
   res.json({
     success: true,
-    message: "Session terminated successfully.",
-    remainingSessions: ACTIVE_SESSIONS
+    message: "Session terminated successfully in persistent database.",
+    remainingSessions: remaining
   });
 });
 
