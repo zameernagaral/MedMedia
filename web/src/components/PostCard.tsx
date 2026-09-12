@@ -14,7 +14,8 @@ import {
   CheckCircle2, 
   AlertCircle,
   Copy,
-  Flag
+  Flag,
+  Sparkles
 } from 'lucide-react';
 import { Post, UserProfile } from '../types';
 
@@ -25,6 +26,7 @@ interface PostCardProps {
   onSave: (postId: string) => void;
   onVotePoll?: (postId: string, optionId: string) => void;
   onConnectAuthor?: (authorId: string) => void;
+  onSelectUser?: (userId: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -33,7 +35,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   onLike,
   onSave,
   onVotePoll,
-  onConnectAuthor
+  onConnectAuthor,
+  onSelectUser
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCommentBox, setShowCommentBox] = useState(false);
@@ -64,14 +67,33 @@ export const PostCard: React.FC<PostCardProps> = ({
   return (
     <article className="bg-white border border-slate-200/90 rounded-2xl mb-4 overflow-hidden shadow-sm hover:shadow-md transition duration-200">
       
+      {/* Algorithmic Reason Pill */}
+      {(post as any).matchReasonBadge && (
+        <div className="mx-4 mt-3 px-3 py-1.5 bg-gradient-to-r from-sky-50 to-indigo-50/60 border border-sky-100/90 rounded-xl text-[11px] text-sky-900 font-medium flex items-center justify-between">
+          <div className="flex items-center gap-1.5">
+            <Sparkles className="w-3.5 h-3.5 text-sky-600 flex-shrink-0" />
+            <span>{(post as any).matchReasonBadge}</span>
+          </div>
+          {(post as any).algorithmScore && (
+            <span className="text-[10px] font-bold text-sky-700 bg-sky-100/80 px-1.5 py-0.5 rounded">
+              {(post as any).algorithmScore}% match
+            </span>
+          )}
+        </div>
+      )}
+
       {/* 1. Header: Name / Follow (Slide 7: Copy instagram feature) */}
       <div className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-3">
+        <div 
+          onClick={() => onSelectUser && onSelectUser(post.authorId)}
+          className="flex items-center gap-3 cursor-pointer group"
+          title={`View ${post.authorName}'s full medical portfolio`}
+        >
           <div className="relative">
             <img
               src={post.authorAvatar}
               alt={post.authorName}
-              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100"
+              className="w-11 h-11 rounded-full object-cover ring-2 ring-slate-100 group-hover:ring-sky-400 transition"
             />
             <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full ${
               post.authorRole === 'DOCTOR' ? 'bg-sky-600 text-white' : 'bg-emerald-600 text-white'
@@ -86,12 +108,17 @@ export const PostCard: React.FC<PostCardProps> = ({
 
           <div>
             <div className="flex items-center gap-1.5 flex-wrap">
-              <h3 className="text-sm font-bold text-slate-900 hover:text-sky-600 cursor-pointer transition">
+              <h3 className="text-sm font-bold text-slate-900 group-hover:text-sky-600 transition">
                 {post.authorName}
               </h3>
               {post.isVerified && (
-                <span title="Verified Practitioner" className="inline-flex items-center">
+                <span title="Verified Medical Practitioner" className="inline-flex items-center">
                   <ShieldCheck className="w-4 h-4 text-sky-600 inline" />
+                </span>
+              )}
+              {post.authorIsProfessor && (
+                <span className="text-[9px] px-1.5 py-0.5 rounded bg-indigo-50 text-indigo-700 font-bold border border-indigo-200">
+                  Professor
                 </span>
               )}
               <span className="text-xs text-slate-400">• {post.createdAt}</span>

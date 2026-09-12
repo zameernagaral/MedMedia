@@ -32,6 +32,7 @@ interface ProfileViewProps {
   onSavePost: (postId: string) => void;
   onConnectUser: (userId: string) => void;
   onOpenHelpCenter: () => void;
+  onRequestMentorship?: (professor: UserProfile) => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -43,7 +44,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onLikePost,
   onSavePost,
   onConnectUser,
-  onOpenHelpCenter
+  onOpenHelpCenter,
+  onRequestMentorship
 }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'sessions' | 'help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
@@ -150,6 +152,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <p className="text-xs text-slate-600 mt-2 leading-relaxed max-w-xl font-normal">
               {user.bio}
             </p>
+
+            {/* LinkedIn-Style Academic Banner */}
+            {user.doctorDetails?.isAcceptingMentees && (
+              <div className="mt-3.5 p-3.5 bg-gradient-to-r from-sky-50 via-indigo-50 to-slate-50 rounded-2xl border border-sky-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-sky-600 text-white flex items-center justify-center flex-shrink-0">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs font-bold text-sky-950">Academic Mentorship & Guidance Open</p>
+                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold">
+                        {user.doctorDetails.mentorshipSlots?.available ?? 2} Slots Left
+                      </span>
+                    </div>
+                    <p className="text-[11px] text-sky-800 mt-0.5">
+                      Accepting student research co-investigators & clinical interns for {user.doctorDetails.activeResearchProject || 'academic trials'}.
+                    </p>
+                  </div>
+                </div>
+
+                {!isSelf && currentUser.role === 'STUDENT' && onRequestMentorship && (
+                  <button
+                    onClick={() => onRequestMentorship(user)}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition flex items-center gap-1.5 self-end sm:self-center flex-shrink-0 cursor-pointer"
+                  >
+                    <BookOpen className="w-3.5 h-3.5" />
+                    <span>Request Mentorship</span>
+                  </button>
+                )}
+              </div>
+            )}
+
+            {user.studentDetails?.isSeekingInternship && (
+              <div className="mt-3.5 p-3 bg-emerald-50/80 rounded-2xl border border-emerald-200 flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                  <div>
+                    <p className="text-xs font-bold text-emerald-950">Seeking Clinical Internship & Observership</p>
+                    <p className="text-[11px] text-emerald-700">
+                      Target Specialty: <strong>{user.studentDetails.futureSpecialty}</strong> • College: {user.studentDetails.collegeName}
+                    </p>
+                  </div>
+                </div>
+                <span className="text-[10px] font-bold px-2 py-0.5 bg-emerald-200/70 text-emerald-900 rounded-md">
+                  Candidate Ready
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Stats Bar */}

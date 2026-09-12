@@ -6,6 +6,7 @@ interface StoriesBarProps {
   stories: Story[];
   currentUser: UserProfile;
   onAddStorySuccess: (newStory: Story) => void;
+  onSelectUser?: (userId: string) => void;
 }
 
 const SAMPLE_STORY_IMAGES = [
@@ -18,7 +19,8 @@ const SAMPLE_STORY_IMAGES = [
 export const StoriesBar: React.FC<StoriesBarProps> = ({
   stories,
   currentUser,
-  onAddStorySuccess
+  onAddStorySuccess,
+  onSelectUser
 }) => {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState<number>(0);
@@ -268,21 +270,40 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
               </div>
 
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <img
-                    src={activeStory.userAvatar}
-                    alt=""
-                    className="w-9 h-9 rounded-full object-cover ring-2 ring-sky-400"
-                  />
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    const targetUserId = activeStory.userId;
+                    setActiveStoryIndex(null);
+                    if (onSelectUser) {
+                      onSelectUser(targetUserId);
+                    }
+                  }}
+                  className="flex items-center gap-2.5 text-left group hover:opacity-95 transition focus:outline-none cursor-pointer"
+                  title={`View ${activeStory.userName}'s verified medical profile`}
+                >
+                  <div className="relative">
+                    <img
+                      src={activeStory.userAvatar}
+                      alt={activeStory.userName}
+                      className="w-9 h-9 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-sky-300 transition"
+                    />
+                  </div>
                   <div>
-                    <p className="text-white text-xs font-bold leading-tight">{activeStory.userName}</p>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-white text-xs font-bold leading-tight group-hover:underline">{activeStory.userName}</p>
+                      <span className="text-[9px] bg-sky-500/40 text-sky-200 px-1.5 py-0.5 rounded font-semibold border border-sky-400/40">
+                        View Profile →
+                      </span>
+                    </div>
                     <p className="text-white/70 text-[10px]">{activeStory.timestamp}</p>
                   </div>
-                </div>
+                </button>
 
                 <button
                   onClick={() => setActiveStoryIndex(null)}
-                  className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition"
+                  className="p-1.5 rounded-full bg-black/50 text-white hover:bg-black/70 transition cursor-pointer"
                   title="Close Story"
                 >
                   <X className="w-5 h-5" />

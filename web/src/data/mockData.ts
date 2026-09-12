@@ -59,6 +59,77 @@ export const INITIAL_USERS: UserProfile[] = [
     }
   },
   {
+    id: "prof-1",
+    fullName: "Prof. (Dr.) Rajeshwar Sharma, MD, DM, FICP",
+    username: "prof_rajeshwar_cardio",
+    email: "dr.rajeshwar@kmc.manipal.edu",
+    avatarUrl: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=200&h=200&fit=crop&crop=faces",
+    role: "DOCTOR",
+    verificationStatus: "VERIFIED",
+    badgeTitle: "Professor & HOD Cardiology | Chief Academic Dean",
+    bio: "Senior Professor & Head of Department of Cardiology. Former Director at AIIMS. Dedicated to training the next generation of cardiologists. Accepting ICMR-STS student researchers & clinical interns.",
+    doctorDetails: {
+      specialization: "Cardiovascular Medicine & Academic Mentorship",
+      qualifications: ["MBBS (KIMS Gold Medalist)", "MD Internal Medicine (PGI)", "DM Cardiology (AIIMS)", "FICP", "FRCP (London)"],
+      hospitalAffiliation: "KMC Hospital & University Medical Center",
+      location: "Manipal / Bangalore, India",
+      yearsExperience: 26,
+      clinicalInterests: ["Preventive Cardiology", "Valvular Heart Disease", "Bedside Clinical Semiotics", "Undergraduate Mentorship"],
+      researchPublications: [
+        "Prevalence and Clinical Genetics of Familial Hypercholesterolemia in South India (NEJM 2023)",
+        "Undergraduate Medical Curriculum Innovations for Bedside Cardiovascular Skills (Medical Teacher 2024)"
+      ],
+      medicalCouncilRegNumber: "KMC-19402-IND",
+      isProfessor: true,
+      academicTitle: "Professor & Head of Department (Cardiology)",
+      isAcceptingMentees: true,
+      isAcceptingInterns: true,
+      mentorshipSlots: { available: 2, total: 5 },
+      alumniCollege: "Kempegowda Institute of Medical Sciences (KIMS)",
+      activeResearchProject: "ICMR Multicentric Registry: Early Cardiovascular Biomarkers in Young Adults"
+    },
+    stats: {
+      postsCount: 56,
+      followersCount: 14200,
+      connectionsCount: 3100
+    }
+  },
+  {
+    id: "prof-2",
+    fullName: "Prof. (Dr.) Meenakshi Sundaram, MS, FRCS",
+    username: "prof_sundaram_surg",
+    email: "m.sundaram@bmcri.edu",
+    avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=200&h=200&fit=crop&crop=faces",
+    role: "DOCTOR",
+    verificationStatus: "VERIFIED",
+    badgeTitle: "Professor of Surgery | Laparoscopy Mentor",
+    bio: "Professor of General & Minimal Access Surgery @ Bangalore Medical College (BMCRI). 20+ years teaching MBBS & MS surgical residents. Observerships open for final year scholars.",
+    doctorDetails: {
+      specialization: "General & Laparoscopic Surgery",
+      qualifications: ["MBBS (BMCRI)", "MS General Surgery (AIIMS)", "FRCS (Glasgow)", "FACS"],
+      hospitalAffiliation: "Victoria Hospital / BMCRI",
+      location: "Bangalore, India",
+      yearsExperience: 22,
+      clinicalInterests: ["Surgical Oncology", "Bariatric Surgery", "Surgical Anatomy", "Residency Training"],
+      researchPublications: [
+        "Single-Incision Laparoscopic Cholecystectomy: A 10-Year Academic Hospital Series (Annals of Surgery 2023)"
+      ],
+      medicalCouncilRegNumber: "KMC-28471-IND",
+      isProfessor: true,
+      academicTitle: "Professor of Surgery & Department Head",
+      isAcceptingMentees: true,
+      isAcceptingInterns: true,
+      mentorshipSlots: { available: 1, total: 4 },
+      alumniCollege: "Bangalore Medical College (BMCRI)",
+      activeResearchProject: "Evaluating Ergonomics & Simulation in Surgical Resident Training"
+    },
+    stats: {
+      postsCount: 38,
+      followersCount: 9800,
+      connectionsCount: 2200
+    }
+  },
+  {
     id: "stu-1",
     fullName: "Rohan Verma",
     username: "medical student",
@@ -67,14 +138,18 @@ export const INITIAL_USERS: UserProfile[] = [
     role: "STUDENT",
     verificationStatus: "VERIFIED",
     badgeTitle: "Verified Medical Student (MBBS)",
-    bio: "Final Year MBBS Student at Kempegowda Institute of Medical Sciences. Aspiring Cardiothoracic Surgeon. President, Student Research Forum.",
+    bio: "Final Year MBBS Student at Kempegowda Institute of Medical Sciences (KIMS). Aspiring Cardiothoracic Surgeon. Seeking Professor Mentorship for ICMR Research & Clinical Internship.",
     studentDetails: {
       discipline: "MEDICAL_STUDENT",
       collegeName: "Kempegowda Institute of Medical Sciences (KIMS)",
       academicYear: 4,
       interests: ["Cardiothoracic Surgery", "ECG Diagnostics", "Bedside Clinical Skills", "USMLE / NEET-PG"],
       futureSpecialty: "Cardiovascular & Thoracic Surgery",
-      researchInterests: ["Mechanical Circulatory Support", "Post-operative Hemodynamics in CABG"]
+      researchInterests: ["Mechanical Circulatory Support", "Post-operative Hemodynamics in CABG"],
+      isSeekingInternship: true,
+      isSeekingMentorship: true,
+      targetHospitalPreference: ["Manipal Hospital", "Apollo Hospitals", "Narayana Health", "KMC"],
+      academicAchievements: ["Gold Medal in Pharmacology (2nd MBBS)", "ICMR-STS Research Grant Recipient 2025"]
     },
     stats: {
       postsCount: 18,
@@ -91,14 +166,17 @@ export const INITIAL_USERS: UserProfile[] = [
     role: "STUDENT",
     verificationStatus: "VERIFIED",
     badgeTitle: "Verified Pharmacy Scholar (B.Pharm)",
-    bio: "3rd Year B.Pharm scholar @ Manipal College of Pharmaceutical Sciences. Research intern in clinical pharmacokinetics and therapeutic drug monitoring.",
+    bio: "3rd Year B.Pharm scholar @ Manipal College of Pharmaceutical Sciences. Research intern in clinical pharmacokinetics and therapeutic drug monitoring. Seeking hospital pharmacy observership.",
     studentDetails: {
       discipline: "B_PHARM",
       collegeName: "Manipal College of Pharmaceutical Sciences",
       academicYear: 3,
       interests: ["Pharmacogenomics", "Chemotherapeutic Drug Interactions", "Hospital Pharmacy"],
       futureSpecialty: "Clinical Pharmacology",
-      researchInterests: ["Nanocarriers for Targeted Drug Delivery in Glioblastoma"]
+      researchInterests: ["Nanocarriers for Targeted Drug Delivery in Glioblastoma"],
+      isSeekingInternship: true,
+      isSeekingMentorship: true,
+      targetHospitalPreference: ["Manipal Hospital", "Tata Memorial Hospital"]
     },
     stats: {
       postsCount: 12,
@@ -110,13 +188,33 @@ export const INITIAL_USERS: UserProfile[] = [
 
 export const INITIAL_STORIES: Story[] = [
   {
+    id: "st-prof-1",
+    userId: "prof-1",
+    userName: "Prof. Rajeshwar Sharma",
+    userAvatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=120&h=120&fit=crop&crop=faces",
+    mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&h=800&fit=crop",
+    caption: "Cardiology Grand Rounds: Reviewing rare Brugada syndrome ECGs with our enthusiastic student cohort! 🫀",
+    timestamp: "35m ago",
+    isViewed: false
+  },
+  {
+    id: "st-prof-2",
+    userId: "prof-2",
+    userName: "Prof. Meenakshi Sundaram",
+    userAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&h=120&fit=crop&crop=faces",
+    mediaUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=500&h=800&fit=crop",
+    caption: "Laparoscopic simulation lab open today 4-6 PM for final year MBBS student suturing practice. 🩺",
+    timestamp: "1h ago",
+    isViewed: false
+  },
+  {
     id: "st-1",
     userId: "doc-1",
     userName: "Dr. Arvind Ramesh",
     userAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&h=120&fit=crop&crop=faces",
     mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&h=800&fit=crop",
     caption: "Cath lab live: Successful complex bifurcation stenting with intravascular imaging.",
-    timestamp: "1h ago",
+    timestamp: "2h ago",
     isViewed: false
   },
   {
@@ -142,6 +240,60 @@ export const INITIAL_STORIES: Story[] = [
 ];
 
 export const INITIAL_POSTS: Post[] = [
+  {
+    id: "post-prof-1",
+    authorId: "prof-1",
+    authorName: "Prof. (Dr.) Rajeshwar Sharma, MD, DM, FICP",
+    authorUsername: "prof_rajeshwar_cardio",
+    authorAvatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&h=150&fit=crop&crop=faces",
+    authorRole: "DOCTOR",
+    authorSpecializationOrDiscipline: "Prof & HOD Cardiology (KMC / AIIMS)",
+    authorIsProfessor: true,
+    authorAcademicTitle: "Professor & Head of Department of Cardiology",
+    isVerified: true,
+    postType: "CLINICAL_DISCUSSION",
+    targetAudience: "STUDENT_HIGH_YIELD",
+    content: "📢 OPEN CALL FOR 2 MEDICAL STUDENT RESEARCH INTERNS (ICMR-STS 2026 Cohort):\n\nOur university department is recruiting 2 medical scholars for our prospective multicenter registry on 'Early Cardiovascular Phenotypes & Coronary Calcium Scoring in Young Adults'.\n\n🎯 What We Offer:\n• Direct 1-on-1 mentorship & research methodology training\n• Hands-on carotid ultrasound and hemodynamic profiling exposure\n• Guaranteed PubMed-indexed co-authorship (NEJM / JACC sub-journals)\n• Formal Recommendation Letter for USMLE / NEET-PG Residency\n\nEligibility: 3rd or 4th Year MBBS, or B.Pharm students with strong clinical curiosity. Click 'Request Mentorship' on my profile or send a message in chat with your student credentials!",
+    mediaUrls: [
+      "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=900&h=500&fit=crop"
+    ],
+    clinicalTags: ["#Cardiology", "#StudentMentorship", "#ICMRResearch", "#ClinicalInternship"],
+    likesCount: 890,
+    commentsCount: 142,
+    savesCount: 620,
+    sharesCount: 185,
+    isLiked: false,
+    isSaved: true,
+    isFollowing: true,
+    createdAt: "35 mins ago"
+  },
+  {
+    id: "post-prof-2",
+    authorId: "prof-2",
+    authorName: "Prof. (Dr.) Meenakshi Sundaram, MS, FRCS",
+    authorUsername: "prof_sundaram_surg",
+    authorAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=faces",
+    authorRole: "DOCTOR",
+    authorSpecializationOrDiscipline: "Professor of Surgery (BMCRI)",
+    authorIsProfessor: true,
+    authorAcademicTitle: "Professor of General & Minimal Access Surgery",
+    isVerified: true,
+    postType: "IMAGE_CASE",
+    targetAudience: "STUDENT_HIGH_YIELD",
+    content: "Bedside Surgical Clinic for Final Year MBBS Scholars: The 3 Cardinal Rules of Assessing an Acute Abdomen in Emergency Casualty:\n\n1. Never administer high-dose opioids before identifying localized rebound tenderness and involuntary guarding (the classic 'board-like' rigidity of hollow viscus perforation).\n2. A normal abdominal ultrasound does NOT rule out early retrocecal acute appendicitis when the Alvarado score is > 7.\n3. Always palpate hernial orifices and examine the scrotum/femoral canal in every patient presenting with vomiting and distension.\n\nSave this checklist for your university practical exams and upcoming casualty postings! 🩺",
+    mediaUrls: [
+      "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop"
+    ],
+    clinicalTags: ["#GeneralSurgery", "#ClinicalPearls", "#MBBSPrep", "#AcuteAbdomen"],
+    likesCount: 640,
+    commentsCount: 78,
+    savesCount: 430,
+    sharesCount: 120,
+    isLiked: true,
+    isSaved: true,
+    isFollowing: false,
+    createdAt: "1 hour ago"
+  },
   {
     id: "post-1",
     authorId: "doc-1",
@@ -377,6 +529,42 @@ export const INITIAL_JOBS: Job[] = [
     skills: ["Pediatric ECMO", "Advanced Airway", "Point-of-Care Ultrasound (POCUS)", "Invasive Hemodynamic Monitoring"],
     hospitalLogoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=120&h=120&fit=crop",
     postedAt: "4 days ago"
+  },
+  {
+    id: "job-5",
+    title: "Undergraduate Clinical Observership & Cath Lab Internship",
+    category: "Internship",
+    type: "Part time",
+    companyName: "KMC Hospital & University Heart Center",
+    place: "Manipal / Bangalore",
+    experience: "3rd / 4th Year MBBS Student",
+    salary: "₹25,000 / month stipend",
+    stipend: "₹25,000 / month stipend",
+    duration: "3 Months Rotational",
+    isClinicalInternship: true,
+    description: "Supervised clinical rotation under Prof. (Dr.) Rajeshwar Sharma. Daily morning ICU rounds, ECG triage seminars, cath lab observation, and weekly clinical case conference presentation.",
+    preferenceEducation: "Currently enrolled in recognized MBBS program with good academic standing. College NOC supported.",
+    skills: ["12-Lead ECG Interpretation", "Bedside Clinical Semiotics", "Patient Case History", "POCUS Basics"],
+    hospitalLogoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=120&h=120&fit=crop",
+    postedAt: "Just now"
+  },
+  {
+    id: "job-6",
+    title: "Surgical Sub-Internship & Laparoscopy Observership",
+    category: "Internship",
+    type: "Part time",
+    companyName: "Victoria Hospital / Bangalore Medical College (BMCRI)",
+    place: "Bangalore, Karnataka",
+    experience: "MBBS Intern / Final Year Scholar",
+    salary: "₹28,000 / month stipend",
+    stipend: "₹28,000 / month stipend",
+    duration: "4 Months",
+    isClinicalInternship: true,
+    description: "Hands-on emergency trauma triage, knot-tying and suturing wet-lab, OR assisting on laparoscopic surgeries, and direct surgical mentorship under Prof. Meenakshi Sundaram.",
+    preferenceEducation: "Final year MBBS scholars or rotating medical interns.",
+    skills: ["Surgical Suture Techniques", "Trauma ATLS Protocol", "Laparoscopic Port Handling", "Pre-op Evaluation"],
+    hospitalLogoUrl: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=120&h=120&fit=crop",
+    postedAt: "1 day ago"
   }
 ];
 

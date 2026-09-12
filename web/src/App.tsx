@@ -10,6 +10,9 @@ import { SearchAndNetworking } from './components/SearchAndNetworking';
 import { AuthModal } from './components/AuthModal';
 import { CreatePostModal } from './components/CreatePostModal';
 import { ClinicalChatDrawer } from './components/ClinicalChatDrawer';
+import { MentorshipModal } from './components/MentorshipModal';
+import { InternshipApplyModal } from './components/InternshipApplyModal';
+import { getPersonalizedFeed, getPersonalizedMedclips } from './utils/algorithmEngine';
 import { 
   INITIAL_USERS, 
   INITIAL_STORIES, 
@@ -19,7 +22,7 @@ import {
   INITIAL_OPPORTUNITIES, 
   INITIAL_SESSIONS 
 } from './data/mockData';
-import { UserProfile, Post } from './types';
+import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication } from './types';
 import { 
   Smartphone, 
   Monitor, 
@@ -31,13 +34,16 @@ import {
   X, 
   TrendingUp,
   Stethoscope,
-  GraduationCap
+  GraduationCap,
+  BookOpen,
+  ArrowRight
 } from 'lucide-react';
 
 export const App: React.FC = () => {
   // Application State
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[2]); // Default to Rohan Verma (MBBS student) to immediately demonstrate student perspective!
+  const [selectedProfileUser, setSelectedProfileUser] = useState<UserProfile | null>(null);
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [clips, setClips] = useState(INITIAL_CLIPS);
@@ -55,6 +61,9 @@ export const App: React.FC = () => {
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [showMessagesDrawer, setShowMessagesDrawer] = useState(false);
   const [isMobileFrameMode, setIsMobileFrameMode] = useState(false);
+  const [mentoringProfessor, setMentoringProfessor] = useState<UserProfile | null>(null);
+  const [applyingJob, setApplyingJob] = useState<Job | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   // Post Actions
   const handleLikePost = (postId: string) => {
@@ -142,39 +151,80 @@ export const App: React.FC = () => {
     alert("Session successfully revoked. The target device has been logged out.");
   };
 
+  const handleSelectUser = (userOrId: UserProfile | string) => {
+    if (typeof userOrId === 'string') {
+      const found = users.find(u => u.id === userOrId);
+      if (found) {
+        setSelectedProfileUser(found);
+        setCurrentTab('profile');
+      }
+    } else {
+      setSelectedProfileUser(userOrId);
+      setCurrentTab('profile');
+    }
+  };
 
-  const filteredPosts = posts.filter(p => {
+  const handleSwitchPersona = (user: UserProfile) => {
+    setCurrentUser(user);
+    setSelectedProfileUser(null);
+    setToastMessage(`Viewer algorithm adjusted for: ${user.fullName}`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Algorithmic Personalized Feed & Clips calculation
+  const algorithmicPosts = getPersonalizedFeed(posts, currentUser);
+  const filteredPosts = algorithmicPosts.filter(p => {
     if (feedFilterTag === 'All') return true;
+    if (feedFilterTag === '#Professors') return p.authorIsProfessor;
+    if (feedFilterTag === '#Internships') return p.clinicalTags.some(t => t.toLowerCase().includes('internship') || t.toLowerCase().includes('mentorship'));
     return p.clinicalTags.some(t => t.toLowerCase() === feedFilterTag.toLowerCase());
   });
+
+  const algorithmicClips = getPersonalizedMedclips(clips, currentUser);
 
   return (
     <div className="min-h-screen bg-slate-100 flex flex-col items-center">
       
-      {/* Top Banner with Device Frame Preview Switcher for Desktop Testing */}
-      <div className="w-full bg-slate-900 text-white px-4 py-2 text-xs flex items-center justify-between z-50 border-b border-slate-800">
+      {/* Top Banner: Algorithm Persona Switcher & Device Frame Preview */}
+      <div className="w-full bg-slate-900 text-white px-3 sm:px-4 py-2 text-xs flex flex-wrap items-center justify-between z-50 border-b border-slate-800 gap-2">
         <div className="flex items-center gap-2">
           <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span className="font-bold tracking-wide uppercase text-[10px] text-sky-400">
-            MedMedia Healthcare System v1.0
+            MedMedia AI Algorithm Mode
           </span>
-          <span className="hidden md:inline text-slate-400">• Doctor/Student Tiered Platform</span>
+          <span className="hidden md:inline text-slate-400">• Viewer-Centric Ranking</span>
         </div>
 
-        <div className="flex items-center gap-3">
+        {/* Quick Persona Selector to test algorithm live */}
+        <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+          <span className="text-[10px] text-slate-400 font-bold mr-1 hidden sm:inline">Active Perspective:</span>
+          {users.map(u => (
+            <button
+              key={`persona-${u.id}`}
+              onClick={() => handleSwitchPersona(u)}
+              className={`px-2.5 py-1 rounded-full text-[10px] font-bold transition flex items-center gap-1 cursor-pointer whitespace-nowrap ${
+                currentUser.id === u.id
+                  ? 'bg-sky-500 text-white shadow-xs'
+                  : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+              }`}
+              title={`Switch viewer perspective to ${u.fullName}`}
+            >
+              <img src={u.avatarUrl} alt="" className="w-3.5 h-3.5 rounded-full object-cover" />
+              <span>{u.fullName.split(' ')[0]}</span>
+              <span className="text-[9px] opacity-75 font-normal">
+                ({u.role === 'STUDENT' ? 'Student' : u.doctorDetails?.isProfessor ? 'Professor' : 'Doctor'})
+              </span>
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
           <button
             onClick={() => setIsMobileFrameMode(!isMobileFrameMode)}
-            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-medium text-[11px]"
+            className="flex items-center gap-1.5 px-3 py-1 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-200 transition font-medium text-[11px] cursor-pointer"
           >
             {isMobileFrameMode ? <Monitor className="w-3.5 h-3.5 text-sky-400" /> : <Smartphone className="w-3.5 h-3.5 text-sky-400" />}
-            <span>{isMobileFrameMode ? 'Desktop 3-Column View' : 'Mobile Phone Preview'}</span>
-          </button>
-
-          <button
-            onClick={() => setShowAuthModal(true)}
-            className="px-3 py-1 bg-sky-600 hover:bg-sky-500 font-bold text-white rounded-full transition text-[11px]"
-          >
-            Switch / Register Account
+            <span className="hidden sm:inline">{isMobileFrameMode ? 'Desktop View' : 'Mobile Preview'}</span>
           </button>
         </div>
       </div>
@@ -280,31 +330,32 @@ export const App: React.FC = () => {
               {/* TAB 1: HOME FEED (Slide 5 & 7: Stories, Text, tweets, Images, Links, Discussions - No reels) */}
               {currentTab === 'home' && (
                 <div>
-                  {/* Stories Bar (Slide 5: Story update - Accessory feature) */}
+                  {/* Stories Bar (Slide 5: Story update - with clickable author profile) */}
                   <StoriesBar
                     stories={stories}
                     currentUser={currentUser}
                     onAddStorySuccess={(newStory) => setStories([newStory, ...stories])}
+                    onSelectUser={handleSelectUser}
                   />
 
-                  {/* Filter Pills Bar */}
+                  {/* LinkedIn + Instagram Hybrid Filter Pills Bar */}
                   <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar mb-3 py-1">
-                    {['All', '#Cardiology', '#ECGChallenge', '#Neurosurgery', '#Pharmacology', '#IntensiveCare'].map(tag => (
+                    {['All', '#Professors', '#Internships', '#Cardiology', '#GeneralSurgery', '#ECGChallenge', '#Pharmacology'].map(tag => (
                       <button
                         key={tag}
                         onClick={() => setFeedFilterTag(tag)}
-                        className={`text-xs px-3 py-1 rounded-full font-semibold transition whitespace-nowrap ${
+                        className={`text-xs px-3.5 py-1.5 rounded-full font-semibold transition whitespace-nowrap cursor-pointer ${
                           feedFilterTag === tag
-                            ? 'bg-sky-600 text-white shadow-sm'
+                            ? 'bg-sky-600 text-white shadow-xs'
                             : 'bg-white border border-slate-200 text-slate-600 hover:bg-slate-100'
                         }`}
                       >
-                        {tag}
+                        {tag === 'All' ? '🎯 For You (AI Algorithm)' : tag === '#Professors' ? '👨‍🏫 Professors & Faculty' : tag === '#Internships' ? '🏥 Clinical Internships' : tag}
                       </button>
                     ))}
                   </div>
 
-                  {/* Home Feed Post Cards */}
+                  {/* Home Feed Post Cards with Algorithmic Transparency */}
                   <div className="space-y-4">
                     {filteredPosts.map((post) => (
                       <PostCard
@@ -314,9 +365,11 @@ export const App: React.FC = () => {
                         onLike={handleLikePost}
                         onSave={handleSavePost}
                         onVotePoll={handleVotePoll}
+                        onSelectUser={handleSelectUser}
                         onConnectAuthor={(authorId) => {
                           const author = users.find(u => u.id === authorId);
-                          alert(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
+                          setToastMessage(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
+                          setTimeout(() => setToastMessage(null), 3000);
                         }}
                       />
                     ))}
@@ -328,11 +381,14 @@ export const App: React.FC = () => {
               {currentTab === 'medclips' && (
                 <div className="py-2">
                   <MedclipsPlayer
-                    clips={clips}
+                    clips={algorithmicClips}
                     currentUser={currentUser}
                     onLikeClip={handleLikeClip}
                     onSaveClip={handleSaveClip}
-                    onConnectAuthor={(name) => alert(`Connection request sent to ${name}!`)}
+                    onConnectAuthor={(name) => {
+                      setToastMessage(`Connection request sent to ${name}!`);
+                      setTimeout(() => setToastMessage(null), 3000);
+                    }}
                   />
                 </div>
               )}
@@ -341,11 +397,15 @@ export const App: React.FC = () => {
               {currentTab === 'search' && (
                 <SearchAndNetworking
                   currentUser={currentUser}
-                  onSelectUser={(u) => {
-                    setCurrentUser(u);
-                    setCurrentTab('profile');
+                  availableUsers={users}
+                  jobs={jobs}
+                  onSelectUser={handleSelectUser}
+                  onConnectSuggestion={(name) => {
+                    setToastMessage(`Networking request sent to ${name}!`);
+                    setTimeout(() => setToastMessage(null), 3000);
                   }}
-                  onConnectSuggestion={(name) => alert(`Networking request sent to ${name}!`)}
+                  onRequestMentorship={(prof) => setMentoringProfessor(prof)}
+                  onApplyInternship={(job) => setApplyingJob(job)}
                 />
               )}
 
@@ -360,17 +420,37 @@ export const App: React.FC = () => {
 
               {/* TAB 5: PROFILE (Slide 3 Doctor & Slide 4 Student Professional Portfolio) */}
               {currentTab === 'profile' && (
-                <ProfileView
-                  user={currentUser}
-                  posts={posts.filter(p => p.authorId === currentUser.id)}
-                  currentUser={currentUser}
-                  deviceSessions={sessions}
-                  onRevokeSession={handleRevokeSession}
-                  onLikePost={handleLikePost}
-                  onSavePost={handleSavePost}
-                  onConnectUser={(id) => alert(`Connected with user #${id}!`)}
-                  onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
-                />
+                <div>
+                  {selectedProfileUser && selectedProfileUser.id !== currentUser.id && (
+                    <div className="mb-3 px-4 py-2 bg-sky-50 border border-sky-200 rounded-2xl flex items-center justify-between text-xs">
+                      <span className="text-sky-900 font-medium">
+                        Viewing profile of: <strong>{selectedProfileUser.fullName}</strong>
+                      </span>
+                      <button
+                        onClick={() => setSelectedProfileUser(null)}
+                        className="font-bold text-sky-700 hover:underline cursor-pointer"
+                      >
+                        Return to My Profile →
+                      </button>
+                    </div>
+                  )}
+
+                  <ProfileView
+                    user={selectedProfileUser || currentUser}
+                    posts={posts.filter(p => p.authorId === (selectedProfileUser ? selectedProfileUser.id : currentUser.id))}
+                    currentUser={currentUser}
+                    deviceSessions={sessions}
+                    onRevokeSession={handleRevokeSession}
+                    onLikePost={handleLikePost}
+                    onSavePost={handleSavePost}
+                    onConnectUser={(id) => {
+                      setToastMessage(`Connected with user #${id}!`);
+                      setTimeout(() => setToastMessage(null), 3000);
+                    }}
+                    onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
+                    onRequestMentorship={(prof) => setMentoringProfessor(prof)}
+                  />
+                </div>
               )}
 
             </main>
@@ -518,6 +598,38 @@ export const App: React.FC = () => {
         onClose={() => setShowCreateModal(false)}
         onPostCreated={(newPost) => setPosts([newPost, ...posts])}
       />
+
+      {/* Professor Mentorship Request Modal (LinkedIn-Style Mentorship Suite) */}
+      <MentorshipModal
+        isOpen={!!mentoringProfessor}
+        professor={mentoringProfessor}
+        student={currentUser}
+        onClose={() => setMentoringProfessor(null)}
+        onSubmitSuccess={(req) => {
+          setToastMessage(`Mentorship request submitted to ${req.professorName}!`);
+          setTimeout(() => setToastMessage(null), 4000);
+        }}
+      />
+
+      {/* Clinical Internship Application Modal */}
+      <InternshipApplyModal
+        isOpen={!!applyingJob}
+        job={applyingJob}
+        applicant={currentUser}
+        onClose={() => setApplyingJob(null)}
+        onSubmitSuccess={(app) => {
+          setToastMessage(`Application submitted for ${app.opportunityTitle} at ${app.hospitalName}!`);
+          setTimeout(() => setToastMessage(null), 4000);
+        }}
+      />
+
+      {/* Global Interactive Feedback Toast */}
+      {toastMessage && (
+        <div className="fixed bottom-16 sm:bottom-6 left-1/2 -translate-x-1/2 z-50 px-4 py-2.5 bg-slate-900/95 backdrop-blur-md text-white rounded-2xl shadow-2xl border border-slate-700/80 text-xs font-semibold flex items-center gap-2 animate-in fade-in slide-in-from-bottom-3 duration-200">
+          <Sparkles className="w-4 h-4 text-sky-400 flex-shrink-0" />
+          <span>{toastMessage}</span>
+        </div>
+      )}
 
     </div>
   );

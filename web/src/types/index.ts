@@ -11,6 +11,13 @@ export interface DoctorDetails {
   clinicalInterests: string[];
   researchPublications: string[];
   medicalCouncilRegNumber: string;
+  isProfessor?: boolean;
+  academicTitle?: string; // e.g. "Professor & HOD Cardiology"
+  isAcceptingMentees?: boolean;
+  isAcceptingInterns?: boolean;
+  mentorshipSlots?: { available: number; total: number };
+  alumniCollege?: string;
+  activeResearchProject?: string;
 }
 
 export interface StudentDetails {
@@ -20,6 +27,10 @@ export interface StudentDetails {
   interests: string[];
   futureSpecialty: string;
   researchInterests: string[];
+  isSeekingInternship?: boolean;
+  isSeekingMentorship?: boolean;
+  targetHospitalPreference?: string[];
+  academicAchievements?: string[];
 }
 
 export interface UserProfile {
@@ -85,6 +96,10 @@ export interface Post {
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
+  authorIsProfessor?: boolean;
+  authorAcademicTitle?: string;
+  targetAudience?: 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | 'SPECIALIST_CONSULT';
+  recommendationReason?: string;
   createdAt: string;
 }
 
@@ -95,6 +110,7 @@ export interface Medclip {
   authorSpecialty: string;
   authorAvatar: string;
   isVerified: boolean;
+  authorIsProfessor?: boolean;
   videoUrl: string;
   thumbnailUrl: string;
   caption: string;
@@ -107,6 +123,8 @@ export interface Medclip {
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
+  targetAudience?: 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | 'SPECIALIST_CONSULT';
+  recommendationReason?: string;
   createdAt: string;
 }
 
@@ -123,6 +141,9 @@ export interface Job {
   preferenceEducation: string;
   skills: string[];
   hospitalLogoUrl: string;
+  stipend?: string;
+  duration?: string;
+  isClinicalInternship?: boolean;
   postedAt: string;
 }
 
@@ -139,6 +160,8 @@ export interface OpportunityItem {
   contactEmail?: string;
   actionLabel: string;
   cmeCredits?: number;
+  targetAudience?: 'STUDENTS' | 'PROFESSORS' | 'ALL';
+  stipendOrFunding?: string;
 }
 
 export interface DeviceSession {
@@ -149,4 +172,36 @@ export interface DeviceSession {
   ipAddress: string;
   lastActive: string;
   isCurrentDevice: boolean;
+}
+
+export interface MentorshipRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCollege: string;
+  studentYear: number;
+  studentAvatar: string;
+  professorId: string;
+  professorName: string;
+  focusArea: 'Clinical Research' | 'USMLE / NEET-PG Strategy' | 'Surgical Skills' | 'Subspecialty Guidance' | 'Case Reporting';
+  statementOfPurpose: string;
+  hasCollegeNoc: boolean;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt: string;
+}
+
+export interface InternshipApplication {
+  id: string;
+  applicantId: string;
+  applicantName: string;
+  applicantDiscipline: string;
+  applicantCollege: string;
+  applicantYear: number;
+  opportunityOrJobId: string;
+  opportunityTitle: string;
+  hospitalName: string;
+  applicantSop: string;
+  availableFrom: string;
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'INTERVIEW_SCHEDULED' | 'ACCEPTED';
+  submittedAt: string;
 }
