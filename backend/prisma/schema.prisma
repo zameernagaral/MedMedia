@@ -1,0 +1,178 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  DOCTOR
+  STUDENT
+  ADMIN
+  INSTITUTION
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+enum StudentCategory {
+  MEDICAL_STUDENT
+  NURSING
+  B_PHARM
+  D_PHARM
+  LAB_PRACTITIONER
+  ALLIED_HEALTH
+}
+
+enum PostType {
+  TEXT
+  TWEET
+  IMAGE_CASE
+  ARTICLE_LINK
+  CLINICAL_DISCUSSION
+}
+
+enum JobCategory {
+  DOCTOR_JOB
+  ACADEMIC_JOB
+  INTERNSHIP
+  FELLOWSHIP
+}
+
+enum EmploymentType {
+  FULL_TIME
+  PART_TIME
+  LOCUM
+  CONTRACT
+  REMOTE
+}
+
+model User {
+  id                 String             @id @default(uuid())
+  email              String?            @unique
+  phoneNumber        String?            @unique
+  passwordHash       String?
+  googleId           String?            @unique
+  fullName           String
+  username           String             @unique
+  avatarUrl          String?
+  role               UserRole
+  verificationStatus VerificationStatus @default(PENDING)
+  bio                String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+
+  doctorProfile      DoctorProfile?
+  studentProfile     StudentProfile?
+  sessions           DeviceSession[]
+  posts              Post[]
+  medclips           Medclip[]
+  jobApplications    JobApplication[]
+}
+
+model DoctorProfile {
+  id                      String    @id @default(uuid())
+  userId                  String    @unique
+  user                    User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  specialization          String
+  qualifications          String[]
+  hospitalAffiliation     String
+  location                String
+  yearsExperience         Int       @default(0)
+  clinicalInterests       String[]
+  researchPublications    String[]
+  medicalCouncilRegNumber String
+  verifiedAt              DateTime?
+}
+
+model StudentProfile {
+  id               String          @id @default(uuid())
+  userId           String          @unique
+  user             User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  discipline       StudentCategory
+  collegeName      String
+  academicYear     Int
+  interests        String[]
+  futureSpecialty  String?
+  researchInterests String[]
+  verifiedAt       DateTime?
+}
+
+model DeviceSession {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  deviceName   String
+  deviceOs     String
+  ipAddress    String?
+  refreshToken String
+  lastActive   DateTime @default(now())
+  isRevoked    Boolean  @default(false)
+  createdAt    DateTime @default(now())
+}
+
+model Post {
+  id             String    @id @default(uuid())
+  userId         String
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  postType       PostType  @default(TEXT)
+  content        String
+  mediaUrls      String[]
+  linkUrl        String?
+  clinicalTags   String[]
+  likesCount     Int       @default(0)
+  commentsCount  Int       @default(0)
+  savesCount     Int       @default(0)
+  sharesCount    Int       @default(0)
+  createdAt      DateTime  @default(now())
+}
+
+model Medclip {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  videoUrl         String
+  thumbnailUrl     String?
+  caption          String
+  clinicalCategory String
+  tags             String[]
+  viewsCount       Int      @default(0)
+  likesCount       Int      @default(0)
+  commentsCount    Int      @default(0)
+  savesCount       Int      @default(0)
+  createdAt        DateTime @default(now())
+}
+
+model Job {
+  id                     String           @id @default(uuid())
+  title                  String
+  category               JobCategory
+  employmentType         EmploymentType
+  companyName            String
+  location               String
+  requiredExperienceYears Int             @default(0)
+  salaryRange            String?
+  jobDescription         String
+  educationPreference    String
+  skillsRequired         String[]
+  isActive               Boolean          @default(true)
+  createdAt              DateTime         @default(now())
+  applications           JobApplication[]
+}
+
+model JobApplication {
+  id          String   @id @default(uuid())
+  jobId       String
+  job         Job      @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  applicantId String
+  applicant   User     @relation(fields: [applicantId], references: [id], onDelete: Cascade)
+  resumeUrl   String?
+  status      String   @default("SUBMITTED")
+  appliedAt   DateTime @default(now())
+}

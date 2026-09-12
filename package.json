@@ -1,0 +1,15 @@
+{
+  "name": "medmedia-workspace",
+  "version": "1.0.0",
+  "description": "MedMedia Healthcare Professional & Student Platform (Web + Native Mobile + Backend + Docs)",
+  "scripts": {
+    "web:dev": "npm --prefix web run dev",
+    "web:build": "npm --prefix web run build",
+    "web:preview": "npm --prefix web run preview",
+    "backend:dev": "npm --prefix backend run dev",
+    "backend:build": "npm --prefix backend run build",
+    "backend:start": "npm --prefix backend start",
+    "mobile:start": "npm --prefix mobile start",
+    "mobile:android": "npm --prefix mobile run android"
+  }
+}
