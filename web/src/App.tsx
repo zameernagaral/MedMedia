@@ -39,7 +39,7 @@ export const App: React.FC = () => {
   // Application State
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
   const [currentUser, setCurrentUser] = useState<UserProfile>(INITIAL_USERS[0]);
-  const [stories] = useState(INITIAL_STORIES);
+  const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [clips, setClips] = useState(INITIAL_CLIPS);
   const [jobs] = useState(INITIAL_JOBS);
@@ -298,7 +298,7 @@ export const App: React.FC = () => {
                   <StoriesBar
                     stories={stories}
                     currentUser={currentUser}
-                    onAddStory={() => alert("Story creation camera opened. Capture your 24h clinical update.")}
+                    onAddStorySuccess={(newStory) => setStories([newStory, ...stories])}
                   />
 
                   {/* Filter Pills Bar */}
