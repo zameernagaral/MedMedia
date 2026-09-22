@@ -51,6 +51,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [collegeName, setCollegeName] = useState('');
   const [academicYear, setAcademicYear] = useState('4');
   const [fileUploaded, setFileUploaded] = useState(false);
+  const [isPrivate, setIsPrivate] = useState(false);
   
   // Step 2 Theme Choice
   const [chosenTheme, setChosenTheme] = useState<'dark' | 'light'>(isDarkMode ? 'dark' : 'light');
@@ -89,22 +90,27 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleFinalSignUp = async (skipPost: boolean) => {
     setStatusMessage("Saving verified account to your laptop database...");
 
+    const hasCred = fileUploaded || Boolean(medicalRegNumber.trim());
     const userData = {
       fullName: fullName.trim() || (selectedRole === 'DOCTOR' ? "Dr. Healthcare Clinician" : "Medical Scholar"),
       username: selectedRole === 'DOCTOR' 
-        ? (specialization.toLowerCase().replace(/\s+/g, '_') || 'dr_specialist')
+        ? (specialization.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'dr_specialist')
         : (selectedDiscipline.toLowerCase().replace(/_/g, '_') || 'med_scholar'),
       email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone.replace(/\D/g, '')}@medmedia.health`,
       phoneNumber: emailOrPhone.includes('@') ? undefined : emailOrPhone,
       password,
       dob,
       role: selectedRole,
+      verificationStatus: hasCred ? 'VERIFIED' : 'UNVERIFIED',
       badgeTitle: selectedRole === 'DOCTOR'
-        ? (fileUploaded ? `Verified ${specialization} Specialist` : "Doctor (Verification Pending)")
-        : (fileUploaded ? `Verified ${selectedDiscipline.replace('_', ' ')}` : "Student (Verification Pending)"),
+        ? (hasCred ? `Verified ${specialization} Specialist` : `${specialization} Specialist`)
+        : (hasCred ? `Verified ${selectedDiscipline.replace('_', ' ')}` : selectedDiscipline.replace('_', ' ')),
       bio: selectedRole === 'DOCTOR'
-        ? `Clinical specialist in ${specialization}. DOB: ${dob || 'Confidential'}. Verified medical practitioner.`
+        ? `Clinical specialist in ${specialization}. DOB: ${dob || 'Confidential'}.`
         : `${selectedDiscipline.replace('_', ' ')} candidate at ${collegeName || 'Medical College'}. DOB: ${dob || 'Confidential'}.`,
+      isPrivate: isPrivate,
+      medicalCouncilCredentialUrl: selectedRole === 'DOCTOR' && hasCred ? 'https://example.com/medical_council_cert.pdf' : undefined,
+      studentIdCredentialUrl: selectedRole === 'STUDENT' && hasCred ? 'https://example.com/student_id_proof.pdf' : undefined,
       doctorDetails: selectedRole === 'DOCTOR' ? {
         specialization,
         qualifications: ["MBBS", "MD / DNB"],
@@ -113,19 +119,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         yearsExperience: 4,
         clinicalInterests: [specialization, "Clinical Case Review"],
         researchPublications: ["Clinical Outcome Evaluation in Tertiary Care"],
-        medicalCouncilRegNumber: medicalRegNumber || "MCI-REG-2026",
-        isAcceptingMentees: true,
-        mentorshipSlots: { available: 2, total: 3 },
-        activeResearchProject: "Clinical Outcomes & Patient Pathways"
+        medicalCouncilRegNumber: medicalRegNumber || (hasCred ? "MCI-REG-2026" : "")
       } : undefined,
       studentDetails: selectedRole === 'STUDENT' ? {
         discipline: selectedDiscipline,
         collegeName: collegeName || "State Medical College & Research Institute",
-        academicYear: Number(academicYear) || 4,
+        academicYear: Number(academicYear) || 1,
         interests: ["Clinical Rounds", "Diagnostics", "Pharmacology"],
         futureSpecialty: "Internal Medicine / Surgery",
-        researchInterests: ["Evidence-Based Clinical Audits"],
-        isSeekingInternship: true
+        researchInterests: ["Evidence-Based Clinical Audits"]
       } : undefined
     };
 
@@ -422,100 +424,179 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
                 </div>
 
-                {/* Role Specific Credentials */}
-                {selectedRole === 'DOCTOR' ? (
-                  <div className="p-3.5 bg-sky-50/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl space-y-2.5">
-                    <h4 className="text-xs font-bold text-sky-950 dark:text-sky-200 flex items-center gap-1.5">
-                      <ShieldCheck className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                      Medical Council Credentials
-                    </h4>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Specialty / Discipline:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Cardiology, Neurology, Orthopedics"
-                        value={specialization}
-                        onChange={(e) => setSpecialization(e.target.value)}
-                        className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none"
-                      />
+                {/* "Who am I?" Step & Verification Flow */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between px-1">
+                    <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                      Step: "Who am I?" & Professional Credentials
+                    </span>
+                  </div>
+
+                  {selectedRole === 'DOCTOR' ? (
+                    <div className="p-3.5 bg-sky-50/50 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 rounded-2xl space-y-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                          Medical Specialization (20+ Fields): <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={specialization}
+                          onChange={(e) => setSpecialization(e.target.value)}
+                          className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-1 focus:ring-sky-500"
+                        >
+                          {[
+                            "Cardiology",
+                            "Neurology",
+                            "General Surgery",
+                            "Pediatrics & Neonatology",
+                            "Orthopedics & Sports Medicine",
+                            "Dermatology & Cosmetology",
+                            "Radiology & Imaging",
+                            "Internal Medicine",
+                            "Obstetrics & Gynecology",
+                            "Anesthesiology & Critical Care",
+                            "Psychiatry & Behavioral Health",
+                            "Pathology & Lab Medicine",
+                            "Emergency Medicine & Trauma",
+                            "Gastroenterology & Hepatology",
+                            "Pulmonology / Respiratory Medicine",
+                            "Ophthalmology",
+                            "ENT / Otorhinolaryngology",
+                            "Nephrology & Renal Care",
+                            "Urology",
+                            "Endocrinology & Diabetes",
+                            "Medical Oncology",
+                            "Rheumatology & Immunology"
+                          ].map(s => (
+                            <option key={s} value={s}>{s}</option>
+                          ))}
+                        </select>
+                      </div>
+
+                      {/* Auto-join Community Notice */}
+                      <div className="p-2 bg-sky-100/70 dark:bg-sky-900/40 rounded-xl text-[11px] text-sky-800 dark:text-sky-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                        <span>Will automatically join the <strong>{specialization}</strong> peer community upon signup (10,000 capacity).</span>
+                      </div>
+
+                      {/* Optional Credential Upload - Grants Blue Tick */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                          <span>Medical Council Credential (Optional):</span>
+                          <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-sky-600 inline" />
+                            Grants Blue Tick
+                          </span>
+                        </label>
+                        <div
+                          onClick={() => setFileUploaded(!fileUploaded)}
+                          className={`p-3 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
+                            fileUploaded 
+                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
+                              : 'border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500'
+                          }`}
+                        >
+                          <Upload className="w-4 h-4 mx-auto mb-1 text-sky-600 dark:text-sky-400" />
+                          <p className="text-xs font-bold">
+                            {fileUploaded ? "✓ Medical Council Document Attached (Blue Tick Verified)" : "Upload Medical Council Certificate / License (PDF/JPG)"}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Medical Council Registration Number (Optional):
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. KMC-58291-IND"
-                        value={medicalRegNumber}
-                        onChange={(e) => setMedicalRegNumber(e.target.value)}
-                        className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none"
-                      />
+                  ) : (
+                    <div className="p-3.5 bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl space-y-3">
+                      <div>
+                        <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                          Year of Studying: <span className="text-rose-500">*</span>
+                        </label>
+                        <select
+                          value={academicYear}
+                          onChange={(e) => setAcademicYear(e.target.value)}
+                          className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                        >
+                          <option value="1">1st Year MBBS</option>
+                          <option value="2">2nd Year MBBS</option>
+                          <option value="3">3rd Year MBBS</option>
+                          <option value="4">Final Year MBBS & Clinical Intern</option>
+                          <option value="5">Nursing Scholar</option>
+                          <option value="6">Pharmacy Scholar (B.Pharm / D.Pharm)</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                          College / Institution Name:
+                        </label>
+                        <input
+                          type="text"
+                          placeholder="e.g. Bangalore Medical College & Research Institute"
+                          value={collegeName}
+                          onChange={(e) => setCollegeName(e.target.value)}
+                          className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-xl focus:outline-none"
+                        />
+                      </div>
+
+                      {/* Auto-join Cohort Community Notice */}
+                      <div className="p-2 bg-emerald-100/70 dark:bg-emerald-900/40 rounded-xl text-[11px] text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                        <span>Will automatically join the matched Student Cohort community upon signup.</span>
+                      </div>
+
+                      {/* Optional Student ID Upload - Grants Blue Tick */}
+                      <div className="space-y-1.5">
+                        <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                          <span>Student ID Proof (Optional):</span>
+                          <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
+                            <ShieldCheck className="w-3 h-3 text-sky-600 inline" />
+                            Grants Blue Tick
+                          </span>
+                        </label>
+                        <div
+                          onClick={() => setFileUploaded(!fileUploaded)}
+                          className={`p-3 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
+                            fileUploaded 
+                              ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
+                              : 'border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-emerald-500'
+                          }`}
+                        >
+                          <Upload className="w-4 h-4 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
+                          <p className="text-xs font-bold">
+                            {fileUploaded ? "✓ Student ID Attached (Blue Tick Verified)" : "Upload Student ID Card / College Slip"}
+                          </p>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <div
-                      onClick={() => setFileUploaded(!fileUploaded)}
-                      className={`p-2.5 border border-dashed rounded-xl text-center cursor-pointer transition ${
-                        fileUploaded 
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
-                          : 'border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
-                      }`}
-                    >
-                      <Upload className="w-3.5 h-3.5 mx-auto mb-1 text-sky-600 dark:text-sky-400" />
-                      <p className="text-[11px] font-bold">
-                        {fileUploaded ? "✓ Medical Registration Certificate Attached" : "Upload Medical License / Certificate (Optional)"}
+                  )}
+
+                  {/* Public / Private Account Toggle */}
+                  <div className="p-3 bg-white dark:bg-slate-800/80 rounded-2xl border border-slate-200 dark:border-slate-700 flex items-center justify-between">
+                    <div>
+                      <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                        {isPrivate ? 'Private Account (Followers Only)' : 'Public Account (Discoverable to Colleagues)'}
+                      </h4>
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
+                        {isPrivate 
+                          ? 'Only approved medical colleagues can see your posts and details.' 
+                          : 'Your clinical posts are discoverable across the verified peer feed.'}
                       </p>
                     </div>
-                  </div>
-                ) : (
-                  <div className="p-3.5 bg-emerald-50/50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800 rounded-2xl space-y-2.5">
-                    <h4 className="text-xs font-bold text-emerald-950 dark:text-emerald-200 flex items-center gap-1.5">
-                      <GraduationCap className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                      Academic Healthcare Discipline
-                    </h4>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        Discipline Stream:
-                      </label>
-                      <select
-                        value={selectedDiscipline}
-                        onChange={(e) => setSelectedDiscipline(e.target.value as any)}
-                        className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none"
-                      >
-                        <option value="MEDICAL_STUDENT">Medical Student (MBBS)</option>
-                        <option value="NURSING">Nursing (B.Sc / GNM)</option>
-                        <option value="B_PHARM">B Pharm (Bachelor of Pharmacy)</option>
-                        <option value="D_PHARM">D Pharm (Diploma in Pharmacy)</option>
-                        <option value="LAB_PRACTITIONER">Lab Practitioner (MLT / Allied)</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                        College / Institution Name:
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="e.g. Bangalore Medical College & Research Institute"
-                        value={collegeName}
-                        onChange={(e) => setCollegeName(e.target.value)}
-                        className="w-full text-xs p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-white rounded-lg focus:outline-none"
-                      />
-                    </div>
-                    <div
-                      onClick={() => setFileUploaded(!fileUploaded)}
-                      className={`p-2.5 border border-dashed rounded-xl text-center cursor-pointer transition ${
-                        fileUploaded 
-                          ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
-                          : 'border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300'
+                    <button
+                      type="button"
+                      onClick={() => setIsPrivate(!isPrivate)}
+                      className={`w-12 h-6 flex items-center rounded-full p-1 transition cursor-pointer flex-shrink-0 ${
+                        isPrivate ? 'bg-sky-600 justify-end' : 'bg-slate-300 dark:bg-slate-700 justify-start'
                       }`}
                     >
-                      <Upload className="w-3.5 h-3.5 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
-                      <p className="text-[11px] font-bold">
-                        {fileUploaded ? "✓ Student ID Attached" : "Upload Student ID Card / College Slip (Optional)"}
-                      </p>
-                    </div>
+                      <div className="bg-white w-4 h-4 rounded-full shadow-md" />
+                    </button>
                   </div>
-                )}
+                </div>
 
                 {statusMessage && (
                   <p className="text-xs text-center font-semibold text-rose-600 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/50 p-2 rounded-lg">

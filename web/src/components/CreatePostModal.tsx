@@ -61,14 +61,14 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [creationMode, setCreationMode] = useState<'post' | 'story'>(initialMode);
 
   // Common Media & File State
-  const [mediaUrl, setMediaUrl] = useState('');
+  const [mediaUrl, setMediaUrl] = useState(() => initialMode === 'story' ? SAMPLE_STORY_IMAGES[0].url : '');
   const [isVideo, setIsVideo] = useState(false);
   const [deviceFileName, setDeviceFileName] = useState<string | null>(null);
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Post Specific State
-  const [postType, setPostType] = useState<'TEXT' | 'TWEET' | 'IMAGE_CASE' | 'ARTICLE_LINK' | 'CLINICAL_DISCUSSION'>('CLINICAL_DISCUSSION');
+  const [postType, setPostType] = useState<'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION'>('TWEET');
   const [content, setContent] = useState('');
   const [tagInput, setTagInput] = useState('#Cardiology #ClinicalCase');
   const [pollQuestion, setPollQuestion] = useState('Recommended Next Diagnostic Step:');
@@ -178,10 +178,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   // Submit Story (30s limit saved to MySQL & local database)
   const handleStorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!mediaUrl) {
-      alert("Please upload an image or video from your device for the story");
-      return;
-    }
+    const finalMedia = mediaUrl || SAMPLE_STORY_IMAGES[0].url;
 
     setIsSubmitting(true);
     try {
@@ -189,9 +186,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         userId: currentUser.id,
         userName: currentUser.fullName,
         userAvatar: currentUser.avatarUrl,
-        mediaUrl: mediaUrl,
-        caption: storyCaption.trim() || 'Clinical procedure update',
-        clinicalTags: storyTags
+        mediaUrl: finalMedia,
+        caption: storyCaption.trim() || 'Clinical update from ward rounds',
+        clinicalTags: storyTags,
+        isVideo: isVideo
       });
 
       if (onStoryCreated) {
@@ -271,11 +269,10 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             {/* Post Content Type Selector */}
             <div className="flex border-b border-slate-100 dark:border-slate-800 pb-2 gap-1 overflow-x-auto no-scrollbar text-xs font-semibold">
               {[
-                { type: 'CLINICAL_DISCUSSION', label: 'Case & Diagnostic Poll' },
-                { type: 'TEXT', label: 'Clinical Thought' },
-                { type: 'TWEET', label: 'MedTweet' },
+                { type: 'TWEET', label: 'Medtweet' },
                 { type: 'IMAGE_CASE', label: 'Imaging / Case Study' },
-                { type: 'ARTICLE_LINK', label: 'Journal Review' }
+                { type: 'TEXT', label: 'Clinical Thought' },
+                { type: 'CLINICAL_DISCUSSION', label: 'Case & Diagnostic Poll' }
               ].map((item) => (
                 <button
                   key={item.type}
@@ -664,7 +661,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || !mediaUrl}
+                disabled={isSubmitting}
                 className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 {isSubmitting ? (

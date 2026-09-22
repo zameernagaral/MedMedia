@@ -1,4 +1,4 @@
-﻿import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../data/persistentDb';
 import { Post } from '../data/mockDb';
 
@@ -16,14 +16,6 @@ router.get('/', (req: Request, res: Response) => {
     success: true,
     count: filtered.length,
     posts: filtered
-  });
-});
-
-// GET /api/posts/stories - Story Updates
-router.get('/stories', (req: Request, res: Response) => {
-  res.json({
-    success: true,
-    stories: db.getStories()
   });
 });
 
@@ -126,6 +118,28 @@ router.post('/:id/poll', (req: Request, res: Response) => {
     success: true,
     casePoll: poll
   });
+});
+
+// DELETE /api/posts/:id - Delete a clinical post
+router.delete('/:id', (req: Request, res: Response) => {
+  try {
+    const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
+    const deleted = db.deletePost(id);
+    if (!deleted) {
+      return res.status(404).json({ success: false, message: 'Post not found' });
+    }
+    res.json({
+      success: true,
+      message: 'Post deleted successfully',
+      id
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to delete post',
+      error: error.message
+    });
+  }
 });
 
 export default router;

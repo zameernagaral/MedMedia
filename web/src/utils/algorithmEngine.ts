@@ -38,7 +38,7 @@ export interface AlgorithmicInternship {
 export function getPersonalizedFeed(posts: Post[], viewer: UserProfile): AlgorithmicPost[] {
   return posts.map(post => {
     let score = 50; // base score
-    let reason = 'Trending in Medical Community';
+    let reason = 'Clinical Network Recommendation';
 
     // 1. Author authority boost: Professors & Verified Consultants
     if (post.authorIsProfessor) {

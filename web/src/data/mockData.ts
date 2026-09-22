@@ -25,7 +25,7 @@ export const INITIAL_USERS: UserProfile[] = [
       medicalCouncilRegNumber: "KMC-48192-IND"
     },
     stats: {
-      postsCount: 42,
+      postsCount: 0,
       followersCount: 8920,
       connectionsCount: 1420
     }
@@ -53,7 +53,7 @@ export const INITIAL_USERS: UserProfile[] = [
       medicalCouncilRegNumber: "KMC-59281-IND"
     },
     stats: {
-      postsCount: 31,
+      postsCount: 0,
       followersCount: 6410,
       connectionsCount: 980
     }
@@ -89,7 +89,7 @@ export const INITIAL_USERS: UserProfile[] = [
       activeResearchProject: "ICMR Multicentric Registry: Early Cardiovascular Biomarkers in Young Adults"
     },
     stats: {
-      postsCount: 56,
+      postsCount: 0,
       followersCount: 14200,
       connectionsCount: 3100
     }
@@ -124,7 +124,7 @@ export const INITIAL_USERS: UserProfile[] = [
       activeResearchProject: "Evaluating Ergonomics & Simulation in Surgical Resident Training"
     },
     stats: {
-      postsCount: 38,
+      postsCount: 0,
       followersCount: 9800,
       connectionsCount: 2200
     }
@@ -152,7 +152,7 @@ export const INITIAL_USERS: UserProfile[] = [
       academicAchievements: ["Gold Medal in Pharmacology (2nd MBBS)", "ICMR-STS Research Grant Recipient 2025"]
     },
     stats: {
-      postsCount: 18,
+      postsCount: 0,
       followersCount: 1840,
       connectionsCount: 620
     }
@@ -179,229 +179,16 @@ export const INITIAL_USERS: UserProfile[] = [
       targetHospitalPreference: ["Manipal Hospital", "Tata Memorial Hospital"]
     },
     stats: {
-      postsCount: 12,
+      postsCount: 0,
       followersCount: 920,
       connectionsCount: 340
     }
   }
 ];
 
-export const INITIAL_STORIES: Story[] = [
-  {
-    id: "st-prof-1",
-    userId: "prof-1",
-    userName: "Prof. Rajeshwar Sharma",
-    userAvatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&h=800&fit=crop",
-    caption: "Cardiology Grand Rounds: Reviewing rare Brugada syndrome ECGs with our enthusiastic student cohort! 🫀",
-    timestamp: "35m ago",
-    isViewed: false
-  },
-  {
-    id: "st-prof-2",
-    userId: "prof-2",
-    userName: "Prof. Meenakshi Sundaram",
-    userAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=500&h=800&fit=crop",
-    caption: "Laparoscopic simulation lab open today 4-6 PM for final year MBBS student suturing practice. 🩺",
-    timestamp: "1h ago",
-    isViewed: false
-  },
-  {
-    id: "st-1",
-    userId: "doc-1",
-    userName: "Dr. Arvind Ramesh",
-    userAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&h=800&fit=crop",
-    caption: "Cath lab live: Successful complex bifurcation stenting with intravascular imaging.",
-    timestamp: "2h ago",
-    isViewed: false
-  },
-  {
-    id: "st-2",
-    userId: "doc-2",
-    userName: "Dr. Priya Nair",
-    userAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=500&h=800&fit=crop",
-    caption: "Pediatric grand rounds starting in 15 mins. Topic: Craniopharyngioma management.",
-    timestamp: "3h ago",
-    isViewed: false
-  },
-  {
-    id: "st-3",
-    userId: "stu-1",
-    userName: "Rohan Verma",
-    userAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=500&h=800&fit=crop",
-    caption: "Bedside cardiology clinical case discussion with batchmates! 🫀",
-    timestamp: "5h ago",
-    isViewed: true
-  }
-];
+export const INITIAL_STORIES: Story[] = [];
 
-export const INITIAL_POSTS: Post[] = [
-  {
-    id: "post-prof-1",
-    authorId: "prof-1",
-    authorName: "Prof. (Dr.) Rajeshwar Sharma, MD, DM, FICP",
-    authorUsername: "prof_rajeshwar_cardio",
-    authorAvatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "DOCTOR",
-    authorSpecializationOrDiscipline: "Prof & HOD Cardiology (KMC / AIIMS)",
-    authorIsProfessor: true,
-    authorAcademicTitle: "Professor & Head of Department of Cardiology",
-    isVerified: true,
-    postType: "CLINICAL_DISCUSSION",
-    targetAudience: "STUDENT_HIGH_YIELD",
-    content: "📢 OPEN CALL FOR 2 MEDICAL STUDENT RESEARCH INTERNS (ICMR-STS 2026 Cohort):\n\nOur university department is recruiting 2 medical scholars for our prospective multicenter registry on 'Early Cardiovascular Phenotypes & Coronary Calcium Scoring in Young Adults'.\n\n🎯 What We Offer:\n• Direct 1-on-1 mentorship & research methodology training\n• Hands-on carotid ultrasound and hemodynamic profiling exposure\n• Guaranteed PubMed-indexed co-authorship (NEJM / JACC sub-journals)\n• Formal Recommendation Letter for USMLE / NEET-PG Residency\n\nEligibility: 3rd or 4th Year MBBS, or B.Pharm students with strong clinical curiosity. Click 'Request Mentorship' on my profile or send a message in chat with your student credentials!",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#Cardiology", "#StudentMentorship", "#ICMRResearch", "#ClinicalInternship"],
-    likesCount: 890,
-    commentsCount: 142,
-    savesCount: 620,
-    sharesCount: 185,
-    isLiked: false,
-    isSaved: true,
-    isFollowing: true,
-    createdAt: "35 mins ago"
-  },
-  {
-    id: "post-prof-2",
-    authorId: "prof-2",
-    authorName: "Prof. (Dr.) Meenakshi Sundaram, MS, FRCS",
-    authorUsername: "prof_sundaram_surg",
-    authorAvatar: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "DOCTOR",
-    authorSpecializationOrDiscipline: "Professor of Surgery (BMCRI)",
-    authorIsProfessor: true,
-    authorAcademicTitle: "Professor of General & Minimal Access Surgery",
-    isVerified: true,
-    postType: "IMAGE_CASE",
-    targetAudience: "STUDENT_HIGH_YIELD",
-    content: "Bedside Surgical Clinic for Final Year MBBS Scholars: The 3 Cardinal Rules of Assessing an Acute Abdomen in Emergency Casualty:\n\n1. Never administer high-dose opioids before identifying localized rebound tenderness and involuntary guarding (the classic 'board-like' rigidity of hollow viscus perforation).\n2. A normal abdominal ultrasound does NOT rule out early retrocecal acute appendicitis when the Alvarado score is > 7.\n3. Always palpate hernial orifices and examine the scrotum/femoral canal in every patient presenting with vomiting and distension.\n\nSave this checklist for your university practical exams and upcoming casualty postings! 🩺",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#GeneralSurgery", "#ClinicalPearls", "#MBBSPrep", "#AcuteAbdomen"],
-    likesCount: 640,
-    commentsCount: 78,
-    savesCount: 430,
-    sharesCount: 120,
-    isLiked: true,
-    isSaved: true,
-    isFollowing: false,
-    createdAt: "1 hour ago"
-  },
-  {
-    id: "post-1",
-    authorId: "doc-1",
-    authorName: "Dr. Arvind Ramesh, MD, DM",
-    authorUsername: "cardio_ramesh",
-    authorAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "DOCTOR",
-    authorSpecializationOrDiscipline: "Interventional Cardiology",
-    isVerified: true,
-    postType: "CLINICAL_DISCUSSION",
-    content: "🚨 58-year-old male presents to the ER with sudden retrosternal squeezing chest pain radiating to the left jaw (onset 45 mins ago). BP 90/60 mmHg, HR 52 bpm.\n\nNotice the dramatic ST-segment elevation in leads II, III, and aVF with reciprocal ST depression in I and aVL, accompanied by complete AV dissociation.\n\nWhich coronary artery branch is the culprit, and what is your immediate management protocol prior to cath lab activation?",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#Cardiology", "#ECGChallenge", "#STEMI", "#EmergencyMedicine"],
-    casePoll: {
-      question: "Primary Culprit Vessel Identification:",
-      options: [
-        { id: "opt-1", text: "Proximal Right Coronary Artery (RCA)", votes: 248 },
-        { id: "opt-2", text: "Left Anterior Descending (LAD) Diagonal", votes: 22 },
-        { id: "opt-3", text: "Left Circumflex (LCx) dominant branch", votes: 41 },
-        { id: "opt-4", text: "Left Main Equivocal", votes: 9 }
-      ],
-      totalVotes: 320,
-      userVotedOptionId: "opt-1"
-    },
-    likesCount: 342,
-    commentsCount: 68,
-    savesCount: 114,
-    sharesCount: 45,
-    isLiked: false,
-    isSaved: true,
-    isFollowing: true,
-    createdAt: "2 hours ago"
-  },
-  {
-    id: "post-2",
-    authorId: "stu-1",
-    authorName: "Rohan Verma",
-    authorUsername: "medical student",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "STUDENT",
-    authorSpecializationOrDiscipline: "Final Year MBBS (KIMS)",
-    isVerified: true,
-    postType: "ARTICLE_LINK",
-    content: "Fascinating clinical paper published in the New England Journal of Medicine on early microvascular perfusion monitoring in septic shock.\n\nFor students preparing for university exams: take note of how sublingual capillary flow index correlates far better with patient 28-day mortality than central venous oxygen saturation (ScvO2). Highly recommend reading the trial design!",
-    linkUrl: "https://nejm.org/doi/full/10.1056/NEJMoa240182",
-    linkMeta: {
-      title: "Sublingual Microcirculation Versus Global Hemodynamic Targets in Septic Shock",
-      source: "The New England Journal of Medicine (NEJM)",
-      description: "A randomized multi-center investigation into targeted microvascular resuscitation in ICU patients."
-    },
-    clinicalTags: ["#IntensiveCare", "#SepticShock", "#MedicalStudents", "#NEJMReview"],
-    likesCount: 189,
-    commentsCount: 24,
-    savesCount: 82,
-    sharesCount: 19,
-    isLiked: true,
-    isSaved: false,
-    isFollowing: false,
-    createdAt: "4 hours ago"
-  },
-  {
-    id: "post-3",
-    authorId: "doc-2",
-    authorName: "Dr. Priya Nair, MS, MCh",
-    authorUsername: "neuro_priya",
-    authorAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "DOCTOR",
-    authorSpecializationOrDiscipline: "Pediatric Neurosurgery",
-    isVerified: true,
-    postType: "IMAGE_CASE",
-    content: "Surgical pearls from this morning's endoscopic third ventriculostomy (ETV):\n\n1. Always identify the mammillary bodies and infundibular recess before fenestrating the floor.\n2. Use blunt balloon dilation rather than sharp dissection to protect the basilar apex below.\n3. Verify brisk cerebrospinal fluid pulsation before closure.\n\nOpen to questions from residents and surgical interns!",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#Neurosurgery", "#SurgicalPearls", "#Endoscopy", "#Residents"],
-    likesCount: 512,
-    commentsCount: 49,
-    savesCount: 201,
-    sharesCount: 88,
-    isLiked: false,
-    isSaved: true,
-    isFollowing: true,
-    createdAt: "7 hours ago"
-  },
-  {
-    id: "post-4",
-    authorId: "stu-2",
-    authorName: "Ananya Desai",
-    authorUsername: "B parm",
-    authorAvatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "STUDENT",
-    authorSpecializationOrDiscipline: "3rd Year B.Pharm",
-    isVerified: true,
-    postType: "TWEET",
-    content: "Reminder for hospital pharmacy & clinical rounds: When switching a heart failure patient from an ACE inhibitor (e.g., Ramipril) to an ARNI (Sacubitril/Valsartan), ALWAYS enforce a strict 36-hour washout period to prevent bradykinin-mediated life-threatening angioedema! 💊⚠️",
-    clinicalTags: ["#Pharmacology", "#PatientSafety", "#DrugInteractions", "#PharmacyStudent"],
-    likesCount: 275,
-    commentsCount: 16,
-    savesCount: 164,
-    sharesCount: 52,
-    isLiked: true,
-    isSaved: true,
-    isFollowing: false,
-    createdAt: "11 hours ago"
-  }
-];
+export const INITIAL_POSTS: Post[] = [];
 
 export const INITIAL_CLIPS: Medclip[] = [
   {
@@ -577,153 +364,9 @@ export const INITIAL_CLIPS: Medclip[] = [
   }
 ];
 
-export const INITIAL_JOBS: Job[] = [
-  {
-    id: "job-1",
-    title: "Consultant Interventional Cardiologist",
-    category: "Doctor jobs",
-    type: "Full time",
-    companyName: "Fortis Memorial Research Institute",
-    place: "Gurugram, NCR",
-    experience: "5+ Years Post DM/DNB",
-    salary: "₹38,00,000 - ₹55,00,000 / annum",
-    description: "Seeking a dedicated Interventional Cardiologist to lead our second state-of-the-art Cath Lab unit. Responsibilities include primary PCIs, radial interventions, device implantation, and participation in academic seminars.",
-    preferenceEducation: "DM / DNB in Cardiology with recognized medical council registration. FACC or FSCAI fellowship preferred.",
-    skills: ["Complex PCI", "Cath Lab Leadership", "Rotablation", "IVUS & OCT", "TAVR Assistance"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=120&h=120&fit=crop",
-    postedAt: "1 day ago"
-  },
-  {
-    id: "job-2",
-    title: "Assistant Professor - Department of Pathology",
-    category: "academic jobs",
-    type: "Full time",
-    companyName: "St. John's National Academy of Health Sciences",
-    place: "Bangalore, Karnataka",
-    experience: "2-4 Years Post MD",
-    salary: "₹18,00,000 - ₹24,00,000 / annum",
-    description: "Inviting applications for full-time faculty in Histopathology and Cytogenetics. Role entails teaching MBBS & MD candidates, clinical reporting, and research grant execution.",
-    preferenceEducation: "MD Pathology with minimum 3 publications in PubMed-indexed peer-reviewed journals.",
-    skills: ["Histopathology Reporting", "Undergraduate Lectures", "Immunohistochemistry", "Curriculum Mentorship"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=120&h=120&fit=crop",
-    postedAt: "3 days ago"
-  },
-  {
-    id: "job-3",
-    title: "Clinical Research & Oncology Internship 2026",
-    category: "Internship",
-    type: "Part time",
-    companyName: "Tata Memorial Centre / ACTREC",
-    place: "Mumbai, Maharashtra (Hybrid)",
-    experience: "MBBS Intern / Final Year Student",
-    salary: "₹35,000 / month stipend",
-    description: "6-month rotational research internship focusing on immunotherapy clinical trials, data abstraction, biobanking protocols, and GCP guidelines.",
-    preferenceEducation: "Final year MBBS students, recent graduates, or B.Pharm students with strong interest in clinical oncology.",
-    skills: ["GCP Guidelines", "Clinical Trial Protocol", "SPSS / R Analysis", "Patient Registry Management"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=120&h=120&fit=crop",
-    postedAt: "Just now"
-  },
-  {
-    id: "job-4",
-    title: "Fellowship in Pediatric Critical Care Medicine (PICU)",
-    category: "fellowship",
-    type: "Full time",
-    companyName: "Rainbow Children's Hospitals",
-    place: "Hyderabad, Telangana",
-    experience: "MD / DNB Pediatrics Completed",
-    salary: "₹1,20,000 / month stipend + Accommodation",
-    description: "Accredited 1-year clinical fellowship covering ECMO management, high-frequency oscillatory ventilation, advanced pediatric resuscitation, and bedside echocardiography.",
-    preferenceEducation: "MD / DNB in Pediatrics or Child Health.",
-    skills: ["Pediatric ECMO", "Advanced Airway", "Point-of-Care Ultrasound (POCUS)", "Invasive Hemodynamic Monitoring"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=120&h=120&fit=crop",
-    postedAt: "4 days ago"
-  },
-  {
-    id: "job-5",
-    title: "Undergraduate Clinical Observership & Cath Lab Internship",
-    category: "Internship",
-    type: "Part time",
-    companyName: "KMC Hospital & University Heart Center",
-    place: "Manipal / Bangalore",
-    experience: "3rd / 4th Year MBBS Student",
-    salary: "₹25,000 / month stipend",
-    stipend: "₹25,000 / month stipend",
-    duration: "3 Months Rotational",
-    isClinicalInternship: true,
-    description: "Supervised clinical rotation under Prof. (Dr.) Rajeshwar Sharma. Daily morning ICU rounds, ECG triage seminars, cath lab observation, and weekly clinical case conference presentation.",
-    preferenceEducation: "Currently enrolled in recognized MBBS program with good academic standing. College NOC supported.",
-    skills: ["12-Lead ECG Interpretation", "Bedside Clinical Semiotics", "Patient Case History", "POCUS Basics"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=120&h=120&fit=crop",
-    postedAt: "Just now"
-  },
-  {
-    id: "job-6",
-    title: "Surgical Sub-Internship & Laparoscopy Observership",
-    category: "Internship",
-    type: "Part time",
-    companyName: "Victoria Hospital / Bangalore Medical College (BMCRI)",
-    place: "Bangalore, Karnataka",
-    experience: "MBBS Intern / Final Year Scholar",
-    salary: "₹28,000 / month stipend",
-    stipend: "₹28,000 / month stipend",
-    duration: "4 Months",
-    isClinicalInternship: true,
-    description: "Hands-on emergency trauma triage, knot-tying and suturing wet-lab, OR assisting on laparoscopic surgeries, and direct surgical mentorship under Prof. Meenakshi Sundaram.",
-    preferenceEducation: "Final year MBBS scholars or rotating medical interns.",
-    skills: ["Surgical Suture Techniques", "Trauma ATLS Protocol", "Laparoscopic Port Handling", "Pre-op Evaluation"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=120&h=120&fit=crop",
-    postedAt: "1 day ago"
-  }
-];
+export const INITIAL_JOBS: Job[] = [];
 
-export const INITIAL_OPPORTUNITIES: OpportunityItem[] = [
-  {
-    id: "opp-1",
-    type: "RESEARCH",
-    title: "Multi-Center Study: AI-Powered ECG Detection of Early Cardiomyopathy",
-    subtitle: "Principal Investigator: Dr. Arvind Ramesh | Open Collaboration Call",
-    description: "Seeking 3 medical student / resident co-investigators across tertiary teaching hospitals for patient cohort anonymization and digital ECG record validation. Co-authorship guaranteed on IEEE/Lancet digital health submission.",
-    tags: ["#ResearchCall", "#Cardiology", "#MachineLearning", "#CoAuthorWanted"],
-    organizerOrAffiliation: "Apollo Research Innovations & Health AI Lab",
-    actionLabel: "Join Research Project"
-  },
-  {
-    id: "opp-2",
-    type: "FREELANCE",
-    title: "Emergency Department Weekend Locum Coverage",
-    subtitle: "Columbia Asia / Manipal Hospital - Whitefield",
-    description: "Urgent locum shifts available for licensed MBBS / MD physicians for 12-hour trauma & casualty weekend coverage. Competitive hourly compensation with on-call quarters provided.",
-    tags: ["#LocumTenens", "#EmergencyDuty", "#DoctorFreelancing", "#WeekendShift"],
-    organizerOrAffiliation: "Manipal Hospital Casualty Division",
-    locationOrVenue: "Whitefield, Bangalore",
-    dateTime: "Upcoming Saturday & Sunday Shifts",
-    actionLabel: "Apply for Locum"
-  },
-  {
-    id: "opp-3",
-    type: "EVENT",
-    title: "77th Annual All India Medical Congress & Surgical Expo 2026",
-    subtitle: "Accredited with 6 CME Credit Hours by Medical Council",
-    description: "3-day premier medical event bringing together over 4,000 surgeons, clinicians, and medical scholars. Features live robotic surgery broadcasts, simulated trauma bootcamps, and abstract competitions.",
-    tags: ["#MedicalCongress", "#CMEEvent", "#RoboticSurgery", "#Exhibition"],
-    organizerOrAffiliation: "Indian Medical Association & Surgical Society",
-    locationOrVenue: "Bangalore International Exhibition Centre (BIEC)",
-    dateTime: "Nov 14 - Nov 16, 2026 • 09:00 AM IST",
-    contactEmail: "cme-secretariat@ima-events.org",
-    actionLabel: "RSVP & Register"
-  },
-  {
-    id: "opp-4",
-    type: "COURSE",
-    title: "Mastering Bedside Point-of-Care Ultrasound (POCUS) in Critical Care",
-    subtitle: "Certified Comprehensive Online & Simulation Hybrid Module",
-    description: "Endorsed by the Society of Critical Care Medicine. 12 comprehensive modules on eFAST, lung ultrasound (B-lines vs A-lines), and focused cardiac evaluation.",
-    tags: ["#POCUS", "#UltrasoundMastery", "#CriticalCare", "#OnlineCME"],
-    organizerOrAffiliation: "MedMedia Academy & International Ultrasound Society",
-    cmeCredits: 4.5,
-    actionLabel: "Enroll in Course"
-  }
-];
+export const INITIAL_OPPORTUNITIES: OpportunityItem[] = [];
 
 export const INITIAL_SESSIONS: DeviceSession[] = [
   {
@@ -738,10 +381,22 @@ export const INITIAL_SESSIONS: DeviceSession[] = [
   {
     id: "sess-2",
     userId: "doc-1",
-    deviceName: "Chrome on macOS Sonoma",
-    deviceOs: "macOS",
+    deviceName: "Chrome on Windows 11 (Laptop)",
+    deviceOs: "Windows",
     ipAddress: "103.21.144.2",
-    lastActive: "2 hours ago",
-    isCurrentDevice: false
+    lastActive: "Active Now",
+    isCurrentDevice: true
   }
 ];
+
+export const INITIAL_COMMUNITIES: any[] = [];
+
+export const INITIAL_COURSES: any[] = [];
+
+export const INITIAL_SCHOLARSHIPS: any[] = [];
+
+export const INITIAL_RESEARCH_PROJECTS: any[] = [];
+
+export const INITIAL_LOCUM_GIGS: any[] = [];
+
+export const INITIAL_NOTIFICATIONS: any[] = [];

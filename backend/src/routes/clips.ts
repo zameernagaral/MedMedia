@@ -1,12 +1,13 @@
 import { Router, Request, Response } from 'express';
-import { MEDCLIPS, Medclip } from '../data/mockDb';
+import { db } from '../data/persistentDb';
+import { Medclip } from '../data/mockDb';
 
 const router = Router();
 
 // GET /api/clips (Slide 6: Medclips main stream)
 router.get('/', (req: Request, res: Response) => {
   const { category } = req.query; // 'social update' | 'clinical updates' | 'following'
-  let clips = [...MEDCLIPS];
+  let clips = db.getClips();
 
   if (category) {
     clips = clips.filter(c => c.clinicalCategory.toLowerCase() === (category as string).toLowerCase());
@@ -22,7 +23,7 @@ router.get('/', (req: Request, res: Response) => {
 // POST /api/clips/:id/action (Slide 6 side actions: Like, comment, Share, Save, more)
 router.post('/:id/action', (req: Request, res: Response) => {
   const { action } = req.body; // 'like' | 'save' | 'follow' | 'connect' | 'interested' | 'report'
-  const clip = MEDCLIPS.find(c => c.id === req.params.id);
+  const clip = db.getClips().find(c => c.id === req.params.id);
 
   if (!clip) {
     return res.status(404).json({ success: false, message: "Medclip not found" });

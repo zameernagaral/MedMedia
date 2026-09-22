@@ -1,20 +1,52 @@
-﻿import { Router, Request, Response } from 'express';
+import { Router, Request, Response } from 'express';
 import { db } from '../data/persistentDb';
 import { UserProfile } from '../data/mockDb';
 
 const router = Router();
+
+// Mapping specialties and student years to official communities
+const SPECIALTY_COMMUNITY_MAP: Record<string, string> = {
+  "Cardiology": "comm-cardio",
+  "Neurology": "comm-neuro",
+  "General Surgery": "comm-surgery",
+  "Dermatology": "comm-derma",
+  "Pediatrics": "comm-pediatrics",
+  "Orthopedics": "comm-ortho",
+  "Radiology": "comm-radiology"
+};
+
+const STUDENT_YEAR_COMMUNITY_MAP: Record<number, string> = {
+  1: "comm-year1",
+  2: "comm-year2",
+  3: "comm-year3",
+  4: "comm-year4"
+};
 
 // POST /api/auth/login
 router.post('/login', (req: Request, res: Response) => {
   const { identifier, password, role } = req.body;
   const users = db.getUsers();
   
-  // Find matching user by email, username or ID
+  if (users.length === 0) {
+    return res.status(401).json({
+      success: false,
+      message: "No registered accounts found in the database. Please register your verified Doctor or Student profile."
+    });
+  }
+
+  // Find matching user by email, username, or ID
   const user = users.find(u => 
-    u.email.toLowerCase() === identifier?.toLowerCase() || 
-    u.username.toLowerCase() === identifier?.toLowerCase() ||
+    (u.email && u.email.toLowerCase() === identifier?.toLowerCase()) || 
+    (u.username && u.username.toLowerCase() === identifier?.toLowerCase()) ||
     u.id === identifier
-  ) || users[role === 'STUDENT' ? 2 : 0];
+  ) || users[0];
+
+  if (!user) {
+    return res.status(401).json({
+      success: false,
+      message: "User not found. Please check your credentials or register a new profile."
+    });
+  }
 
   res.json({
     success: true,
@@ -35,8 +67,29 @@ router.post('/register', (req: Request, res: Response) => {
     dob, 
     role, 
     doctorDetails, 
-    studentDetails 
+    studentDetails,
+    isPrivate,
+    coverPhotoUrl,
+    medicalCouncilCredentialUrl,
+    studentIdCredentialUrl
   } = req.body;
+
+  // Determine verification status based on optional credential uploads
+  const hasCredential = role === 'DOCTOR' 
+    ? Boolean(medicalCouncilCredentialUrl || doctorDetails?.medicalCouncilRegNumber)
+    : Boolean(studentIdCredentialUrl);
+
+  const verificationStatus = hasCredential ? 'VERIFIED' : 'UNVERIFIED';
+
+  // Determine auto-joined communities
+  const autoJoinedCommunities: string[] = [];
+  if (role === 'DOCTOR' && doctorDetails?.specialization) {
+    const matchedCommId = SPECIALTY_COMMUNITY_MAP[doctorDetails.specialization] || "comm-surgery";
+    autoJoinedCommunities.push(matchedCommId);
+  } else if (role === 'STUDENT' && studentDetails?.academicYear) {
+    const matchedCommId = STUDENT_YEAR_COMMUNITY_MAP[studentDetails.academicYear] || "comm-year1";
+    autoJoinedCommunities.push(matchedCommId);
+  }
 
   const newUser: UserProfile = {
     id: `usr-${Date.now()}`,
@@ -47,14 +100,19 @@ router.post('/register', (req: Request, res: Response) => {
     avatarUrl: role === 'DOCTOR'
       ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=faces"
       : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
+    coverPhotoUrl: coverPhotoUrl || "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=400&fit=crop",
     role: role || "DOCTOR",
-    verificationStatus: "VERIFIED",
+    verificationStatus,
     badgeTitle: role === 'DOCTOR' 
-      ? `Verified ${doctorDetails?.specialization || "Medicine"} Specialist` 
-      : `Verified ${studentDetails?.discipline?.replace(/_/g, ' ') || "Student Scholar"}`,
+      ? `${verificationStatus === 'VERIFIED' ? 'Verified ' : ''}${doctorDetails?.specialization || "Medicine"} Specialist` 
+      : `${verificationStatus === 'VERIFIED' ? 'Verified ' : ''}${studentDetails?.discipline?.replace(/_/g, ' ') || "Student Scholar"}`,
     bio: role === 'DOCTOR' 
-      ? `Clinical practitioner in ${doctorDetails?.specialization || "Healthcare"}. DOB: ${dob || "Confidential"}. Verified on MedMedia.` 
+      ? `Clinical practitioner in ${doctorDetails?.specialization || "Healthcare"}. DOB: ${dob || "Confidential"}.` 
       : `${studentDetails?.discipline?.replace(/_/g, ' ') || "Medical Scholar"} at ${studentDetails?.collegeName || "Medical College"}. DOB: ${dob || "Confidential"}.`,
+    isPrivate: Boolean(isPrivate),
+    medicalCouncilCredentialUrl: medicalCouncilCredentialUrl || undefined,
+    studentIdCredentialUrl: studentIdCredentialUrl || undefined,
+    joinedCommunityIds: autoJoinedCommunities,
     doctorDetails: role === 'DOCTOR' ? {
       specialization: doctorDetails?.specialization || "General Medicine",
       qualifications: doctorDetails?.qualifications || ["MBBS", "MD"],
@@ -63,12 +121,12 @@ router.post('/register', (req: Request, res: Response) => {
       yearsExperience: Number(doctorDetails?.yearsExperience) || 4,
       clinicalInterests: doctorDetails?.clinicalInterests || ["Internal Medicine", "Diagnostics"],
       researchPublications: doctorDetails?.researchPublications || ["Clinical Case Evaluations in Tertiary Care"],
-      medicalCouncilRegNumber: doctorDetails?.medicalCouncilRegNumber || `MCI-REG-${Date.now().toString().slice(-5)}`
+      medicalCouncilRegNumber: doctorDetails?.medicalCouncilRegNumber || (hasCredential ? `MCI-REG-${Date.now().toString().slice(-5)}` : "")
     } : undefined,
     studentDetails: role === 'STUDENT' ? {
       discipline: studentDetails?.discipline || "MEDICAL_STUDENT",
       collegeName: studentDetails?.collegeName || "Government Medical College",
-      academicYear: Number(studentDetails?.academicYear) || 4,
+      academicYear: Number(studentDetails?.academicYear) || 1,
       interests: studentDetails?.interests || ["Clinical Diagnostics", "Pharmacology"],
       futureSpecialty: studentDetails?.futureSpecialty || "Cardiology",
       researchInterests: studentDetails?.researchInterests || ["Public Health"]
@@ -83,11 +141,16 @@ router.post('/register', (req: Request, res: Response) => {
   // Persist directly to local disk database
   db.addUser(newUser);
 
-  console.log(`[MedMedia] Registered & persisted new user ${newUser.fullName} (${newUser.id}) to laptop database.`);
+  // Auto-join communities in DB
+  autoJoinedCommunities.forEach(cId => {
+    db.joinCommunity(cId, newUser.id);
+  });
+
+  console.log(`[MedMedia] Registered user ${newUser.fullName} (${newUser.id}). Auto-joined: ${autoJoinedCommunities.join(', ')}.`);
 
   res.status(201).json({
     success: true,
-    message: "User registered and successfully persisted to local database on laptop.",
+    message: "User registered and successfully persisted.",
     user: newUser,
     token: "jwt-medmedia-" + newUser.id
   });
@@ -95,9 +158,52 @@ router.post('/register', (req: Request, res: Response) => {
 
 // POST /api/auth/google
 router.post('/google', (req: Request, res: Response) => {
-  const { role } = req.body;
+  const { role, email, fullName } = req.body;
   const users = db.getUsers();
-  const user = users[role === 'STUDENT' ? 2 : 0];
+  let user = users.find(u => email && u.email && u.email.toLowerCase() === email.toLowerCase());
+
+  if (!user && users.length > 0) {
+    user = users[0];
+  }
+
+  if (!user) {
+    // Create new Google profile
+    const newUser: UserProfile = {
+      id: `usr-google-${Date.now()}`,
+      fullName: fullName || (role === 'STUDENT' ? "Medical Scholar (Google Verified)" : "Dr. Verified Clinician (Google)"),
+      username: (fullName ? fullName.toLowerCase().replace(/\s+/g, '_') : 'clinician_google') + `_${Date.now().toString().slice(-4)}`,
+      email: email || `user_${Date.now()}@medmedia.health`,
+      avatarUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=faces",
+      coverPhotoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=400&fit=crop",
+      role: role || "DOCTOR",
+      verificationStatus: "VERIFIED",
+      badgeTitle: role === 'STUDENT' ? "Verified Medical Student" : "Verified Clinical Specialist",
+      bio: "Healthcare professional verified via Google Authentication. Active on MedMedia clinical network.",
+      isPrivate: false,
+      joinedCommunityIds: ["comm-surgery"],
+      doctorDetails: role !== 'STUDENT' ? {
+        specialization: "Internal Medicine",
+        qualifications: ["MBBS", "MD"],
+        hospitalAffiliation: "University Teaching Hospital",
+        location: "Medical City",
+        yearsExperience: 5,
+        clinicalInterests: ["Internal Medicine", "Diagnostics"],
+        researchPublications: ["Clinical Case Reviews"],
+        medicalCouncilRegNumber: `MCI-${Date.now().toString().slice(-6)}`
+      } : undefined,
+      studentDetails: role === 'STUDENT' ? {
+        discipline: "MEDICAL_STUDENT",
+        collegeName: "Medical University",
+        academicYear: 3,
+        interests: ["Cardiology", "Diagnostics"],
+        futureSpecialty: "Cardiology",
+        researchInterests: ["Public Health"]
+      } : undefined,
+      stats: { postsCount: 0, followersCount: 0, connectionsCount: 0 }
+    };
+    user = db.addUser(newUser);
+  }
+
   res.json({
     success: true,
     message: "Google OAuth successful",

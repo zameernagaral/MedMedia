@@ -11,7 +11,9 @@ import {
   Upload, 
   Hash, 
   Image as ImageIcon,
-  Trash2
+  Trash2,
+  Volume2,
+  VolumeX
 } from 'lucide-react';
 import { Story, UserProfile } from '../types';
 import { apiService } from '../services/api';
@@ -19,8 +21,10 @@ import { apiService } from '../services/api';
 interface StoriesBarProps {
   stories: Story[];
   currentUser: UserProfile;
-  onAddStorySuccess: (newStory: Story) => void;
+  onAddStorySuccess?: (newStory: Story) => void;
   onSelectUser?: (userId: string) => void;
+  onOpenCreateStory?: () => void;
+  onDeleteStory?: (storyId: string) => void;
 }
 
 const SAMPLE_STORY_IMAGES = [
@@ -45,15 +49,25 @@ const SUGGESTED_MEDICAL_TAGS = [
   '#Radiology'
 ];
 
+const isVideoMedia = (story: Story | null) => {
+  if (!story) return false;
+  if (story.isVideo) return true;
+  if (story.mediaUrl?.startsWith('data:video')) return true;
+  return /\.(mp4|webm|mov|ogg)(\?.*)?$/i.test(story.mediaUrl || '');
+};
+
 export const StoriesBar: React.FC<StoriesBarProps> = ({
   stories,
   currentUser,
   onAddStorySuccess,
-  onSelectUser
+  onSelectUser,
+  onOpenCreateStory,
+  onDeleteStory
 }) => {
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [progress, setProgress] = useState<number>(0);
   const [isPaused, setIsPaused] = useState<boolean>(false);
+  const [isMuted, setIsMuted] = useState<boolean>(true);
   const [showCreateModal, setShowCreateModal] = useState<boolean>(false);
   const [newCaption, setNewCaption] = useState<string>('');
   const [selectedImage, setSelectedImage] = useState<string>(SAMPLE_STORY_IMAGES[0].url);
@@ -65,12 +79,13 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
   const [replyFeedback, setReplyFeedback] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
 
   const activeStory = activeStoryIndex !== null ? stories[activeStoryIndex] : null;
 
-  // Auto-advance timer for stories (~5 seconds per story)
+  // Auto-advance timer for image stories (~5 seconds per story)
   useEffect(() => {
-    if (activeStoryIndex === null || isPaused) return;
+    if (activeStoryIndex === null || isPaused || isVideoMedia(activeStory)) return;
 
     const interval = setInterval(() => {
       setProgress((prev) => {
@@ -88,7 +103,57 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
     }, 100);
 
     return () => clearInterval(interval);
-  }, [activeStoryIndex, isPaused, stories.length]);
+  }, [activeStoryIndex, isPaused, activeStory, stories.length]);
+
+  // Pause / resume video when isPaused changes
+  useEffect(() => {
+    if (videoRef.current) {
+      if (isPaused) {
+        videoRef.current.pause();
+      } else {
+        videoRef.current.play().catch(() => {});
+      }
+    }
+  }, [isPaused]);
+
+  // Keyboard navigation for story viewer (ArrowRight, ArrowLeft, Escape)
+  useEffect(() => {
+    if (activeStoryIndex === null) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        handleNextStory();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        handlePrevStory();
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        setActiveStoryIndex(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeStoryIndex, stories.length]);
+
+  const handleDeleteActiveStory = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!activeStory) return;
+    if (window.confirm("Are you sure you want to delete this 24-hour story?")) {
+      const idToDelete = activeStory.id;
+      if (activeStoryIndex !== null && stories.length > 1) {
+        if (activeStoryIndex >= stories.length - 1) {
+          setActiveStoryIndex(activeStoryIndex - 1);
+        }
+      } else {
+        setActiveStoryIndex(null);
+      }
+      if (onDeleteStory) {
+        onDeleteStory(idToDelete);
+      } else {
+        await apiService.deleteStory(idToDelete);
+      }
+    }
+  };
 
   const handleOpenStory = (index: number) => {
     setActiveStoryIndex(index);
@@ -164,7 +229,9 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
         clinicalTags: selectedTags
       });
 
-      onAddStorySuccess(created);
+      if (onAddStorySuccess) {
+        onAddStorySuccess(created);
+      }
       setShowCreateModal(false);
       setNewCaption('');
       setSelectedTags(['#BedsideRounds']);
@@ -190,7 +257,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
       <div className="flex items-center justify-between mb-2.5 px-1">
         <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200 tracking-wide uppercase">
           <Stethoscope className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-          <span>Story Updates <span className="text-[10px] font-normal text-slate-400 dark:text-slate-500 capitalize">(24h Clinical Pearls)</span></span>
+          <span>Clinical Pearls</span>
         </div>
       </div>
 
@@ -199,7 +266,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
         
         {/* Current User Add Story Bubble */}
         <div
-          onClick={() => setShowCreateModal(true)}
+          onClick={() => onOpenCreateStory ? onOpenCreateStory() : setShowCreateModal(true)}
           className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
           title="Share a 24-hour clinical story update from your device"
         >
@@ -214,7 +281,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
             </div>
           </div>
           <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
-            Your Update
+            Your Pearl
           </span>
         </div>
 
@@ -228,7 +295,7 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
             <div className={`w-16 h-16 rounded-full p-0.5 transition transform group-hover:scale-105 ${
               story.isViewed
                 ? 'border-2 border-slate-300 dark:border-slate-700'
-                : 'bg-gradient-to-tr from-sky-500 via-teal-400 to-indigo-500 p-[2.5px]'
+                : 'bg-gradient-to-tr from-cyan-400 via-teal-500 to-sky-600 p-[2.5px] shadow-[0_0_12px_rgba(6,182,212,0.35)]'
             }`}>
               <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-0.5">
                 <img
@@ -470,8 +537,6 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
       {activeStory && (
         <div 
           className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex items-center justify-center p-2 sm:p-4"
-          onMouseEnter={() => setIsPaused(true)}
-          onMouseLeave={() => setIsPaused(false)}
         >
           <div className="relative w-full max-w-sm h-[90vh] max-h-[720px] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between">
             
@@ -507,6 +572,9 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                     <img
                       src={activeStory.userAvatar}
                       alt={activeStory.userName}
+                      onError={(e) => {
+                        (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&h=120&fit=crop';
+                      }}
                       className="w-9 h-9 rounded-full object-cover ring-2 ring-sky-400 group-hover:ring-white transition"
                     />
                   </div>
@@ -518,41 +586,94 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
                   </div>
                 </div>
 
-                <button
-                  onClick={() => setActiveStoryIndex(null)}
-                  className="p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition cursor-pointer"
-                  title="Close Story"
-                >
-                  <X className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  {isVideoMedia(activeStory) && (
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setIsMuted(!isMuted);
+                      }}
+                      className="p-1.5 rounded-full bg-black/60 hover:bg-black/90 text-white transition cursor-pointer"
+                      title={isMuted ? "Unmute Audio" : "Mute Audio"}
+                    >
+                      {isMuted ? <VolumeX className="w-4 h-4 text-amber-300" /> : <Volume2 className="w-4 h-4 text-emerald-300" />}
+                    </button>
+                  )}
+
+                  {activeStory.userId === currentUser.id && (
+                    <button
+                      onClick={handleDeleteActiveStory}
+                      className="p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition cursor-pointer"
+                      title="Delete Story"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-400 hover:text-white" />
+                    </button>
+                  )}
+
+                  <button
+                    onClick={() => setActiveStoryIndex(null)}
+                    className="p-1.5 rounded-full bg-black/60 hover:bg-rose-600 text-white transition cursor-pointer"
+                    title="Close Story (Esc)"
+                  >
+                    <X className="w-5 h-5" />
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Media Image */}
-            <div className="relative w-full h-full flex items-center justify-center bg-slate-950">
-              <img
-                src={activeStory.mediaUrl}
-                alt="Story Media"
-                className="w-full h-full object-cover select-none"
-              />
+            {/* Media Display (Native Video or Clinical Image) */}
+            <div 
+              className="relative w-full h-full flex items-center justify-center bg-slate-950 select-none"
+              onPointerDown={() => setIsPaused(true)}
+              onPointerUp={() => setIsPaused(false)}
+            >
+              {isVideoMedia(activeStory) ? (
+                <video
+                  ref={videoRef}
+                  src={activeStory.mediaUrl}
+                  autoPlay
+                  playsInline
+                  muted={isMuted}
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                  onError={() => {
+                    handleNextStory();
+                  }}
+                  onTimeUpdate={() => {
+                    if (videoRef.current && videoRef.current.duration) {
+                      setProgress((videoRef.current.currentTime / videoRef.current.duration) * 100);
+                    }
+                  }}
+                  onEnded={handleNextStory}
+                />
+              ) : (
+                <img
+                  src={activeStory.mediaUrl}
+                  alt="Story Media"
+                  onError={(e) => {
+                    (e.currentTarget as HTMLImageElement).src = 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=700&h=1000&fit=crop';
+                  }}
+                  className="w-full h-full object-cover select-none pointer-events-none"
+                />
+              )}
 
               {/* Tap Left / Right Overlay Controls */}
               <button
                 onClick={handlePrevStory}
-                className="absolute left-0 top-16 bottom-24 w-1/3 z-10 opacity-0 hover:opacity-20 bg-white cursor-pointer"
-                title="Previous Story"
+                className="absolute left-0 top-16 bottom-28 w-1/3 z-10 opacity-0 hover:opacity-10 bg-white cursor-pointer"
+                title="Previous Story (Left Arrow)"
               />
               <button
                 onClick={handleNextStory}
-                className="absolute right-0 top-16 bottom-24 w-1/3 z-10 opacity-0 hover:opacity-20 bg-white cursor-pointer"
-                title="Next Story"
+                className="absolute right-0 top-16 bottom-28 w-1/3 z-10 opacity-0 hover:opacity-10 bg-white cursor-pointer"
+                title="Next Story (Right Arrow)"
               />
 
               {/* Explicit Prev / Next Floating Arrows */}
               {activeStoryIndex !== null && activeStoryIndex > 0 && (
                 <button
                   onClick={handlePrevStory}
-                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90"
+                  className="absolute left-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-sky-600 transition shadow-lg cursor-pointer"
+                  title="Previous"
                 >
                   <ChevronLeft className="w-5 h-5" />
                 </button>
@@ -560,52 +681,82 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
               {activeStoryIndex !== null && activeStoryIndex < stories.length - 1 && (
                 <button
                   onClick={handleNextStory}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 z-20 w-8 h-8 rounded-full bg-black/70 text-white flex items-center justify-center hover:bg-sky-600 transition shadow-lg cursor-pointer"
+                  title="Next"
                 >
                   <ChevronRight className="w-5 h-5" />
                 </button>
               )}
             </div>
 
-            {/* Bottom Caption, Hashtags & Reply Bar */}
-            <div className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/95 via-black/70 to-transparent">
-              <p className="text-white text-xs sm:text-sm font-medium leading-relaxed drop-shadow mb-1.5">
+            {/* Bottom Caption, Hashtags & High-Visibility Reply Bar */}
+            <div className="absolute bottom-0 left-0 right-0 z-20 p-4 bg-gradient-to-t from-black/95 via-black/85 to-transparent">
+              <p className="text-white text-xs sm:text-sm font-medium leading-relaxed drop-shadow mb-1.5 line-clamp-2">
                 {activeStory.caption}
               </p>
 
               {/* Clinical Hashtags Display */}
               {((activeStory as any).clinicalTags && (activeStory as any).clinicalTags.length > 0) && (
-                <div className="flex flex-wrap gap-1 mb-3">
+                <div className="flex flex-wrap gap-1 mb-2.5">
                   {(activeStory as any).clinicalTags.map((tag: string, i: number) => (
-                    <span key={i} className="text-[10px] font-semibold bg-sky-500/30 text-sky-200 border border-sky-400/30 px-2 py-0.5 rounded-full">
+                    <span key={i} className="text-[10px] font-semibold bg-sky-500/40 text-sky-200 border border-sky-400/40 px-2 py-0.5 rounded-full">
                       {tag}
                     </span>
                   ))}
                 </div>
               )}
 
+              {/* Highly Visible Reply & Reaction Controls */}
               {replyFeedback ? (
-                <div className="p-2 bg-emerald-500/90 text-white text-xs font-bold rounded-xl text-center flex items-center justify-center gap-1.5">
-                  <Check className="w-4 h-4" />
+                <div className="p-2.5 bg-emerald-600 text-white text-xs font-bold rounded-2xl text-center flex items-center justify-center gap-1.5 shadow-xl animate-in zoom-in-95">
+                  <Check className="w-4 h-4 stroke-[3]" />
                   <span>{replyFeedback}</span>
                 </div>
               ) : (
-                <form onSubmit={handleSendReply} className="flex items-center gap-2">
-                  <input
-                    type="text"
-                    placeholder={`Reply to ${activeStory.userName.split(' ')[0]}...`}
-                    value={replyText}
-                    onChange={(e) => setReplyText(e.target.value)}
-                    className="flex-1 bg-white/20 text-white placeholder-white/60 text-xs px-4 py-2.5 rounded-full border border-white/30 focus:outline-none focus:ring-2 focus:ring-sky-400"
-                  />
-                  <button 
-                    type="submit"
-                    className="p-2.5 bg-sky-500 hover:bg-sky-600 text-white rounded-full transition cursor-pointer"
-                    title="Send Reply"
-                  >
-                    <Send className="w-3.5 h-3.5" />
-                  </button>
-                </form>
+                <div className="space-y-2">
+                  {/* Quick Reaction Emojis */}
+                  <div className="flex items-center justify-center gap-2">
+                    {[
+                      { emoji: '❤️', label: 'Love' },
+                      { emoji: '🩺', label: 'Clinical' },
+                      { emoji: '👏', label: 'Applaud' },
+                      { emoji: '🔥', label: 'Brilliant' },
+                      { emoji: '💡', label: 'Insightful' }
+                    ].map((item) => (
+                      <button
+                        key={item.emoji}
+                        type="button"
+                        onClick={() => {
+                          setReplyFeedback(`Sent ${item.emoji} to ${activeStory.userName}!`);
+                          setTimeout(() => setReplyFeedback(''), 2500);
+                        }}
+                        className="w-8 h-8 rounded-full bg-slate-900/90 hover:bg-sky-600 text-sm flex items-center justify-center border border-white/30 hover:scale-110 active:scale-95 transition cursor-pointer shadow-lg"
+                        title={`React with ${item.label}`}
+                      >
+                        {item.emoji}
+                      </button>
+                    ))}
+                  </div>
+
+                  {/* Prominent High-Visibility Reply Input Form */}
+                  <form onSubmit={handleSendReply} className="flex items-center gap-2 bg-slate-950/95 backdrop-blur-md p-1 pl-3.5 rounded-full border border-white/40 shadow-2xl">
+                    <input
+                      type="text"
+                      placeholder={`Reply to ${activeStory.userName.split(' ')[0]}...`}
+                      value={replyText}
+                      onChange={(e) => setReplyText(e.target.value)}
+                      className="flex-1 bg-transparent text-white placeholder-slate-300 text-xs font-medium focus:outline-none"
+                    />
+                    <button 
+                      type="submit"
+                      disabled={!replyText.trim()}
+                      className="p-2 bg-sky-500 hover:bg-sky-400 disabled:opacity-40 text-white rounded-full transition shadow-md cursor-pointer flex-shrink-0"
+                      title="Send Reply"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                    </button>
+                  </form>
+                </div>
               )}
             </div>
 

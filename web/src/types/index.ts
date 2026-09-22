@@ -12,7 +12,7 @@ export interface DoctorDetails {
   researchPublications: string[];
   medicalCouncilRegNumber: string;
   isProfessor?: boolean;
-  academicTitle?: string; // e.g. "Professor & HOD Cardiology"
+  academicTitle?: string;
   isAcceptingMentees?: boolean;
   isAcceptingInterns?: boolean;
   mentorshipSlots?: { available: number; total: number };
@@ -44,6 +44,12 @@ export interface UserProfile {
   verificationStatus: VerificationStatus;
   badgeTitle: string;
   bio: string;
+  isPrivate?: boolean;
+  coverPhotoUrl?: string;
+  isAdmin?: boolean;
+  medicalCouncilCredentialUrl?: string;
+  studentIdCredentialUrl?: string;
+  joinedCommunityIds?: string[];
   doctorDetails?: DoctorDetails;
   studentDetails?: StudentDetails;
   stats: {
@@ -62,6 +68,8 @@ export interface Story {
   caption: string;
   timestamp: string;
   isViewed: boolean;
+  isVideo?: boolean;
+  clinicalTags?: string[];
 }
 
 export interface Post {
@@ -72,8 +80,10 @@ export interface Post {
   authorAvatar: string;
   authorRole: UserRole;
   authorSpecializationOrDiscipline: string;
+  authorIsProfessor?: boolean;
+  authorAcademicTitle?: string;
   isVerified: boolean;
-  postType: 'TEXT' | 'TWEET' | 'IMAGE_CASE' | 'ARTICLE_LINK' | 'CLINICAL_DISCUSSION';
+  postType: 'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION' | 'ARTICLE_LINK';
   content: string;
   mediaUrls?: string[];
   linkUrl?: string;
@@ -96,9 +106,7 @@ export interface Post {
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
-  authorIsProfessor?: boolean;
-  authorAcademicTitle?: string;
-  targetAudience?: 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | 'SPECIALIST_CONSULT';
+  targetAudience?: 'DOCTOR' | 'STUDENT' | 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | string;
   recommendationReason?: string;
   createdAt: string;
 }
@@ -109,12 +117,12 @@ export interface Medclip {
   authorName: string;
   authorSpecialty: string;
   authorAvatar: string;
-  isVerified: boolean;
   authorIsProfessor?: boolean;
+  isVerified: boolean;
   videoUrl: string;
   thumbnailUrl: string;
   caption: string;
-  clinicalCategory: 'clinical updates' | 'social update' | 'following';
+  clinicalCategory: 'clinical updates' | 'social update' | 'social updates' | 'following' | string;
   tags: string[];
   likesCount: number;
   commentsCount: number;
@@ -123,8 +131,199 @@ export interface Medclip {
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
-  targetAudience?: 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | 'SPECIALIST_CONSULT';
-  recommendationReason?: string;
+  targetAudience?: 'DOCTOR' | 'STUDENT' | 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | string;
+  createdAt: string;
+}
+
+export interface Community {
+  id: string;
+  name: string;
+  iconUrl?: string;
+  avatarUrl?: string;
+  description: string;
+  category: string;
+  membersCount: number;
+  maxMembers?: number;
+  maxCapacity: number; // 10,000 limit enforced
+  creatorId: string;
+  creatorName: string;
+  isOfficial?: boolean;
+  createdAt: string;
+}
+
+export interface ResearchNote {
+  id: string;
+  title: string;
+  content: string;
+  authorId?: string;
+  authorName: string;
+  authorRole?: string;
+  updatedAt?: string;
+  createdAt?: string;
+}
+
+export interface ResearchMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  senderRole?: string;
+  text: string;
+  mediaUrl?: string;
+  attachment?: {
+    type: 'IMAGE' | 'VIDEO' | 'PDF' | 'DOCUMENT' | string;
+    url: string;
+    name?: string;
+  };
+  isVideo?: boolean;
+  timestamp: string;
+}
+
+export interface ResearchProject {
+  id: string;
+  projectName?: string;
+  title?: string;
+  instituteName?: string;
+  institution?: string;
+  departmentName?: string;
+  department?: string;
+  place?: string;
+  location?: string;
+  description: string;
+  tags?: string[];
+  hashtags?: string[];
+  requiredSkills?: string[];
+  photosOrLink?: string;
+  creatorId: string;
+  creatorName?: string;
+  leadDoctorName?: string;
+  creatorAvatar?: string;
+  leadDoctorAvatar?: string;
+  targetSampleSize?: number | string;
+  collaboratorCount?: number;
+  memberIds?: string[];
+  pendingJoinRequestIds?: string[];
+  pendingJoinRequests?: any[];
+  notes?: ResearchNote[];
+  messages?: ResearchMessage[];
+  createdAt?: string;
+}
+
+export interface LocumGig {
+  id: string;
+  instituteName?: string;
+  hospitalName?: string;
+  place?: string;
+  location?: string;
+  duration?: string;
+  shiftTiming?: string;
+  gigName?: string;
+  department?: string;
+  stipend?: string;
+  stipendAmount?: string;
+  stipendType?: string;
+  requiredDocuments?: string[];
+  documentsUrl?: string;
+  email?: string;
+  contactEmail?: string;
+  phone?: string;
+  contactPhone?: string;
+  otherLink?: string;
+  creatorId?: string;
+  creatorName?: string;
+  postedByDoctorId?: string;
+  createdAt?: string;
+}
+
+export interface LocumApplication {
+  id: string;
+  gigId: string;
+  gigName: string;
+  name?: string;
+  applicantName?: string;
+  applicantRole?: string;
+  applicantPhone?: string;
+  applicantEmail?: string;
+  yearsOfExperience?: string;
+  medicalCouncilRegNumber?: string;
+  qualification?: string;
+  resumeUrl?: string;
+  email?: string;
+  contactNumber?: string;
+  otherLink?: string;
+  applicantId?: string;
+  submittedAt?: string;
+}
+
+export interface MentorshipRequest {
+  id: string;
+  studentId: string;
+  studentName: string;
+  studentCollege: string;
+  studentYear: number;
+  studentAvatar: string;
+  professorId: string;
+  professorName: string;
+  focusArea: 'Clinical Research' | 'Surgical Mentorship' | 'USMLE / PLAB Guidance' | 'Residency Match' | string;
+  statementOfPurpose: string;
+  hasCollegeNoc: boolean;
+  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
+  createdAt: string;
+}
+
+export interface InternshipApplication {
+  id: string;
+  applicantId: string;
+  applicantName: string;
+  applicantDiscipline: string;
+  applicantCollege: string;
+  applicantYear: number;
+  opportunityOrJobId: string;
+  opportunityTitle: string;
+  hospitalName: string;
+  applicantSop: string;
+  availableFrom: string;
+  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'ACCEPTED' | 'REJECTED';
+  submittedAt: string;
+}
+
+export interface ScholarshipItem {
+  id: string;
+  name?: string;
+  title?: string;
+  organization?: string;
+  provider?: string;
+  logoUrl: string;
+  fundingAmount?: string;
+  coverage?: string;
+  description: string;
+  deadline: string;
+  applyLink?: string;
+  link?: string;
+}
+
+export interface CourseItem {
+  id: string;
+  name?: string;
+  title?: string;
+  provider?: string;
+  platform?: string;
+  logoUrl: string;
+  description: string;
+  link: string;
+  isFree: boolean;
+  cmeCredits?: number;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: string;
+  description: string;
+  forwardedTo: string;
+  status: 'RECEIVED' | 'IN_REVIEW' | 'RESOLVED';
   createdAt: string;
 }
 
@@ -160,8 +359,18 @@ export interface OpportunityItem {
   contactEmail?: string;
   actionLabel: string;
   cmeCredits?: number;
-  targetAudience?: 'STUDENTS' | 'PROFESSORS' | 'ALL';
   stipendOrFunding?: string;
+}
+
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED';
+  title: string;
+  description: string;
+  timestamp: string;
+  isRead: boolean;
+  actionUrl?: string;
 }
 
 export interface DeviceSession {
@@ -172,36 +381,4 @@ export interface DeviceSession {
   ipAddress: string;
   lastActive: string;
   isCurrentDevice: boolean;
-}
-
-export interface MentorshipRequest {
-  id: string;
-  studentId: string;
-  studentName: string;
-  studentCollege: string;
-  studentYear: number;
-  studentAvatar: string;
-  professorId: string;
-  professorName: string;
-  focusArea: 'Clinical Research' | 'USMLE / NEET-PG Strategy' | 'Surgical Skills' | 'Subspecialty Guidance' | 'Case Reporting';
-  statementOfPurpose: string;
-  hasCollegeNoc: boolean;
-  status: 'PENDING' | 'ACCEPTED' | 'DECLINED';
-  createdAt: string;
-}
-
-export interface InternshipApplication {
-  id: string;
-  applicantId: string;
-  applicantName: string;
-  applicantDiscipline: string;
-  applicantCollege: string;
-  applicantYear: number;
-  opportunityOrJobId: string;
-  opportunityTitle: string;
-  hospitalName: string;
-  applicantSop: string;
-  availableFrom: string;
-  status: 'SUBMITTED' | 'UNDER_REVIEW' | 'INTERVIEW_SCHEDULED' | 'ACCEPTED';
-  submittedAt: string;
 }

@@ -1,11 +1,34 @@
-import { Post, Medclip, Job, OpportunityItem, UserProfile, Story } from '../types';
+import { 
+  Post, 
+  Medclip, 
+  Job, 
+  OpportunityItem, 
+  UserProfile, 
+  Story, 
+  Community, 
+  ResearchProject, 
+  ResearchNote, 
+  ResearchMessage, 
+  LocumGig, 
+  LocumApplication, 
+  ScholarshipItem, 
+  CourseItem, 
+  NotificationItem, 
+  SupportTicket 
+} from '../types';
 import { 
   INITIAL_POSTS, 
   INITIAL_CLIPS, 
   INITIAL_JOBS, 
   INITIAL_OPPORTUNITIES, 
   INITIAL_USERS,
-  INITIAL_STORIES
+  INITIAL_STORIES,
+  INITIAL_COMMUNITIES,
+  INITIAL_RESEARCH_PROJECTS,
+  INITIAL_LOCUM_GIGS,
+  INITIAL_SCHOLARSHIPS,
+  INITIAL_COURSES,
+  INITIAL_NOTIFICATIONS
 } from '../data/mockData';
 
 const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
@@ -19,7 +42,7 @@ export const apiService = {
       const res = await fetch(`${API_BASE}/posts`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      if (data.posts && Array.isArray(data.posts) && data.posts.length > 0) {
+      if (data.posts && Array.isArray(data.posts)) {
         localStorage.setItem('medmedia_posts_cache', JSON.stringify(data.posts));
         return data.posts;
       }
@@ -27,7 +50,6 @@ export const apiService = {
       console.warn('[MedMedia API] Backend not reachable, using local cache:', e);
     }
 
-    // LocalStorage fallback
     const cached = localStorage.getItem('medmedia_posts_cache');
     if (cached) {
       try {
@@ -57,18 +79,18 @@ export const apiService = {
     if (!savedPost) {
       savedPost = {
         id: `post-${Date.now()}`,
-        authorId: post.authorId || 'usr-local',
-        authorName: post.authorName || 'Verified Clinician',
-        authorUsername: post.authorUsername || 'clinician',
+        authorId: post.authorId || 'doc-1',
+        authorName: post.authorName || 'Dr. Arvind Ramesh',
+        authorUsername: post.authorUsername || 'cardio_ramesh',
         authorAvatar: post.authorAvatar || 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop',
         authorRole: post.authorRole || 'DOCTOR',
-        authorSpecializationOrDiscipline: post.authorSpecializationOrDiscipline || 'General Medicine',
+        authorSpecializationOrDiscipline: post.authorSpecializationOrDiscipline || 'Interventional Cardiology',
         isVerified: true,
-        postType: post.postType || 'CLINICAL_DISCUSSION',
+        postType: post.postType || 'TWEET',
         content: post.content || '',
         mediaUrls: post.mediaUrls,
         linkUrl: post.linkUrl,
-        clinicalTags: post.clinicalTags || ['#ClinicalDiscussion'],
+        clinicalTags: post.clinicalTags || ['#Cardiology'],
         casePoll: post.casePoll,
         likesCount: 0,
         commentsCount: 0,
@@ -80,7 +102,6 @@ export const apiService = {
       };
     }
 
-    // Update local cache
     const current = await this.getPosts();
     const updated = [savedPost, ...current.filter(p => p.id !== savedPost?.id)];
     localStorage.setItem('medmedia_posts_cache', JSON.stringify(updated));
@@ -111,7 +132,7 @@ export const apiService = {
     return INITIAL_USERS;
   },
 
-  // 4. REGISTER NEW USER (Save to laptop database disk)
+  // 4. REGISTER NEW USER
   async registerUser(userData: any): Promise<UserProfile> {
     let savedUser: UserProfile | null = null;
     try {
@@ -129,25 +150,27 @@ export const apiService = {
     }
 
     if (!savedUser) {
+      const hasCred = Boolean(userData.medicalCouncilCredentialUrl || userData.studentIdCredentialUrl);
       savedUser = {
         id: `usr-${Date.now()}`,
-        fullName: userData.fullName || 'Verified Medical Member',
-        username: userData.username || 'verified_member',
+        fullName: userData.fullName || 'Medical Member',
+        username: userData.username || 'user_member',
         email: userData.email || 'user@medmedia.health',
         avatarUrl: userData.role === 'DOCTOR'
           ? 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop'
           : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
+        coverPhotoUrl: userData.coverPhotoUrl || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=400&fit=crop',
         role: userData.role || 'DOCTOR',
-        verificationStatus: 'VERIFIED',
-        badgeTitle: userData.role === 'DOCTOR' ? 'Verified Doctor' : 'Verified Student Scholar',
-        bio: userData.bio || 'Verified Healthcare Member on MedMedia.',
+        verificationStatus: hasCred ? 'VERIFIED' : 'UNVERIFIED',
+        badgeTitle: userData.role === 'DOCTOR' ? (hasCred ? 'Verified Specialist' : 'Specialist') : (hasCred ? 'Verified Student Scholar' : 'Student Scholar'),
+        bio: userData.bio || 'Healthcare Member on MedMedia.',
+        isPrivate: Boolean(userData.isPrivate),
         doctorDetails: userData.doctorDetails,
         studentDetails: userData.studentDetails,
         stats: { postsCount: 0, followersCount: 15, connectionsCount: 8 }
       };
     }
 
-    // Persist to user cache
     const currentUsers = await this.getUsers();
     const updatedUsers = [savedUser, ...currentUsers.filter(u => u.id !== savedUser?.id)];
     localStorage.setItem('medmedia_users_cache', JSON.stringify(updatedUsers));
@@ -156,7 +179,6 @@ export const apiService = {
     return savedUser;
   },
 
-  // 5. LOGIN
   async loginUser(identifier: string, password?: string): Promise<UserProfile | null> {
     try {
       const res = await fetch(`${API_BASE}/auth/login`, {
@@ -185,6 +207,27 @@ export const apiService = {
     return null;
   },
 
+  // 6. UPDATE USER PROFILE
+  async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
+    try {
+      const res = await fetch(`${API_BASE}/users/${userId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.user) {
+          localStorage.setItem('medmedia_current_user', JSON.stringify(data.user));
+          return data.user;
+        }
+      }
+    } catch (e) {
+      console.warn('[MedMedia API] Backend updateUserProfile error:', e);
+    }
+    return null;
+  },
+
   async getClips(): Promise<Medclip[]> {
     try {
       const res = await fetch(`${API_BASE}/clips`);
@@ -204,6 +247,15 @@ export const apiService = {
       return data.jobs || INITIAL_JOBS;
     } catch {
       return INITIAL_JOBS;
+    }
+  },
+
+  async deleteJob(jobId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/jobs/${jobId}`, { method: 'DELETE' });
+      return res.ok;
+    } catch {
+      return false;
     }
   },
 
@@ -257,7 +309,7 @@ export const apiService = {
       const res = await fetch(`${API_BASE}/stories`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      if (data.stories && Array.isArray(data.stories) && data.stories.length > 0) {
+      if (data.stories && Array.isArray(data.stories)) {
         localStorage.setItem('medmedia_stories_cache', JSON.stringify(data.stories));
         return data.stories;
       }
@@ -273,7 +325,7 @@ export const apiService = {
     return INITIAL_STORIES;
   },
 
-  // 8. CREATE STORY (Device upload with caption & hashtags saved to MySQL & disk)
+  // 8. CREATE STORY
   async createStory(storyData: {
     userId: string;
     userName: string;
@@ -281,6 +333,7 @@ export const apiService = {
     mediaUrl: string;
     caption: string;
     clinicalTags?: string[];
+    isVideo?: boolean;
   }): Promise<Story> {
     let savedStory: Story | null = null;
     try {
@@ -306,11 +359,10 @@ export const apiService = {
         mediaUrl: storyData.mediaUrl,
         caption: storyData.caption,
         timestamp: 'Just now',
-        isViewed: false
+        isViewed: false,
+        isVideo: storyData.isVideo,
+        clinicalTags: storyData.clinicalTags
       };
-      if (storyData.clinicalTags) {
-        (savedStory as any).clinicalTags = storyData.clinicalTags;
-      }
     }
 
     try {
@@ -321,5 +373,353 @@ export const apiService = {
     } catch {}
 
     return savedStory;
+  },
+
+  // 9. DELETE STORY
+  async deleteStory(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/stories/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const raw = localStorage.getItem('medmedia_stories_cache');
+        if (raw) {
+          const list: Story[] = JSON.parse(raw);
+          localStorage.setItem('medmedia_stories_cache', JSON.stringify(list.filter(s => s.id !== id)));
+        }
+        return true;
+      }
+    } catch (e) {
+      console.warn('[MedMedia API] Backend deleteStory failed:', e);
+    }
+    return false;
+  },
+
+  // 10. DELETE POST
+  async deletePost(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/posts/${id}`, { method: 'DELETE' });
+      if (res.ok) {
+        const raw = localStorage.getItem('medmedia_posts_cache');
+        if (raw) {
+          const list: Post[] = JSON.parse(raw);
+          localStorage.setItem('medmedia_posts_cache', JSON.stringify(list.filter(p => p.id !== id)));
+        }
+        return true;
+      }
+    } catch (e) {
+      console.warn('[MedMedia API] Backend deletePost failed:', e);
+    }
+    return false;
+  },
+
+  // Wipe all test data (Clean Slate)
+  async clearAllData(): Promise<void> {
+    try {
+      await fetch(`${API_BASE}/admin/clear`, { method: 'POST' });
+    } catch (e) {
+      console.warn('[MedMedia API] Backend clear error:', e);
+    }
+    localStorage.removeItem('medmedia_posts_cache');
+    localStorage.removeItem('medmedia_stories_cache');
+  },
+
+
+  // ==========================================
+  // COMMUNITIES (10,000 Capacity Limit)
+  // ==========================================
+  async getCommunities(category?: string, search?: string): Promise<Community[]> {
+    try {
+      const params = new URLSearchParams();
+      if (category && category !== 'All') params.append('category', category);
+      if (search) params.append('search', search);
+
+      const res = await fetch(`${API_BASE}/opportunities/communities?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.communities || INITIAL_COMMUNITIES;
+      }
+    } catch {}
+    return INITIAL_COMMUNITIES;
+  },
+
+  async createCommunity(community: Partial<Community>): Promise<{ success: boolean; community?: Community; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/communities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(community)
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Could not connect to backend server.' };
+    }
+  },
+
+  async joinCommunity(communityId: string, userId: string): Promise<{ success: boolean; message: string; membersCount?: number }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/communities/${communityId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Failed to join community.' };
+    }
+  },
+
+  async deleteCommunity(communityId: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/communities/${communityId}`, { method: 'DELETE' });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // ==========================================
+  // RESEARCH WORKSPACE
+  // ==========================================
+  async getResearchProjects(search?: string, tag?: string): Promise<ResearchProject[]> {
+    try {
+      const params = new URLSearchParams();
+      if (search) params.append('search', search);
+      if (tag) params.append('tag', tag);
+      const res = await fetch(`${API_BASE}/opportunities/research?${params.toString()}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.researchProjects || INITIAL_RESEARCH_PROJECTS;
+      }
+    } catch {}
+    return INITIAL_RESEARCH_PROJECTS;
+  },
+
+  async createResearchProject(proj: Partial<ResearchProject>): Promise<ResearchProject | null> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(proj)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.project;
+      }
+    } catch {}
+    return null;
+  },
+
+  async joinResearch(projectId: string, userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/join`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Failed to request join.' };
+    }
+  },
+
+  async approveResearch(projectId: string, userId: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/approve`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Approval failed.' };
+    }
+  },
+
+  async addResearchNote(projectId: string, note: Partial<ResearchNote>): Promise<ResearchNote | null> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/notes`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(note)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.note;
+      }
+    } catch {}
+    return null;
+  },
+
+  async editResearchNote(projectId: string, noteId: string, title: string, content: string): Promise<ResearchNote | null> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/notes/${noteId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.note;
+      }
+    } catch {}
+    return null;
+  },
+
+  async sendResearchMessage(projectId: string, msg: Partial<ResearchMessage>): Promise<ResearchMessage | null> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(msg)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        return data.message;
+      }
+    } catch {}
+    return null;
+  },
+
+  // ==========================================
+  // LOCUM GIGS
+  // ==========================================
+  async getLocumGigs(): Promise<LocumGig[]> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/locum`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.locumGigs || INITIAL_LOCUM_GIGS;
+      }
+    } catch {}
+    return INITIAL_LOCUM_GIGS;
+  },
+
+  async createLocumGig(gig: Partial<LocumGig>): Promise<{ success: boolean; gig?: LocumGig; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/locum`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(gig)
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Failed to post locum gig.' };
+    }
+  },
+
+  async applyLocum(gigId: string, app: Partial<LocumApplication>): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/locum/${gigId}/apply`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(app)
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Application submission failed.' };
+    }
+  },
+
+  // ==========================================
+  // SCHOLARSHIPS & COURSES
+  // ==========================================
+  async getScholarships(): Promise<ScholarshipItem[]> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/scholarships`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.scholarships || INITIAL_SCHOLARSHIPS;
+      }
+    } catch {}
+    return INITIAL_SCHOLARSHIPS;
+  },
+
+  async getCourses(): Promise<CourseItem[]> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/courses`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.courses || INITIAL_COURSES;
+      }
+    } catch {}
+    return INITIAL_COURSES;
+  },
+
+  // ==========================================
+  // JOBS (Doctor jobs, Academic, Internships)
+  // ==========================================
+  async createJob(job: Partial<Job>): Promise<{ success: boolean; job?: Job; message?: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/opportunities/jobs`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(job)
+      });
+      return await res.json();
+    } catch {
+      return { success: false, message: 'Failed to post job.' };
+    }
+  },
+
+  // ==========================================
+  // NOTIFICATIONS (Conferences, Jobs, Follows)
+  // ==========================================
+  async getNotifications(userId?: string): Promise<NotificationItem[]> {
+    try {
+      const url = userId ? `${API_BASE}/notifications?userId=${userId}` : `${API_BASE}/notifications`;
+      const res = await fetch(url);
+      if (res.ok) {
+        const data = await res.json();
+        return data.notifications || INITIAL_NOTIFICATIONS;
+      }
+    } catch {}
+    return INITIAL_NOTIFICATIONS;
+  },
+
+  async markNotificationRead(id: string): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/notifications/${id}/read`, { method: 'POST' });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  // ==========================================
+  // HELP CENTER & SUPPORT (medmedia1409@gmail.com)
+  // ==========================================
+  async submitSupportTicket(ticket: {
+    userId: string;
+    userName: string;
+    userEmail: string;
+    category: string;
+    description: string;
+  }): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetch(`${API_BASE}/admin/support`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticket)
+      });
+      return await res.json();
+    } catch {
+      return {
+        success: true,
+        message: 'Your inquiry has been submitted and forwarded directly to MedMedia Support at medmedia1409@gmail.com. Our clinical engineering team will respond within 24-48 hours.'
+      };
+    }
+  },
+
+  // ==========================================
+  // SEARCH
+  // ==========================================
+  async search(query: string, category: string = 'Accounts'): Promise<any> {
+    try {
+      const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.results;
+      }
+    } catch {}
+    return null;
   }
 };

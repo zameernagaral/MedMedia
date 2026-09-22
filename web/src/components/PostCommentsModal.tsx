@@ -55,7 +55,7 @@ interface PostCommentsModalProps {
 }
 
 // Initial clinical peer comments with author-like badge & replies
-const INITIAL_DEMO_COMMENTS: Record<string, PostComment[]> = {
+const INITIAL_CLINICAL_COMMENTS: Record<string, PostComment[]> = {
   'default': [
     {
       id: 'c-1',
@@ -133,7 +133,7 @@ export const PostCommentsModal: React.FC<PostCommentsModalProps> = ({
   const isPostAuthor = currentUser.id === post.authorId;
 
   const [comments, setComments] = useState<PostComment[]>(() => {
-    return INITIAL_DEMO_COMMENTS[post.id] || INITIAL_DEMO_COMMENTS['default'];
+    return INITIAL_CLINICAL_COMMENTS[post.id] || INITIAL_CLINICAL_COMMENTS['default'];
   });
 
   const [newCommentText, setNewCommentText] = useState('');

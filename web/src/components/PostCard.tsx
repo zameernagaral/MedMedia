@@ -15,7 +15,8 @@ import {
   AlertCircle,
   Copy,
   Flag,
-  Sparkles
+  Sparkles,
+  Trash2
 } from 'lucide-react';
 import { Post, UserProfile } from '../types';
 import { PostCommentsModal } from './PostCommentsModal';
@@ -28,6 +29,7 @@ interface PostCardProps {
   onVotePoll?: (postId: string, optionId: string) => void;
   onConnectAuthor?: (authorId: string) => void;
   onSelectUser?: (userId: string) => void;
+  onDeletePost?: (postId: string) => void;
 }
 
 export const PostCard: React.FC<PostCardProps> = ({
@@ -37,7 +39,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   onSave,
   onVotePoll,
   onConnectAuthor,
-  onSelectUser
+  onSelectUser,
+  onDeletePost
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
@@ -198,6 +201,23 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <Flag className="w-4 h-4 text-rose-500 dark:text-rose-400" />
                   Report Case / HIPAA
                 </button>
+                {post.authorId === currentUser.id && onDeletePost && (
+                  <>
+                    <div className="border-t border-slate-100 dark:border-slate-700 my-1"></div>
+                    <button
+                      onClick={() => {
+                        setShowMoreMenu(false);
+                        if (window.confirm("Are you sure you want to delete this clinical post?")) {
+                          onDeletePost(post.id);
+                        }
+                      }}
+                      className="w-full px-3.5 py-2 text-left text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 flex items-center gap-2 cursor-pointer"
+                    >
+                      <Trash2 className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+                      Delete Post
+                    </button>
+                  </>
+                )}
               </div>
             )}
           </div>
@@ -297,53 +317,58 @@ export const PostCard: React.FC<PostCardProps> = ({
         </div>
       )}
 
-      {/* 3. Action Footer Bar (Slide 7: Like/comment/save/share, more) */}
-      <div className="px-4 py-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800">
-        <div className="flex items-center gap-4 sm:gap-6">
+      {/* 3. Action Footer Bar: Transparent Icons (Like, Comment, Share, Save) */}
+      <div className="px-4 py-3 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 bg-transparent">
+        <div className="flex items-center gap-5 sm:gap-6">
           
-          {/* Like */}
+          {/* Like - Transparent icon */}
           <button
             onClick={() => onLike(post.id)}
-            className={`flex items-center gap-1.5 text-xs font-semibold transition group cursor-pointer ${
-              post.isLiked ? 'text-rose-600 dark:text-rose-400' : 'text-slate-600 dark:text-slate-400 hover:text-rose-600 dark:hover:text-rose-400'
-            }`}
+            className="bg-transparent border-0 p-0 flex items-center gap-1.5 text-xs font-semibold transition group cursor-pointer"
+            title="Like Post"
           >
             <Heart className={`w-5 h-5 transition transform group-active:scale-125 ${
-              post.isLiked ? 'fill-rose-600 dark:fill-rose-400 text-rose-600 dark:text-rose-400' : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-600'
+              post.isLiked
+                ? 'fill-rose-500 text-rose-500'
+                : 'text-slate-500 dark:text-slate-400 group-hover:text-rose-500'
             }`} />
-            <span>{post.likesCount}</span>
+            <span className={post.isLiked ? 'text-rose-500 font-bold' : 'text-slate-600 dark:text-slate-400'}>
+              {post.likesCount}
+            </span>
           </button>
 
-          {/* Comment */}
+          {/* Comment - Transparent icon */}
           <button
             onClick={() => setShowCommentsModal(true)}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
+            className="bg-transparent border-0 p-0 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-500 transition cursor-pointer group"
             title="Open Medical Discussion & Comments"
           >
-            <MessageCircle className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-sky-600" />
+            <MessageCircle className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 transition" />
             <span>{commentCount}</span>
           </button>
 
-          {/* Share */}
+          {/* Share - Transparent icon */}
           <button
             onClick={handleCopyLink}
-            className="flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition cursor-pointer"
+            className="bg-transparent border-0 p-0 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-500 transition cursor-pointer group"
             title="Share Post"
           >
-            <Share2 className="w-5 h-5 text-slate-500 dark:text-slate-400 hover:text-sky-600" />
+            <Share2 className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 transition" />
             <span className="hidden sm:inline">{post.sharesCount}</span>
           </button>
         </div>
 
-        {/* Save / Bookmark (Slide 7) */}
+        {/* Save / Bookmark - Transparent icon */}
         <button
           onClick={() => onSave(post.id)}
-          className={`p-1.5 rounded-full transition cursor-pointer ${
-            post.isSaved ? 'text-sky-600 dark:text-sky-400' : 'text-slate-400 dark:text-slate-500 hover:text-slate-700 dark:hover:text-slate-200'
-          }`}
+          className="bg-transparent border-0 p-0 transition cursor-pointer group"
           title="Save to Clinical Library"
         >
-          <Bookmark className={`w-5 h-5 ${post.isSaved ? 'fill-sky-600 dark:fill-sky-400' : ''}`} />
+          <Bookmark className={`w-5 h-5 transition ${
+            post.isSaved
+              ? 'fill-sky-500 text-sky-500'
+              : 'text-slate-400 dark:text-slate-500 group-hover:text-slate-700 dark:group-hover:text-slate-200'
+          }`} />
         </button>
       </div>
 

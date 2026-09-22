@@ -12,6 +12,7 @@ import { CreatePostModal } from './components/CreatePostModal';
 import { ClinicalChatDrawer } from './components/ClinicalChatDrawer';
 import { MentorshipModal } from './components/MentorshipModal';
 import { InternshipApplyModal } from './components/InternshipApplyModal';
+import { SupportModal } from './components/SupportModal';
 import { getPersonalizedFeed, getPersonalizedMedclips } from './utils/algorithmEngine';
 import { apiService } from './services/api';
 import { 
@@ -21,9 +22,10 @@ import {
   INITIAL_CLIPS, 
   INITIAL_JOBS, 
   INITIAL_OPPORTUNITIES, 
-  INITIAL_SESSIONS 
+  INITIAL_SESSIONS,
+  INITIAL_NOTIFICATIONS
 } from './data/mockData';
-import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication } from './types';
+import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication, NotificationItem } from './types';
 import { 
   Smartphone, 
   Monitor, 
@@ -32,12 +34,16 @@ import {
   Briefcase, 
   Sparkles, 
   UserPlus, 
+  UserCheck,
   X, 
   TrendingUp,
   Stethoscope,
   GraduationCap,
   BookOpen,
-  ArrowRight
+  ArrowRight,
+  Bell,
+  CheckCircle2,
+  Plus
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -79,10 +85,13 @@ export const App: React.FC = () => {
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [clips, setClips] = useState(INITIAL_CLIPS);
-  const [jobs] = useState(INITIAL_JOBS);
+  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
   const [opportunities] = useState(INITIAL_OPPORTUNITIES);
   const [sessions, setSessions] = useState(INITIAL_SESSIONS);
+  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
+  const [isManagerMode, setIsManagerMode] = useState<boolean>(false);
+  const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
 
   // Load persistent data from laptop database on startup
   useEffect(() => {
@@ -114,6 +123,22 @@ export const App: React.FC = () => {
         setStories(loadedStories);
       }
     });
+
+    // 4. Fetch notifications (strictly filtered: conferences, jobs, follows - NO likes or comments)
+    apiService.getNotifications(currentUser.id).then((loadedNotifs) => {
+      if (loadedNotifs && loadedNotifs.length > 0) {
+        const allowedTypes = ['CONFERENCE', 'JOB_UPDATE', 'JOB_APPLICATION', 'FOLLOW_REQUEST', 'FOLLOW_ACCEPTED'];
+        const cleanNotifs = loadedNotifs.filter(n => allowedTypes.includes(n.type));
+        setNotifications(cleanNotifs);
+      }
+    });
+
+    // 5. Fetch jobs from backend
+    apiService.getJobs().then((loadedJobs) => {
+      if (loadedJobs && loadedJobs.length > 0) {
+        setJobs(loadedJobs);
+      }
+    });
   }, []);
 
   // Active Navigation Tab (Slide 5: Home, Medclips, Search, Opportunities, Profile)
@@ -122,12 +147,46 @@ export const App: React.FC = () => {
   // Modals
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [createModalMode, setCreateModalMode] = useState<'post' | 'story'>('post');
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
   const [showMessagesDrawer, setShowMessagesDrawer] = useState(false);
   const [isMobileFrameMode, setIsMobileFrameMode] = useState(false);
   const [mentoringProfessor, setMentoringProfessor] = useState<UserProfile | null>(null);
   const [applyingJob, setApplyingJob] = useState<Job | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  const handleDeletePost = async (postId: string) => {
+    setPosts(prev => prev.filter(p => p.id !== postId));
+    await apiService.deletePost(postId);
+    setToastMessage("Clinical post deleted successfully.");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDeleteStory = async (storyId: string) => {
+    setStories(prev => prev.filter(s => s.id !== storyId));
+    await apiService.deleteStory(storyId);
+    setToastMessage("Story deleted successfully.");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDeleteJob = async (jobId: string) => {
+    setJobs(prev => prev.filter(j => j.id !== jobId));
+    await apiService.deleteJob(jobId);
+    setToastMessage("Job posting removed by Manager.");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleAcceptFollow = (notifId: string, authorName?: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    setToastMessage(`Accepted connection request${authorName ? ` from ${authorName}` : ''}!`);
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleDeclineFollow = (notifId: string) => {
+    setNotifications(prev => prev.filter(n => n.id !== notifId));
+    setToastMessage("Declined connection request.");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
 
   // Post Actions (Persisted to database)
   const handleLikePost = (postId: string) => {
@@ -244,6 +303,18 @@ export const App: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3500);
   };
 
+  // Wipe / Reset all test data
+  const handleClearAllTestData = async () => {
+    if (window.confirm("Are you sure you want to wipe all demo/test data? This will clear all posts, stories, and notifications to give you a completely clean test slate.")) {
+      setPosts([]);
+      setStories([]);
+      setNotifications([]);
+      await apiService.clearAllData();
+      setToastMessage("All demo data removed! Clean slate ready for testing.");
+      setTimeout(() => setToastMessage(null), 3500);
+    }
+  };
+
   // Algorithmic Personalized Feed & Clips calculation
   const algorithmicPosts = getPersonalizedFeed(posts, currentUser);
   const filteredPosts = algorithmicPosts.filter(p => {
@@ -271,8 +342,21 @@ export const App: React.FC = () => {
           availableUsers={users}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
+          isManagerMode={isManagerMode}
+          onToggleManagerMode={() => {
+            setIsManagerMode(prev => {
+              const nextVal = !prev;
+              setToastMessage(nextVal ? "🛡️ Switched to Manager Mode (Admin & Moderation active)" : "Switched to Clinician User Mode");
+              setTimeout(() => setToastMessage(null), 3500);
+              return nextVal;
+            });
+          }}
           onSwitchUser={(u) => setCurrentUser(u)}
-          onCreatePost={() => setShowCreateModal(true)}
+          onClearAllTestData={handleClearAllTestData}
+          onCreatePost={() => {
+            setCreateModalMode('post');
+            setShowCreateModal(true);
+          }}
           onOpenNotifications={() => setShowNotificationsDrawer(true)}
           onOpenMessages={() => setShowMessagesDrawer(true)}
           onOpenAuth={() => setShowAuthModal(true)}
@@ -322,7 +406,7 @@ export const App: React.FC = () => {
                     onClick={() => setCurrentTab('profile')}
                     className="w-full mt-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
                   >
-                    View Verified Portfolio
+                    View Portfolio
                   </button>
                 </div>
 
@@ -367,6 +451,11 @@ export const App: React.FC = () => {
                     currentUser={currentUser}
                     onAddStorySuccess={(newStory) => setStories([newStory, ...stories])}
                     onSelectUser={handleSelectUser}
+                    onOpenCreateStory={() => {
+                      setCreateModalMode('story');
+                      setShowCreateModal(true);
+                    }}
+                    onDeleteStory={handleDeleteStory}
                   />
 
                   {/* LinkedIn + Instagram Hybrid Filter Pills Bar */}
@@ -388,22 +477,47 @@ export const App: React.FC = () => {
 
                   {/* Home Feed Post Cards with Algorithmic Transparency */}
                   <div className="space-y-4">
-                    {filteredPosts.map((post) => (
-                      <PostCard
-                        key={post.id}
-                        post={post}
-                        currentUser={currentUser}
-                        onLike={handleLikePost}
-                        onSave={handleSavePost}
-                        onVotePoll={handleVotePoll}
-                        onSelectUser={handleSelectUser}
-                        onConnectAuthor={(authorId) => {
-                          const author = users.find(u => u.id === authorId);
-                          setToastMessage(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
-                          setTimeout(() => setToastMessage(null), 3000);
-                        }}
-                      />
-                    ))}
+                    {filteredPosts.length === 0 ? (
+                      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-8 sm:p-10 text-center shadow-xs my-3 animate-in fade-in">
+                        <div className="w-14 h-14 rounded-2xl bg-sky-50 dark:bg-sky-950/80 text-sky-600 dark:text-sky-400 flex items-center justify-center mx-auto mb-3.5 border border-sky-100 dark:border-sky-800">
+                          <Sparkles className="w-7 h-7" />
+                        </div>
+                        <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
+                          Clean Slate • Ready for Testing
+                        </h3>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-5 leading-relaxed">
+                          All demo posts have been removed. You can now test sharing clinical cases, bedside discussions, or medical pearls.
+                        </p>
+                        <button
+                          onClick={() => {
+                            setCreateModalMode('post');
+                            setShowCreateModal(true);
+                          }}
+                          className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl shadow-md transition cursor-pointer inline-flex items-center gap-2"
+                        >
+                          <Plus className="w-4 h-4 stroke-[3]" />
+                          <span>Create Your First Clinical Post</span>
+                        </button>
+                      </div>
+                    ) : (
+                      filteredPosts.map((post) => (
+                        <PostCard
+                          key={post.id}
+                          post={post}
+                          currentUser={currentUser}
+                          onLike={handleLikePost}
+                          onSave={handleSavePost}
+                          onVotePoll={handleVotePoll}
+                          onSelectUser={handleSelectUser}
+                          onDeletePost={handleDeletePost}
+                          onConnectAuthor={(authorId) => {
+                            const author = users.find(u => u.id === authorId);
+                            setToastMessage(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
+                            setTimeout(() => setToastMessage(null), 3000);
+                          }}
+                        />
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -447,6 +561,8 @@ export const App: React.FC = () => {
                   jobs={jobs}
                   opportunities={opportunities}
                   currentUser={currentUser}
+                  isManagerMode={isManagerMode}
+                  onDeleteJob={handleDeleteJob}
                 />
               )}
 
@@ -479,7 +595,14 @@ export const App: React.FC = () => {
                       setToastMessage(`Connected with user #${id}!`);
                       setTimeout(() => setToastMessage(null), 3000);
                     }}
-                    onOpenHelpCenter={() => alert("MedMedia Help & Ethics Desk opened.")}
+                    onOpenHelpCenter={() => setShowSupportModal(true)}
+                    onOpenSupportModal={() => setShowSupportModal(true)}
+                    onUpdateProfile={(updated) => {
+                      setCurrentUser(prev => ({ ...prev, ...updated }));
+                      setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updated } : u));
+                      setToastMessage("Profile updated successfully!");
+                      setTimeout(() => setToastMessage(null), 3000);
+                    }}
                     onRequestMentorship={(prof) => setMentoringProfessor(prof)}
                     isDarkMode={isDarkMode}
                     onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
@@ -580,33 +703,142 @@ export const App: React.FC = () => {
 
       </div>
 
-      {/* Notifications Drawer */}
+      {/* Notifications Drawer (Strictly ONLY Conferences, Jobs, and Follows - Zero Likes or Comments) */}
       {showNotificationsDrawer && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex justify-end">
-          <div className="w-full max-w-sm bg-white dark:bg-slate-900 h-full p-5 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800">
+          <div className="w-full max-w-sm bg-white dark:bg-slate-900 h-full p-5 shadow-2xl overflow-y-auto animate-in slide-in-from-right duration-200 border-l border-slate-200 dark:border-slate-800 flex flex-col">
             <div className="flex items-center justify-between pb-4 border-b border-slate-200 dark:border-slate-800">
-              <h3 className="font-bold text-sm text-slate-900 dark:text-white">Notifications</h3>
-              <button onClick={() => setShowNotificationsDrawer(false)} className="p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer">
-                <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
+              <div className="flex items-center gap-2">
+                <Bell className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white">Professional Alerts</h3>
+                <span className="text-[10px] bg-sky-100 dark:bg-sky-900/60 text-sky-700 dark:text-sky-300 font-bold px-2 py-0.5 rounded-full">
+                  {notifications.length}
+                </span>
+              </div>
+              <button 
+                onClick={() => setShowNotificationsDrawer(false)} 
+                className="p-1.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-500 hover:text-slate-900 dark:hover:text-white cursor-pointer transition"
+                title="Close Alerts (X)"
+              >
+                <X className="w-5 h-5" />
               </button>
             </div>
-            <div className="space-y-3 py-4">
-              <div className="p-3 bg-sky-50 dark:bg-sky-950/50 rounded-xl border border-sky-100 dark:border-sky-800 text-xs">
-                <p className="font-bold text-sky-950 dark:text-sky-200">Dr. Priya Nair liked your STEMI ECG challenge post.</p>
-                <span className="text-[10px] text-sky-700 dark:text-sky-400">10 mins ago</span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                <p className="font-bold text-slate-900 dark:text-white">Medical Council verified your board registration status.</p>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">1 hour ago</span>
-              </div>
-              <div className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
-                <p className="font-bold text-slate-900 dark:text-white">New Locum Emergency shift posted in Bangalore.</p>
-                <span className="text-[10px] text-slate-500 dark:text-slate-400">3 hours ago</span>
-              </div>
+
+            <div className="flex-1 space-y-3 py-4 overflow-y-auto">
+              {notifications.length === 0 ? (
+                <div className="text-center py-12 px-4">
+                  <CheckCircle2 className="w-10 h-10 text-emerald-500 mx-auto mb-2 opacity-80" />
+                  <p className="text-xs font-bold text-slate-800 dark:text-slate-200">You're All Caught Up!</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                    No pending conference invitations, job postings, or follow requests.
+                  </p>
+                </div>
+              ) : (
+                notifications.map((notif) => {
+                  const isConference = notif.type === 'CONFERENCE';
+                  const isJob = notif.type === 'JOB_UPDATE' || notif.type === 'JOB_APPLICATION';
+                  const isFollowRequest = notif.type === 'FOLLOW_REQUEST';
+                  const isFollowAccepted = notif.type === 'FOLLOW_ACCEPTED';
+
+                  return (
+                    <div 
+                      key={notif.id}
+                      className={`p-3.5 rounded-2xl border transition-all text-xs ${
+                        notif.isRead 
+                          ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-800 opacity-90' 
+                          : 'bg-white dark:bg-slate-800 border-sky-200 dark:border-sky-800/80 shadow-xs'
+                      }`}
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className={`p-2 rounded-xl flex-shrink-0 mt-0.5 ${
+                          isConference 
+                            ? 'bg-sky-100 dark:bg-sky-950 text-sky-600 dark:text-sky-400' 
+                            : isJob 
+                            ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400' 
+                            : isFollowRequest 
+                            ? 'bg-indigo-100 dark:bg-indigo-950 text-indigo-600 dark:text-indigo-400' 
+                            : 'bg-teal-100 dark:bg-teal-950 text-teal-600 dark:text-teal-400'
+                        }`}>
+                          {isConference && <Calendar className="w-4 h-4" />}
+                          {isJob && <Briefcase className="w-4 h-4" />}
+                          {isFollowRequest && <UserPlus className="w-4 h-4" />}
+                          {isFollowAccepted && <UserCheck className="w-4 h-4" />}
+                        </div>
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-slate-900 dark:text-white text-xs leading-snug">
+                            {notif.title}
+                          </p>
+                          <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 line-clamp-2">
+                            {notif.description}
+                          </p>
+                          <span className="inline-block text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 font-medium">
+                            {notif.timestamp}
+                          </span>
+
+                          {/* Follow Request Action Controls */}
+                          {isFollowRequest && (
+                            <div className="flex items-center gap-2 mt-2 pt-2 border-t border-slate-100 dark:border-slate-700/60">
+                              <button
+                                onClick={() => handleAcceptFollow(notif.id, notif.title)}
+                                className="px-3 py-1 bg-sky-600 hover:bg-sky-700 text-white text-[11px] font-bold rounded-lg transition cursor-pointer"
+                              >
+                                Accept
+                              </button>
+                              <button
+                                onClick={() => handleDeclineFollow(notif.id)}
+                                className="px-3 py-1 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 text-[11px] font-semibold rounded-lg transition cursor-pointer"
+                              >
+                                Decline
+                              </button>
+                            </div>
+                          )}
+
+                          {/* Quick Navigate Button for Jobs / Conferences */}
+                          {(isConference || isJob) && (
+                            <button
+                              onClick={() => {
+                                setShowNotificationsDrawer(false);
+                                setCurrentTab('opportunities');
+                              }}
+                              className="mt-2 text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline flex items-center gap-1 cursor-pointer"
+                            >
+                              <span>View details in Opportunities</span>
+                              <ArrowRight className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
             </div>
+
+            {notifications.length > 0 && (
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  onClick={() => {
+                    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                    setToastMessage("All alerts marked as read.");
+                    setTimeout(() => setToastMessage(null), 2500);
+                  }}
+                  className="w-full py-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold rounded-xl transition cursor-pointer"
+                >
+                  Mark All as Read
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
+
+      {/* Support Desk Modal (medmedia1409@gmail.com) */}
+      <SupportModal
+        isOpen={showSupportModal}
+        currentUser={currentUser}
+        onClose={() => setShowSupportModal(false)}
+      />
 
       {/* Full-Featured Multi-Conversation Clinical Chat Suite (Slide 5: Messages) */}
       <ClinicalChatDrawer
@@ -665,8 +897,10 @@ export const App: React.FC = () => {
 
       {/* Create Post & Story Creator Studio Modal (Slide 5: Top + button) */}
       <CreatePostModal
+        key={createModalMode}
         isOpen={showCreateModal}
         currentUser={currentUser}
+        initialMode={createModalMode}
         onClose={() => setShowCreateModal(false)}
         onPostCreated={(newPost) => {
           setPosts([newPost, ...posts]);

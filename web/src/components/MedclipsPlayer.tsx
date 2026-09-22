@@ -17,7 +17,6 @@ import {
   ChevronDown, 
   ChevronUp, 
   Send,
-  Sparkles,
   Check
 } from 'lucide-react';
 import { Medclip, UserProfile } from '../types';
@@ -39,7 +38,8 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   onConnectAuthor,
   onSelectUser
 }) => {
-  const [activeCategory, setActiveCategory] = useState<'all' | 'clinical updates' | 'social update' | 'following'>('all');
+  // Tabs: Following (with green dot, default), Clinical Updates, Social Updates
+  const [activeCategory, setActiveCategory] = useState<'following' | 'clinical updates' | 'social updates'>('following');
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
@@ -67,37 +67,45 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   const lastScrollTime = useRef<number>(0);
 
   const filteredClips = clips.filter(c => {
-    if (activeCategory === 'all') return true;
-    if (activeCategory === 'following') return c.isFollowing || followingMap[c.id];
-    return c.clinicalCategory.toLowerCase() === activeCategory.toLowerCase();
+    if (activeCategory === 'following') {
+      return c.isFollowing || followingMap[c.id];
+    }
+    if (activeCategory === 'clinical updates') {
+      return c.clinicalCategory?.toLowerCase().includes('clinical') || c.tags?.some(t => t.toLowerCase().includes('clinical') || t.toLowerCase().includes('surgery') || t.toLowerCase().includes('cardio'));
+    }
+    if (activeCategory === 'social updates') {
+      return c.clinicalCategory?.toLowerCase().includes('social') || !c.clinicalCategory?.toLowerCase().includes('clinical');
+    }
+    return true;
   });
 
-  const currentClip = filteredClips[currentIndex] || clips[0];
+  // Fallback to all clips if following list is empty
+  const activeClipList = filteredClips.length > 0 ? filteredClips : clips;
+  const currentClip = activeClipList[currentIndex] || clips[0];
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => setToastMessage(''), 2200);
   };
 
-  // Continuous seamless loop scrolling (reels never get stuck)
+  // Continuous loop scrolling
   const handleNext = useCallback(() => {
-    if (filteredClips.length === 0) return;
-    setCurrentIndex(prev => (prev < filteredClips.length - 1 ? prev + 1 : 0));
+    if (activeClipList.length === 0) return;
+    setCurrentIndex(prev => (prev < activeClipList.length - 1 ? prev + 1 : 0));
     setShowMoreDrawer(false);
     setShowCommentsModal(false);
-  }, [filteredClips.length]);
+  }, [activeClipList.length]);
 
   const handlePrev = useCallback(() => {
-    if (filteredClips.length === 0) return;
-    setCurrentIndex(prev => (prev > 0 ? prev - 1 : filteredClips.length - 1));
+    if (activeClipList.length === 0) return;
+    setCurrentIndex(prev => (prev > 0 ? prev - 1 : activeClipList.length - 1));
     setShowMoreDrawer(false);
     setShowCommentsModal(false);
-  }, [filteredClips.length]);
+  }, [activeClipList.length]);
 
-  // Smooth mouse wheel scrolling
   const handleWheel = (e: React.WheelEvent) => {
     const now = Date.now();
-    if (now - lastScrollTime.current < 450) return; // Debounce 450ms for smooth 1-reel scroll
+    if (now - lastScrollTime.current < 450) return;
 
     if (e.deltaY > 20) {
       lastScrollTime.current = now;
@@ -108,7 +116,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     }
   };
 
-  // Touch Swipe for mobile devices
   const handleTouchStart = (e: React.TouchEvent) => {
     touchStartY.current = e.touches[0].clientY;
   };
@@ -124,7 +131,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     }
   };
 
-  // Keyboard Navigation (Arrow keys)
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
@@ -140,7 +146,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [handleNext, handlePrev]);
 
-  // Double Click / Tap to Like
   const handleDoubleTap = () => {
     if (!currentClip.isLiked) {
       onLikeClip(currentClip.id);
@@ -184,45 +189,71 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
       className="relative max-w-sm mx-auto h-[calc(100vh-140px)] sm:h-[730px] bg-black rounded-3xl overflow-hidden shadow-2xl flex flex-col justify-between border border-slate-800 select-none"
     >
       
-      {/* 1. Category Switcher Bar with Attractive Red Followed Indicator */}
+      {/* 1. Header: Following (with green dot), Clinical Updates, Social Updates */}
       <div className="absolute top-0 left-0 right-0 z-30 pt-3 pb-5 px-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex flex-col items-center gap-1.5">
         <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md p-1 rounded-full border border-white/20">
-          {(['all', 'following', 'clinical updates', 'social update'] as const).map((cat) => (
-            <button
-              key={cat}
-              onClick={() => {
-                setActiveCategory(cat);
-                setCurrentIndex(0);
-              }}
-              className={`text-[11px] font-semibold px-3 py-1 rounded-full capitalize transition flex items-center gap-1.5 cursor-pointer ${
-                activeCategory === cat
-                  ? 'bg-sky-600 text-white shadow-md'
-                  : 'text-white/80 hover:text-white'
-              }`}
-            >
-              {cat === 'following' && (
-                <span className="w-2 h-2 rounded-full bg-rose-500 shadow-sm shadow-rose-500/60" title="New reels from followed doctors"></span>
-              )}
-              <span>{cat}</span>
-            </button>
-          ))}
+          {/* Following with green dot */}
+          <button
+            onClick={() => {
+              setActiveCategory('following');
+              setCurrentIndex(0);
+            }}
+            className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 cursor-pointer ${
+              activeCategory === 'following'
+                ? 'bg-sky-600 text-white shadow-md'
+                : 'text-white/80 hover:text-white'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-500/50 animate-pulse shadow-sm shadow-emerald-400"></span>
+            <span>Following</span>
+          </button>
+
+          {/* Clinical Updates */}
+          <button
+            onClick={() => {
+              setActiveCategory('clinical updates');
+              setCurrentIndex(0);
+            }}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${
+              activeCategory === 'clinical updates'
+                ? 'bg-sky-600 text-white shadow-md'
+                : 'text-white/80 hover:text-white'
+            }`}
+          >
+            <span>Clinical Updates</span>
+          </button>
+
+          {/* Social Updates */}
+          <button
+            onClick={() => {
+              setActiveCategory('social updates');
+              setCurrentIndex(0);
+            }}
+            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${
+              activeCategory === 'social updates'
+                ? 'bg-sky-600 text-white shadow-md'
+                : 'text-white/80 hover:text-white'
+            }`}
+          >
+            <span>Social Updates</span>
+          </button>
         </div>
 
-        {/* Scroll Helper Indicator */}
+        {/* Reel Counter */}
         <div className="flex items-center gap-2 text-[10px] text-white/70 font-medium">
-          <span>{currentIndex + 1} of {filteredClips.length}</span>
+          <span>{currentIndex + 1} of {activeClipList.length}</span>
           <span>•</span>
-          <span>Swipe or scroll to browse</span>
+          <span>Swipe or scroll</span>
         </div>
       </div>
 
-      {/* 2. Seamless Vertical Slide Track (Zero Blinking, Zero Black Flashes) */}
+      {/* 2. Seamless Slide Track */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
         <div 
           className="w-full h-full flex flex-col transition-transform duration-350 ease-out"
           style={{ transform: `translateY(-${currentIndex * 100}%)` }}
         >
-          {filteredClips.map((clip, idx) => {
+          {activeClipList.map((clip, idx) => {
             const isActive = idx === currentIndex;
             return (
               <div 
@@ -231,7 +262,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                 onDoubleClick={handleDoubleTap}
                 className="relative w-full h-full flex-shrink-0 flex items-center justify-center cursor-pointer bg-slate-950 overflow-hidden"
               >
-                {/* Poster image always present behind video - ensures zero unpainted blink */}
                 <img
                   src={clip.thumbnailUrl}
                   alt=""
@@ -239,7 +269,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                   loading={Math.abs(idx - currentIndex) <= 1 ? "eager" : "lazy"}
                 />
 
-                {/* Preloaded smooth video playback for active & adjacent reels */}
                 {Math.abs(idx - currentIndex) <= 1 && (
                   <video
                     src={clip.videoUrl}
@@ -259,11 +288,11 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
         </div>
       </div>
 
-      {/* Attractive Red Badge on Followed Doctor's Reel */}
+      {/* Requirement 9: Light green live/notification dot indicator on creator status */}
       {isFollowedReel && (
-        <div className="absolute top-16 left-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-rose-600 text-white text-[10px] font-bold shadow-lg shadow-rose-600/50 border border-rose-400/50 backdrop-blur-md">
-          <span className="w-1.5 h-1.5 rounded-full bg-white"></span>
-          <span>New from Followed Doctor</span>
+        <div className="absolute top-16 left-4 z-30 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-950/80 text-emerald-200 text-[10px] font-bold shadow-lg border border-emerald-500/40 backdrop-blur-md">
+          <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-500/50 animate-pulse"></span>
+          <span>Following</span>
         </div>
       )}
 
@@ -288,129 +317,115 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
       {/* Mute/Unmute Quick Toggle */}
       <button
         onClick={(e) => { e.stopPropagation(); setIsMuted(!isMuted); }}
-        className="absolute top-16 right-4 z-30 p-2 rounded-full bg-black/50 text-white hover:bg-black/75 backdrop-blur-sm cursor-pointer"
+        className="absolute top-16 right-4 z-30 p-2 rounded-full backdrop-blur-md bg-black/40 hover:bg-black/60 border border-white/15 text-white cursor-pointer shadow-md transition"
         title={isMuted ? "Unmute Audio" : "Mute Audio"}
       >
         {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4" />}
       </button>
 
-      {/* Floating Quick Next / Previous Vertical Arrow Buttons */}
+      {/* Quick Up/Down Navigation Buttons */}
       <div className="absolute left-3 top-1/2 -translate-y-1/2 flex flex-col gap-3 z-30">
         <button
           onClick={(e) => { e.stopPropagation(); handlePrev(); }}
-          className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95 cursor-pointer"
+          className="w-9 h-9 rounded-full backdrop-blur-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center border border-white/15 shadow-lg transition active:scale-95 cursor-pointer"
           title="Previous Clip (Up)"
         >
           <ChevronUp className="w-5 h-5 stroke-[2.5]" />
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); handleNext(); }}
-          className="w-9 h-9 rounded-full bg-black/60 text-white flex items-center justify-center hover:bg-black/90 shadow-lg border border-white/20 transition active:scale-95 cursor-pointer"
+          className="w-9 h-9 rounded-full backdrop-blur-md bg-black/40 hover:bg-black/70 text-white flex items-center justify-center border border-white/15 shadow-lg transition active:scale-95 cursor-pointer"
           title="Next Clip (Down)"
         >
           <ChevronDown className="w-5 h-5 stroke-[2.5]" />
         </button>
       </div>
 
-      {/* Vertical Reel Pagination Dots on Right Edge */}
-      <div className="absolute right-1 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-1 items-center py-2 px-1 bg-black/40 backdrop-blur-xs rounded-full">
-        {filteredClips.map((_, i) => (
-          <button
-            key={i}
-            onClick={(e) => { e.stopPropagation(); setCurrentIndex(i); }}
-            className={`rounded-full transition-all duration-200 cursor-pointer ${
-              i === currentIndex ? 'w-1.5 h-3.5 bg-white shadow-xs' : 'w-1.5 h-1.5 bg-white/40 hover:bg-white/70'
-            }`}
-            title={`Go to reel ${i + 1}`}
-          />
-        ))}
-      </div>
-
-      {/* 3. Right Side Interaction Bar (Slide 6: Like, comment, Share, Save, more) */}
-      <div className="absolute right-2.5 bottom-20 z-30 flex flex-col items-center gap-3.5">
+      {/* Transparent Action Buttons (Like, Comment, Share, Save, More) */}
+      <div className="absolute right-2 bottom-20 z-30 flex flex-col items-center gap-4">
         
-        {/* Like */}
+        {/* Like - Transparent Icon */}
         <button
           onClick={() => onLikeClip(currentClip.id)}
-          className="flex flex-col items-center group"
+          className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="Like Medclip"
         >
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition transform group-active:scale-125 ${
-            currentClip.isLiked ? 'bg-rose-600 text-white' : 'bg-black/55 text-white hover:bg-black/75'
-          }`}>
-            <Heart className={`w-6 h-6 ${currentClip.isLiked ? 'fill-white' : ''}`} />
+          <div className="p-2 rounded-full bg-transparent hover:bg-white/10 transition transform group-active:scale-125">
+            <Heart className={`w-7 h-7 drop-shadow-lg transition ${
+              currentClip.isLiked ? 'fill-rose-500 text-rose-500' : 'text-white stroke-[2]'
+            }`} />
           </div>
-          <span className="text-[11px] font-bold text-white mt-0.5 drop-shadow">
+          <span className="text-[11px] font-bold text-white drop-shadow-md -mt-1">
             {currentClip.likesCount}
           </span>
         </button>
 
-        {/* Comment */}
+        {/* Comment - Transparent Icon */}
         <button
           onClick={() => setShowCommentsModal(true)}
-          className="flex flex-col items-center group"
+          className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="Clinical Comments"
         >
-          <div className="w-11 h-11 rounded-full bg-black/55 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/75 transition">
-            <MessageCircle className="w-6 h-6" />
+          <div className="p-2 rounded-full bg-transparent hover:bg-white/10 transition transform group-hover:scale-110">
+            <MessageCircle className="w-7 h-7 text-white stroke-[2] drop-shadow-lg" />
           </div>
-          <span className="text-[11px] font-bold text-white mt-0.5 drop-shadow">
+          <span className="text-[11px] font-bold text-white drop-shadow-md -mt-1">
             {currentClip.commentsCount + (clipComments.length - 2)}
           </span>
         </button>
 
-        {/* Share */}
+        {/* Share - Transparent Icon */}
         <button
           onClick={() => {
             navigator.clipboard?.writeText?.(`https://medmedia.health/clips/${currentClip.id}`);
             showToast("Medclip link copied to clipboard!");
           }}
-          className="flex flex-col items-center group"
+          className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="Share Medclip"
         >
-          <div className="w-11 h-11 rounded-full bg-black/55 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/75 transition">
-            <Share2 className="w-6 h-6" />
+          <div className="p-2 rounded-full bg-transparent hover:bg-white/10 transition transform group-hover:scale-110">
+            <Share2 className="w-7 h-7 text-white stroke-[2] drop-shadow-lg" />
           </div>
-          <span className="text-[11px] font-bold text-white mt-0.5 drop-shadow">
+          <span className="text-[11px] font-bold text-white drop-shadow-md -mt-1">
             Share
           </span>
         </button>
 
-        {/* Save */}
+        {/* Save - Transparent Icon */}
         <button
           onClick={() => {
             onSaveClip(currentClip.id);
             showToast(currentClip.isSaved ? "Removed from Library" : "Saved to Clinical Library");
           }}
-          className="flex flex-col items-center group"
+          className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="Save Clip"
         >
-          <div className={`w-11 h-11 rounded-full flex items-center justify-center backdrop-blur-md transition ${
-            currentClip.isSaved ? 'bg-sky-600 text-white' : 'bg-black/55 text-white hover:bg-black/75'
-          }`}>
-            <Bookmark className={`w-6 h-6 ${currentClip.isSaved ? 'fill-white' : ''}`} />
+          <div className="p-2 rounded-full bg-transparent hover:bg-white/10 transition transform group-hover:scale-110">
+            <Bookmark className={`w-7 h-7 drop-shadow-lg transition ${
+              currentClip.isSaved ? 'fill-sky-400 text-sky-400' : 'text-white stroke-[2]'
+            }`} />
           </div>
-          <span className="text-[11px] font-bold text-white mt-0.5 drop-shadow">
+          <span className="text-[11px] font-bold text-white drop-shadow-md -mt-1">
             Save
           </span>
         </button>
 
-        {/* More Drawer Button (Slide 6: Report, Connect, copy link, Interested) */}
+        {/* More Drawer - Transparent Icon */}
         <button
           onClick={() => setShowMoreDrawer(!showMoreDrawer)}
-          className="flex flex-col items-center group"
+          className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="More Actions"
         >
-          <div className="w-11 h-11 rounded-full bg-black/55 text-white flex items-center justify-center backdrop-blur-md hover:bg-black/75 transition">
-            <MoreVertical className="w-6 h-6" />
+          <div className="p-2 rounded-full bg-transparent hover:bg-white/10 transition">
+            <MoreVertical className="w-7 h-7 text-white stroke-[2] drop-shadow-lg" />
           </div>
-          <span className="text-[11px] font-bold text-white mt-0.5 drop-shadow">
+          <span className="text-[11px] font-bold text-white drop-shadow-md -mt-1">
             More
           </span>
         </button>
       </div>
 
-      {/* 4. Bottom Info: Name, Follow, Caption (Slide 6) */}
+      {/* 4. Bottom Info: Name, Follow, Caption with Light Green Live Indicator on Creator */}
       <div className="absolute bottom-0 left-0 right-14 z-20 p-4 bg-gradient-to-t from-black/95 via-black/75 to-transparent">
         
         {/* Author Info & Follow Button */}
@@ -424,15 +439,13 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
               <img
                 src={currentClip.authorAvatar}
                 alt={currentClip.authorName}
-                className={`w-10 h-10 rounded-full object-cover transition ${
-                  isFollowedReel
-                    ? 'ring-2 ring-rose-500 shadow-sm shadow-rose-500/60'
-                    : 'ring-2 ring-sky-400 group-hover:ring-white'
-                }`}
+                className="w-10 h-10 rounded-full object-cover ring-2 ring-emerald-400 shadow-sm"
               />
-              {isFollowedReel && (
-                <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 bg-rose-500 border-2 border-slate-950 rounded-full" title="New Reel from Followed Doctor"></span>
-              )}
+              {/* Requirement 9: light green live/notification dot indicator */}
+              <span 
+                className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-emerald-400 border-2 border-black rounded-full animate-pulse shadow-sm shadow-emerald-400" 
+                title="Active Clinical Practitioner"
+              />
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
@@ -451,9 +464,9 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
           <button
             onClick={() => toggleFollow(currentClip.id)}
-            className={`ml-2 text-[11px] font-bold px-3 py-1 rounded-full transition flex items-center gap-1 ${
+            className={`ml-2 text-[11px] font-bold px-3 py-1 rounded-full transition flex items-center gap-1 cursor-pointer ${
               followingMap[currentClip.id]
-                ? 'bg-white/20 text-white hover:bg-white/30'
+                ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                 : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm'
             }`}
           >
@@ -494,14 +507,14 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
         </div>
       )}
 
-      {/* Slide 6 "More" Drawer Modal */}
+      {/* "More" Drawer Modal */}
       {showMoreDrawer && (
         <div className="absolute inset-x-0 bottom-0 z-40 bg-slate-900/98 backdrop-blur-2xl border-t border-slate-700 rounded-t-3xl p-5 animate-in slide-in-from-bottom duration-200">
           <div className="flex items-center justify-between pb-3 border-b border-slate-800">
-            <h4 className="text-white text-xs font-bold uppercase tracking-wider">Medclip Options (Slide 6)</h4>
+            <h4 className="text-white text-xs font-bold uppercase tracking-wider">Medclip Options</h4>
             <button
               onClick={() => setShowMoreDrawer(false)}
-              className="text-white/60 hover:text-white text-xs"
+              className="text-white/60 hover:text-white text-xs cursor-pointer"
             >
               ✕
             </button>
@@ -514,7 +527,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                 setShowMoreDrawer(false);
                 showToast(`Connection request sent to ${currentClip.authorName}`);
               }}
-              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition"
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
               <UserPlus className="w-4 h-4 text-sky-400" />
               Connect with {currentClip.authorName}
@@ -526,7 +539,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                 setShowMoreDrawer(false);
                 showToast("Medclip link copied!");
               }}
-              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition"
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
               <Copy className="w-4 h-4 text-slate-400" />
               Copy Link
@@ -537,7 +550,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                 setShowMoreDrawer(false);
                 showToast("Preference saved: Prioritizing clinical updates");
               }}
-              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition"
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4 text-emerald-400" />
               Interested in this Topic
@@ -548,7 +561,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
                 setShowMoreDrawer(false);
                 showToast("Clip reported for medical moderator review");
               }}
-              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-rose-400 hover:bg-rose-950/40 rounded-xl transition"
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-rose-400 hover:bg-rose-950/40 rounded-xl transition cursor-pointer"
             >
               <Flag className="w-4 h-4 text-rose-400" />
               Report Clip / Ethics
@@ -557,7 +570,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
         </div>
       )}
 
-      {/* Slide 6 Comments Drawer Modal */}
+      {/* Comments Drawer Modal */}
       {showCommentsModal && (
         <div className="absolute inset-x-0 bottom-0 z-40 bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 rounded-t-3xl p-4 max-h-[440px] flex flex-col justify-between shadow-2xl animate-in slide-in-from-bottom transition-colors duration-200">
           <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-800">

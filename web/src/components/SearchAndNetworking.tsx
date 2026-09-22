@@ -1,10 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { 
   Search, 
   Users, 
   Building2, 
   Award, 
-  FileText, 
   Briefcase, 
   Sparkles, 
   UserPlus, 
@@ -13,11 +12,10 @@ import {
   Stethoscope, 
   ArrowRight,
   CheckCircle2,
-  Calendar,
   BookOpen
 } from 'lucide-react';
 import { UserProfile, Job } from '../types';
-import { getPersonalizedMentorsAndProfessors, AlgorithmicMentor } from '../utils/algorithmEngine';
+import { getPersonalizedMentorsAndProfessors } from '../utils/algorithmEngine';
 
 interface SearchAndNetworkingProps {
   currentUser: UserProfile;
@@ -38,46 +36,71 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
   onRequestMentorship,
   onApplyInternship
 }) => {
-  const [activeFilter, setActiveFilter] = useState<string>('Professors & Mentors');
+  // Requirement 10: "All Accounts" default
+  const [activeFilter, setActiveFilter] = useState<string>('All Accounts');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
 
-  // Slide 10 Categories & Dedicated Medical LinkedIn + Instagram Filters
+  // Filter tabs with 'All Accounts' first
   const filterTabs = [
+    'All Accounts',
     'Professors & Mentors',
     'Clinical Internships',
     'Alumni Matching',
-    'All Accounts',
     'Associations & Chapters'
   ];
 
   // Algorithmic Personalized Professors & Mentors
-  const algorithmicMentors = getPersonalizedMentorsAndProfessors(availableUsers, currentUser);
+  const algorithmicMentors = useMemo(
+    () => getPersonalizedMentorsAndProfessors(availableUsers, currentUser),
+    [availableUsers, currentUser]
+  );
 
-  // Filtered lists based on search
-  const filteredMentors = algorithmicMentors.filter(m => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
+  // Fast real-time search across all accounts
+  const filteredAllAccounts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return availableUsers;
+    return availableUsers.filter((u) => {
+      const matchName = u.fullName.toLowerCase().includes(q);
+      const matchUsername = u.username.toLowerCase().includes(q);
+      const matchBio = u.bio?.toLowerCase().includes(q);
+      const matchDoctor = u.doctorDetails && (
+        u.doctorDetails.specialization.toLowerCase().includes(q) ||
+        u.doctorDetails.hospitalAffiliation.toLowerCase().includes(q) ||
+        (u.doctorDetails.academicTitle && u.doctorDetails.academicTitle.toLowerCase().includes(q))
+      );
+      const matchStudent = u.studentDetails && (
+        u.studentDetails.collegeName.toLowerCase().includes(q) ||
+        u.studentDetails.futureSpecialty.toLowerCase().includes(q) ||
+        u.studentDetails.discipline.toLowerCase().includes(q)
+      );
+      return matchName || matchUsername || matchBio || matchDoctor || matchStudent;
+    });
+  }, [availableUsers, searchQuery]);
+
+  // Filtered mentors based on search
+  const filteredMentors = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return algorithmicMentors;
+    return algorithmicMentors.filter(m => (
       m.fullName.toLowerCase().includes(q) ||
       m.doctorDetails?.specialization.toLowerCase().includes(q) ||
       m.doctorDetails?.hospitalAffiliation.toLowerCase().includes(q) ||
       (m.doctorDetails?.academicTitle && m.doctorDetails.academicTitle.toLowerCase().includes(q))
-    );
-  });
+    ));
+  }, [algorithmicMentors, searchQuery]);
 
-  const internshipJobs = jobs.filter(j => j.category === 'Internship');
-  const filteredInternships = internshipJobs.filter(j => {
-    if (!searchQuery.trim()) return true;
-    const q = searchQuery.toLowerCase();
-    return (
+  const internshipJobs = useMemo(() => jobs.filter(j => j.category === 'Internship'), [jobs]);
+  const filteredInternships = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return internshipJobs;
+    return internshipJobs.filter(j => (
       j.title.toLowerCase().includes(q) ||
       j.companyName.toLowerCase().includes(q) ||
       j.place.toLowerCase().includes(q)
-    );
-  });
+    ));
+  }, [internshipJobs, searchQuery]);
 
-  // Slide 10: Community & Branches
   const communityBranches = [
     {
       id: "cb-1",
@@ -110,13 +133,13 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
   return (
     <div className="space-y-5 pb-24 max-w-2xl mx-auto">
       
-      {/* 1. Slide 10 Search Bar with Smart Category Pills */}
+      {/* 1. Search Bar with Real-Time Response */}
       <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 shadow-xs space-y-3 transition-colors duration-200">
         <div className="relative">
           <Search className="w-5 h-5 text-slate-400 absolute left-3.5 top-3.5" />
           <input
             type="text"
-            placeholder="Search medical professors, HODs, clinical internships, college alumni..."
+            placeholder="Fast search medical specialists, professors, students, colleges, internships..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500 transition"
@@ -141,8 +164,103 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
         </div>
       </div>
 
-      {/* 2. MEDICAL PROFESSORS & MENTOR MATCHING (LinkedIn-Style Professional Matching) */}
-      {(activeFilter === 'Professors & Mentors' || activeFilter === 'All Accounts') && (
+      {/* 2. ALL ACCOUNTS DIRECTORY (Requirement 10: Default Tab) */}
+      {activeFilter === 'All Accounts' && (
+        <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                <Users className="w-4 h-4" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white">All Medical Accounts</h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  {filteredAllAccounts.length} clinicians, professors, and medical scholars
+                </p>
+              </div>
+            </div>
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+              Verified Network
+            </span>
+          </div>
+
+          <div className="space-y-3 pt-1">
+            {filteredAllAccounts.length === 0 ? (
+              <div className="text-center py-8 text-xs text-slate-500 dark:text-slate-400">
+                No medical accounts match "{searchQuery}".
+              </div>
+            ) : (
+              filteredAllAccounts.map((user) => (
+                <div
+                  key={user.id}
+                  className="p-3.5 rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-slate-50/60 dark:bg-slate-800/40 hover:bg-slate-50 dark:hover:bg-slate-800/70 transition flex items-center justify-between gap-3"
+                >
+                  <div
+                    onClick={() => onSelectUser(user)}
+                    className="flex items-center gap-3 cursor-pointer group flex-1 min-w-0"
+                  >
+                    <div className="relative flex-shrink-0">
+                      <img
+                        src={user.avatarUrl}
+                        alt={user.fullName}
+                        className="w-12 h-12 rounded-full object-cover ring-2 ring-sky-500/20 group-hover:ring-sky-500 transition"
+                      />
+                      <div className={`absolute -bottom-1 -right-1 p-0.5 rounded-full text-white ${
+                        user.role === 'DOCTOR' ? 'bg-sky-600' : 'bg-emerald-600'
+                      }`}>
+                        {user.role === 'DOCTOR' ? <Stethoscope className="w-2.5 h-2.5" /> : <GraduationCap className="w-2.5 h-2.5" />}
+                      </div>
+                    </div>
+
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition truncate">
+                          {user.fullName}
+                        </h4>
+                        <ShieldCheck className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
+                      </div>
+                      <p className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                        {user.role === 'DOCTOR'
+                          ? (user.doctorDetails?.academicTitle || user.doctorDetails?.specialization || 'Physician Specialist')
+                          : `${user.studentDetails?.collegeName || 'Medical College'} • Year ${user.studentDetails?.academicYear || 3}`}
+                      </p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
+                        @{user.username} {user.doctorDetails?.hospitalAffiliation ? `• ${user.doctorDetails.hospitalAffiliation}` : ''}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 flex-shrink-0">
+                    <button
+                      onClick={() => handleConnect(user.id, user.fullName)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 cursor-pointer ${
+                        connectedMap[user.id]
+                          ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                          : 'bg-sky-600 hover:bg-sky-700 text-white shadow-xs'
+                      }`}
+                    >
+                      {connectedMap[user.id] ? (
+                        <>
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          <span>Connected</span>
+                        </>
+                      ) : (
+                        <>
+                          <UserPlus className="w-3.5 h-3.5" />
+                          <span>Connect</span>
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* 3. MEDICAL PROFESSORS & MENTOR MATCHING */}
+      {activeFilter === 'Professors & Mentors' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -181,7 +299,7 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                         className="w-13 h-13 rounded-2xl object-cover ring-2 ring-sky-500/30 group-hover:ring-sky-500 transition shadow-sm"
                       />
                       {prof.doctorDetails?.isProfessor && (
-                        <div className="absolute -bottom-1 -right-1 bg-sky-600 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900" title="Verified Professor">
+                        <div className="absolute -bottom-1 -right-1 bg-sky-600 text-white p-0.5 rounded-full ring-2 ring-white dark:ring-slate-900" title="Professor">
                           <GraduationCap className="w-3 h-3" />
                         </div>
                       )}
@@ -202,7 +320,6 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                     </div>
                   </div>
 
-                  {/* Open Slots Pill */}
                   {prof.doctorDetails?.isAcceptingMentees && (
                     <div className="flex-shrink-0 text-right">
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
@@ -213,13 +330,11 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
                   )}
                 </div>
 
-                {/* Algorithm Reason Banner */}
                 <div className="px-3 py-1.5 bg-sky-100/60 dark:bg-sky-950/50 rounded-xl text-[11px] text-sky-900 dark:text-sky-200 font-medium flex items-center justify-between border border-sky-200/40 dark:border-sky-800/40">
                   <span>{prof.mentorMatchReason}</span>
                   <span className="text-[10px] font-bold text-sky-700 dark:text-sky-300">{prof.matchScore}% Match</span>
                 </div>
 
-                {/* Card Action Buttons */}
                 <div className="flex items-center justify-between gap-2 pt-1">
                   <button
                     onClick={() => onSelectUser(prof)}
@@ -268,8 +383,8 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
         </div>
       )}
 
-      {/* 3. CLINICAL INTERNSHIPS & OBSERVERSHIPS SECTION */}
-      {(activeFilter === 'Clinical Internships' || activeFilter === 'All Accounts') && (
+      {/* 4. CLINICAL INTERNSHIPS & OBSERVERSHIPS SECTION */}
+      {activeFilter === 'Clinical Internships' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -339,8 +454,8 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
         </div>
       )}
 
-      {/* 4. ALUMNI MATCHING ENGINE */}
-      {(activeFilter === 'Alumni Matching' || activeFilter === 'All Accounts') && (
+      {/* 5. ALUMNI MATCHING ENGINE */}
+      {activeFilter === 'Alumni Matching' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
@@ -418,8 +533,8 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
         </div>
       )}
 
-      {/* 5. ASSOCIATIONS & COMMUNITY CHAPTERS */}
-      {(activeFilter === 'Associations & Chapters' || activeFilter === 'All Accounts') && (
+      {/* 6. ASSOCIATIONS & COMMUNITY CHAPTERS */}
+      {activeFilter === 'Associations & Chapters' && (
         <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4 transition-colors duration-200">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">

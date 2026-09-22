@@ -258,6 +258,39 @@ class MySQLDatabaseManager {
       console.error('[MedMedia MySQL] Error seeding initial data:', err.message);
     }
   }
+  // Delete Story
+  public async deleteStory(id: string): Promise<void> {
+    if (!this.pool || !this.isConnected) return;
+    try {
+      await this.pool.query('DELETE FROM stories WHERE id = ?', [id]);
+    } catch (err: any) {
+      console.error(`[MedMedia MySQL] Error deleting story ${id}:`, err.message);
+    }
+  }
+
+  // Delete Post
+  public async deletePost(id: string): Promise<void> {
+    if (!this.pool || !this.isConnected) return;
+    try {
+      await this.pool.query('DELETE FROM posts WHERE id = ?', [id]);
+    } catch (err: any) {
+      console.error(`[MedMedia MySQL] Error deleting post ${id}:`, err.message);
+    }
+  }
+
+  // Clear all tables for clean launch
+  public async clearAllTables(): Promise<void> {
+    if (!this.pool || !this.isConnected) return;
+    try {
+      await this.pool.query('DELETE FROM posts');
+      await this.pool.query('DELETE FROM stories');
+      await this.pool.query('DELETE FROM users');
+      console.log('[MedMedia MySQL] Cleared all records from users, posts, and stories tables.');
+    } catch (err: any) {
+      console.error('[MedMedia MySQL] Error clearing tables:', err.message);
+      throw err;
+    }
+  }
 }
 
 export const mysqlDb = new MySQLDatabaseManager();

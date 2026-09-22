@@ -8,6 +8,8 @@ import opportunitiesRoutes from './routes/opportunities';
 import usersRoutes from './routes/users';
 import searchRoutes from './routes/search';
 import storiesRoutes from './routes/stories';
+import adminRoutes from './routes/admin';
+import notificationsRoutes from './routes/notifications';
 import { mysqlDb } from './data/mysqlDb';
 
 dotenv.config();
@@ -39,6 +41,8 @@ app.use('/api/clips', clipsRoutes);
 app.use('/api/opportunities', opportunitiesRoutes);
 app.use('/api/users', usersRoutes);
 app.use('/api/search', searchRoutes);
+app.use('/api/admin', adminRoutes);
+app.use('/api/notifications', notificationsRoutes);
 
 // 404 handler
 app.use((req, res) => {

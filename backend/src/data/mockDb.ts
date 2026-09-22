@@ -9,6 +9,12 @@ export interface UserProfile {
   verificationStatus: 'VERIFIED' | 'PENDING' | 'UNVERIFIED';
   badgeTitle: string;
   bio: string;
+  isPrivate?: boolean;
+  coverPhotoUrl?: string;
+  isAdmin?: boolean;
+  medicalCouncilCredentialUrl?: string;
+  studentIdCredentialUrl?: string;
+  joinedCommunityIds?: string[];
   doctorDetails?: {
     specialization: string;
     qualifications: string[];
@@ -43,6 +49,8 @@ export interface Story {
   caption: string;
   timestamp: string;
   isViewed: boolean;
+  isVideo?: boolean;
+  clinicalTags?: string[];
 }
 
 export interface Post {
@@ -54,7 +62,7 @@ export interface Post {
   authorRole: 'DOCTOR' | 'STUDENT';
   authorSpecializationOrDiscipline: string;
   isVerified: boolean;
-  postType: 'TEXT' | 'TWEET' | 'IMAGE_CASE' | 'ARTICLE_LINK' | 'CLINICAL_DISCUSSION';
+  postType: 'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION';
   content: string;
   mediaUrls?: string[];
   linkUrl?: string;
@@ -102,6 +110,123 @@ export interface Medclip {
   createdAt: string;
 }
 
+export interface Community {
+  id: string;
+  name: string;
+  iconUrl: string;
+  description: string;
+  category: string;
+  membersCount: number;
+  maxCapacity: number; // 10,000 maximum capacity limit enforced
+  creatorId: string;
+  creatorName: string;
+  isOfficial?: boolean;
+  createdAt: string;
+}
+
+export interface ResearchNote {
+  id: string;
+  title: string;
+  content: string;
+  authorId: string;
+  authorName: string;
+  updatedAt: string;
+}
+
+export interface ResearchMessage {
+  id: string;
+  senderId: string;
+  senderName: string;
+  senderAvatar: string;
+  text: string;
+  mediaUrl?: string;
+  isVideo?: boolean;
+  timestamp: string;
+}
+
+export interface ResearchProject {
+  id: string;
+  projectName: string;
+  instituteName: string;
+  departmentName: string;
+  place: string;
+  description: string;
+  tags: string[];
+  photosOrLink?: string;
+  creatorId: string;
+  creatorName: string;
+  creatorAvatar: string;
+  memberIds: string[];
+  pendingJoinRequestIds: string[];
+  notes: ResearchNote[];
+  messages: ResearchMessage[];
+  createdAt: string;
+}
+
+export interface LocumGig {
+  id: string;
+  instituteName: string;
+  place: string;
+  duration: string;
+  gigName: string;
+  stipend: string; // Mandatory: amount or "Experience only" / "No stipend, other benefits"
+  documentsUrl?: string;
+  email: string;
+  phone: string;
+  otherLink?: string;
+  creatorId: string;
+  creatorName: string;
+  createdAt: string;
+}
+
+export interface LocumApplication {
+  id: string;
+  gigId: string;
+  gigName: string;
+  name: string;
+  qualification: string;
+  resumeUrl: string;
+  email: string;
+  contactNumber: string;
+  otherLink?: string;
+  applicantId: string;
+  submittedAt: string;
+}
+
+export interface ScholarshipItem {
+  id: string;
+  name: string;
+  organization: string;
+  logoUrl: string;
+  fundingAmount: string;
+  description: string;
+  deadline: string;
+  applyLink: string;
+}
+
+export interface CourseItem {
+  id: string;
+  name: string;
+  provider: string;
+  logoUrl: string;
+  description: string;
+  link: string;
+  isFree: boolean;
+  cmeCredits?: number;
+}
+
+export interface SupportTicket {
+  id: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  category: string;
+  description: string;
+  forwardedTo: string; // medmedia1409@gmail.com
+  status: 'RECEIVED' | 'IN_REVIEW' | 'RESOLVED';
+  createdAt: string;
+}
+
 export interface Job {
   id: string;
   title: string;
@@ -133,8 +258,19 @@ export interface OpportunityItem {
   cmeCredits?: number;
 }
 
+export interface NotificationItem {
+  id: string;
+  userId: string;
+  type: 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED';
+  title: string;
+  description: string;
+  timestamp: string;
+  isRead: boolean;
+  actionUrl?: string;
+}
+
 // ==========================================
-// MOCK DATA STORE
+// CLEAN PRODUCTION DATA SEED
 // ==========================================
 
 export const USERS: UserProfile[] = [
@@ -144,12 +280,16 @@ export const USERS: UserProfile[] = [
     username: "cardio_ramesh",
     email: "dr.ramesh@apollohospitals.org",
     avatarUrl: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=200&h=200&fit=crop&crop=faces",
+    coverPhotoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=400&fit=crop",
     role: "DOCTOR",
     verificationStatus: "VERIFIED",
     badgeTitle: "Board Certified Interventional Cardiologist",
-    bio: "Senior Consultant Interventional Cardiologist @ Apollo Heart Institute. Specializing in complex CTO, TAVR, and clinical trials in heart failure.",
+    bio: "Senior Consultant Interventional Cardiologist @ Apollo Heart Institute. Specializing in complex CTO, TAVR, and evidence-based clinical trials.",
+    isPrivate: false,
+    isAdmin: false,
+    joinedCommunityIds: ["comm-cardio", "comm-surgery"],
     doctorDetails: {
-      specialization: "Interventional Cardiology",
+      specialization: "Cardiology",
       qualifications: ["MBBS (AIIMS)", "MD Internal Medicine", "DM Cardiology (PGI)", "FSCAI (USA)"],
       hospitalAffiliation: "Apollo Hospitals, Bangalore",
       location: "Bangalore, India",
@@ -162,7 +302,7 @@ export const USERS: UserProfile[] = [
       medicalCouncilRegNumber: "KMC-48192-IND"
     },
     stats: {
-      postsCount: 42,
+      postsCount: 2,
       followersCount: 8920,
       connectionsCount: 1420
     }
@@ -173,12 +313,16 @@ export const USERS: UserProfile[] = [
     username: "neuro_priya",
     email: "priya.nair@manipal.edu",
     avatarUrl: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=200&h=200&fit=crop&crop=faces",
+    coverPhotoUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=1200&h=400&fit=crop",
     role: "DOCTOR",
     verificationStatus: "VERIFIED",
     badgeTitle: "Consultant Pediatric Neurosurgeon",
-    bio: "Pediatric Neurosurgery @ Manipal Hospitals. Passionate about minimally invasive endoscopy, skull base surgery, and medical student mentorship.",
+    bio: "Pediatric Neurosurgery @ Manipal Hospitals. Minimally invasive endoscopy, skull base surgery, and medical student mentorship.",
+    isPrivate: false,
+    isAdmin: false,
+    joinedCommunityIds: ["comm-neuro", "comm-surgery"],
     doctorDetails: {
-      specialization: "Pediatric Neurosurgery",
+      specialization: "Neurology",
       qualifications: ["MBBS (CMC Vellore)", "MS General Surgery", "MCh Neurosurgery (NIMHANS)"],
       hospitalAffiliation: "Manipal Hospital",
       location: "Bangalore, India",
@@ -190,7 +334,7 @@ export const USERS: UserProfile[] = [
       medicalCouncilRegNumber: "KMC-59281-IND"
     },
     stats: {
-      postsCount: 31,
+      postsCount: 1,
       followersCount: 6410,
       connectionsCount: 980
     }
@@ -198,49 +342,59 @@ export const USERS: UserProfile[] = [
   {
     id: "stu-1",
     fullName: "Rohan Verma",
-    username: "medical student",
-    email: "rohan.v@kims.edu",
+    username: "rohan_verma_mbbs",
+    email: "rohan.v@kims.ac.in",
     avatarUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=200&h=200&fit=crop&crop=faces",
+    coverPhotoUrl: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=1200&h=400&fit=crop",
     role: "STUDENT",
     verificationStatus: "VERIFIED",
-    badgeTitle: "Verified Medical Student (MBBS)",
-    bio: "Final Year MBBS Student at Kempegowda Institute of Medical Sciences. Aspiring Cardiothoracic Surgeon. President, Student Research Forum.",
+    badgeTitle: "Verified Final Year Medical Student (MBBS)",
+    bio: "Final Year MBBS Scholar @ Kempegowda Institute of Medical Sciences. Interested in Interventional Cardiology, clinical auditing, and USMLE preparation.",
+    isPrivate: false,
+    isAdmin: false,
+    joinedCommunityIds: ["comm-year4", "comm-cardio"],
     studentDetails: {
       discipline: "MEDICAL_STUDENT",
       collegeName: "Kempegowda Institute of Medical Sciences (KIMS)",
       academicYear: 4,
-      interests: ["Cardiothoracic Surgery", "ECG Diagnostics", "Bedside Clinical Skills", "USMLE / NEET-PG"],
-      futureSpecialty: "Cardiovascular & Thoracic Surgery",
-      researchInterests: ["Mechanical Circulatory Support", "Post-operative Hemodynamics in CABG"]
+      interests: ["Cardiology", "Emergency Medicine", "Pharmacology"],
+      futureSpecialty: "Cardiology / Internal Medicine",
+      researchInterests: ["Preventive Cardiology", "Point-of-Care Ultrasound (POCUS)"]
     },
     stats: {
-      postsCount: 18,
+      postsCount: 1,
       followersCount: 1840,
-      connectionsCount: 620
+      connectionsCount: 420
     }
   },
   {
-    id: "stu-2",
-    fullName: "Ananya Desai",
-    username: "B parm",
-    email: "ananya.d@manipalpharmacy.edu",
-    avatarUrl: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=200&h=200&fit=crop&crop=faces",
-    role: "STUDENT",
+    id: "mgr-1",
+    fullName: "MedMedia Administrator (Manager)",
+    username: "medmedia_admin",
+    email: "medmedia1409@gmail.com",
+    avatarUrl: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=200&h=200&fit=crop&crop=faces",
+    coverPhotoUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=1200&h=400&fit=crop",
+    role: "DOCTOR",
     verificationStatus: "VERIFIED",
-    badgeTitle: "Verified Pharmacy Scholar (B.Pharm)",
-    bio: "3rd Year B.Pharm scholar @ Manipal College of Pharmaceutical Sciences. Research intern in clinical pharmacokinetics and therapeutic drug monitoring.",
-    studentDetails: {
-      discipline: "B_PHARM",
-      collegeName: "Manipal College of Pharmaceutical Sciences",
-      academicYear: 3,
-      interests: ["Pharmacogenomics", "Chemotherapeutic Drug Interactions", "Hospital Pharmacy"],
-      futureSpecialty: "Clinical Pharmacology",
-      researchInterests: ["Nanocarriers for Targeted Drug Delivery in Glioblastoma"]
+    badgeTitle: "Chief Medical Officer & Platform Manager",
+    bio: "Official MedMedia System Administrator & Clinical Governance Officer. Reviewing platform compliance, HIPAA guidelines, and community verification.",
+    isPrivate: false,
+    isAdmin: true,
+    joinedCommunityIds: ["comm-cardio", "comm-neuro", "comm-surgery", "comm-year4"],
+    doctorDetails: {
+      specialization: "General Surgery",
+      qualifications: ["MBBS", "MS", "MHA", "FRCS"],
+      hospitalAffiliation: "MedMedia Central Governance Board",
+      location: "Bangalore / New Delhi",
+      yearsExperience: 20,
+      clinicalInterests: ["Clinical Governance", "Health Informatics", "Surgical Ethics"],
+      researchPublications: ["Modern Digital Healthcare Protocols & HIPAA Compliance (2025)"],
+      medicalCouncilRegNumber: "NMC-DIR-0001"
     },
     stats: {
-      postsCount: 12,
-      followersCount: 920,
-      connectionsCount: 340
+      postsCount: 1,
+      followersCount: 15400,
+      connectionsCount: 3200
     }
   }
 ];
@@ -249,32 +403,38 @@ export const STORIES: Story[] = [
   {
     id: "st-1",
     userId: "doc-1",
-    userName: "Dr. Arvind Ramesh",
-    userAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=500&h=800&fit=crop",
-    caption: "Cath lab live: Successful complex bifurcation stenting with intravascular imaging.",
-    timestamp: "1h ago",
-    isViewed: false
+    userName: "Dr. Arvind Ramesh, MD, DM",
+    userAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
+    mediaUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=700&h=1000&fit=crop",
+    caption: "Cath lab live: Successful complex bifurcation stenting completed in under 45 minutes using IVUS guidance.",
+    timestamp: "2 hours ago",
+    isViewed: false,
+    isVideo: false,
+    clinicalTags: ["#Cardiology", "#CathLab", "#IVUS"]
   },
   {
     id: "st-2",
     userId: "doc-2",
-    userName: "Dr. Priya Nair",
-    userAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=500&h=800&fit=crop",
-    caption: "Pediatric grand rounds starting in 15 mins. Topic: Craniopharyngioma management.",
-    timestamp: "3h ago",
-    isViewed: false
+    userName: "Dr. Priya Nair, MS, MCh",
+    userAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
+    mediaUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=700&h=1000&fit=crop",
+    caption: "Surgical Pearl: In endoscopic 3rd ventriculostomy, keep the basilar artery bifurcation clearly in view before blunt puncturing.",
+    timestamp: "4 hours ago",
+    isViewed: false,
+    isVideo: false,
+    clinicalTags: ["#Neurosurgery", "#SurgicalPearl", "#Endoscopy"]
   },
   {
     id: "st-3",
     userId: "stu-1",
     userName: "Rohan Verma",
-    userAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop&crop=faces",
-    mediaUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=500&h=800&fit=crop",
-    caption: "Bedside cardiology clinical case discussion with batchmates! 🫀",
-    timestamp: "5h ago",
-    isViewed: true
+    userAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
+    mediaUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=700&h=1000&fit=crop",
+    caption: "Grand Rounds clinical finding: Classic water-hammer pulse observed in severe aortic regurgitation. High yield for viva!",
+    timestamp: "6 hours ago",
+    isViewed: false,
+    isVideo: false,
+    clinicalTags: ["#MedicalStudent", "#Cardiology", "#NEETPG"]
   }
 ];
 
@@ -289,18 +449,16 @@ export const POSTS: Post[] = [
     authorSpecializationOrDiscipline: "Interventional Cardiology",
     isVerified: true,
     postType: "CLINICAL_DISCUSSION",
-    content: "🚨 58-year-old male presents to the ER with sudden retrosternal squeezing chest pain radiating to the left jaw (onset 45 mins ago). BP 90/60 mmHg, HR 52 bpm.\n\nNotice the dramatic ST-segment elevation in leads II, III, and aVF with reciprocal ST depression in I and aVL, accompanied by complete AV dissociation.\n\nWhich coronary artery branch is the culprit, and what is your immediate management protocol prior to cath lab activation?",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#Cardiology", "#ECGChallenge", "#STEMI", "#EmergencyMedicine"],
+    content: "58-year-old male presents to the ER with sudden retrosternal squeezing chest pain radiating to the left jaw (onset 45 mins ago). BP 90/60 mmHg, HR 52 bpm.\n\nNotice dramatic ST-segment elevation in leads II, III, and aVF with reciprocal ST depression in I and aVL, accompanied by complete AV dissociation.\n\nWhich coronary artery branch is the culprit, and what is your immediate management protocol prior to cath lab activation?",
+    mediaUrls: ["https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=900&h=500&fit=crop"],
+    clinicalTags: ["#Cardiology", "#STEMI", "#ECGChallenge"],
     casePoll: {
       question: "Primary Culprit Vessel Identification:",
       options: [
-        { id: "opt-1", text: "Proximal Right Coronary Artery (RCA)", votes: 248 },
-        { id: "opt-2", text: "Left Anterior Descending (LAD) Diagonal", votes: 22 },
-        { id: "opt-3", text: "Left Circumflex (LCx) dominant branch", votes: 41 },
-        { id: "opt-4", text: "Left Main Equivocal", votes: 9 }
+        { id: "opt-1", text: "Right Coronary Artery (Proximal RCA)", votes: 242 },
+        { id: "opt-2", text: "Left Circumflex Artery (LCx)", votes: 48 },
+        { id: "opt-3", text: "Left Anterior Descending (LAD)", votes: 18 },
+        { id: "opt-4", text: "Posterior Descending Artery (PDA)", votes: 12 }
       ],
       totalVotes: 320,
       userVotedOptionId: "opt-1"
@@ -316,33 +474,6 @@ export const POSTS: Post[] = [
   },
   {
     id: "post-2",
-    authorId: "stu-1",
-    authorName: "Rohan Verma",
-    authorUsername: "medical student",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
-    authorRole: "STUDENT",
-    authorSpecializationOrDiscipline: "Final Year MBBS (KIMS)",
-    isVerified: true,
-    postType: "ARTICLE_LINK",
-    content: "Fascinating clinical paper published in the New England Journal of Medicine on early microvascular perfusion monitoring in septic shock.\n\nFor students preparing for university exams: take note of how sublingual capillary flow index correlates far better with patient 28-day mortality than central venous oxygen saturation (ScvO2). Highly recommend reading the trial design!",
-    linkUrl: "https://nejm.org/doi/full/10.1056/NEJMoa240182",
-    linkMeta: {
-      title: "Sublingual Microcirculation Versus Global Hemodynamic Targets in Septic Shock",
-      source: "The New England Journal of Medicine (NEJM)",
-      description: "A randomized multi-center investigation into targeted microvascular resuscitation in ICU patients."
-    },
-    clinicalTags: ["#IntensiveCare", "#SepticShock", "#MedicalStudents", "#NEJMReview"],
-    likesCount: 189,
-    commentsCount: 24,
-    savesCount: 82,
-    sharesCount: 19,
-    isLiked: true,
-    isSaved: false,
-    isFollowing: false,
-    createdAt: "4 hours ago"
-  },
-  {
-    id: "post-3",
     authorId: "doc-2",
     authorName: "Dr. Priya Nair, MS, MCh",
     authorUsername: "neuro_priya",
@@ -350,42 +481,39 @@ export const POSTS: Post[] = [
     authorRole: "DOCTOR",
     authorSpecializationOrDiscipline: "Pediatric Neurosurgery",
     isVerified: true,
-    postType: "IMAGE_CASE",
-    content: "Surgical pearls from this morning's endoscopic third ventriculostomy (ETV):\n\n1. Always identify the mammillary bodies and infundibular recess before fenestrating the floor.\n2. Use blunt balloon dilation rather than sharp dissection to protect the basilar apex below.\n3. Verify brisk cerebrospinal fluid pulsation before closure.\n\nOpen to questions from residents and surgical interns!",
-    mediaUrls: [
-      "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop",
-      "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=900&h=500&fit=crop"
-    ],
-    clinicalTags: ["#Neurosurgery", "#SurgicalPearls", "#Endoscopy", "#Residents"],
-    likesCount: 512,
-    commentsCount: 49,
-    savesCount: 201,
-    sharesCount: 88,
-    isLiked: false,
-    isSaved: true,
+    postType: "TWEET",
+    content: "High-yield pearl for all surgical residents: In hydrocephalus secondary to aqueductal stenosis, Endoscopic Third Ventriculostomy (ETV) demonstrates a 78% success rate without the lifelong mechanical malfunction risks of VP shunts. Check the liliequist membrane carefully during prep.",
+    clinicalTags: ["#Neurosurgery", "#MedTweet", "#Pediatrics", "#SurgicalPearls"],
+    likesCount: 185,
+    commentsCount: 29,
+    savesCount: 82,
+    sharesCount: 24,
+    isLiked: true,
+    isSaved: false,
     isFollowing: true,
-    createdAt: "7 hours ago"
+    createdAt: "4 hours ago"
   },
   {
-    id: "post-4",
-    authorId: "stu-2",
-    authorName: "Ananya Desai",
-    authorUsername: "B parm",
-    authorAvatar: "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=150&h=150&fit=crop&crop=faces",
+    id: "post-3",
+    authorId: "stu-1",
+    authorName: "Rohan Verma",
+    authorUsername: "rohan_verma_mbbs",
+    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
     authorRole: "STUDENT",
-    authorSpecializationOrDiscipline: "3rd Year B.Pharm",
+    authorSpecializationOrDiscipline: "Final Year MBBS",
     isVerified: true,
-    postType: "TWEET",
-    content: "Reminder for hospital pharmacy & clinical rounds: When switching a heart failure patient from an ACE inhibitor (e.g., Ramipril) to an ARNI (Sacubitril/Valsartan), ALWAYS enforce a strict 36-hour washout period to prevent bradykinin-mediated life-threatening angioedema! 💊⚠️",
-    clinicalTags: ["#Pharmacology", "#PatientSafety", "#DrugInteractions", "#PharmacyStudent"],
-    likesCount: 275,
-    commentsCount: 16,
-    savesCount: 164,
-    sharesCount: 52,
-    isLiked: true,
-    isSaved: true,
+    postType: "IMAGE_CASE",
+    content: "Radiology round review: Classic 'Water Bottle Heart' contour on AP chest radiograph in a 34-year-old female presenting with muffled heart sounds, elevated JVP, and systemic hypotension (Beck's Triad). Immediate bedside pericardiocentesis was life-saving.",
+    mediaUrls: ["https://images.unsplash.com/photo-1516549655169-df83a0774514?w=900&h=500&fit=crop"],
+    clinicalTags: ["#Radiology", "#CardiacTamponade", "#MedicalStudent", "#HighYield"],
+    likesCount: 224,
+    commentsCount: 31,
+    savesCount: 95,
+    sharesCount: 19,
+    isLiked: false,
+    isSaved: false,
     isFollowing: false,
-    createdAt: "11 hours ago"
+    createdAt: "7 hours ago"
   }
 ];
 
@@ -393,212 +521,642 @@ export const MEDCLIPS: Medclip[] = [
   {
     id: "clip-1",
     authorId: "doc-1",
-    authorName: "Dr. Arvind Ramesh",
+    authorName: "Dr. Arvind Ramesh, MD, DM",
     authorSpecialty: "Interventional Cardiology",
-    authorAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=100&h=100&fit=crop&crop=faces",
+    authorAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
     isVerified: true,
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=1000&fit=crop",
-    caption: "Auscultation masterclass: How to instantly distinguish Aortic Stenosis (ejection systolic murmur radiating to carotids) from Mitral Regurgitation (holosystolic radiating to axilla) using handgrip maneuvers. 🎧🩺",
-    clinicalCategory: "clinical updates",
-    tags: ["#Cardiology", "#ClinicalSkills", "#Auscultation", "#MedEd"],
-    likesCount: 1420,
-    commentsCount: 112,
-    savesCount: 890,
-    sharesCount: 310,
-    isLiked: false,
-    isSaved: true,
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-hands-of-a-doctor-writing-a-prescription-43403-large.mp4",
+    thumbnailUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&h=900&fit=crop",
+    caption: "Cath Lab Tutorial: Intravascular Ultrasound (IVUS) interpretation before bifurcation stenting. Learn the exact vessel lumen diameter calculation.",
+    clinicalCategory: "following",
+    tags: ["#Cardiology", "#CathLab", "#Fellowship"],
+    likesCount: 890,
+    commentsCount: 64,
+    savesCount: 240,
+    sharesCount: 110,
+    isLiked: true,
+    isSaved: false,
     isFollowing: true,
     createdAt: "1 day ago"
   },
   {
     id: "clip-2",
     authorId: "doc-2",
-    authorName: "Dr. Priya Nair",
+    authorName: "Dr. Priya Nair, MS, MCh",
     authorSpecialty: "Pediatric Neurosurgery",
-    authorAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop&crop=faces",
+    authorAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
     isVerified: true,
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&h=1000&fit=crop",
-    caption: "Surgical Knot Tying: The 1-Handed Square Knot technique essential for OR residents. Watch finger placement carefully to prevent slipping. ✂️",
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-doctor-checking-a-patients-x-ray-43404-large.mp4",
+    thumbnailUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=600&h=900&fit=crop",
+    caption: "Surgical knots under loupes: Demonstrating single-hand surgical knot tying technique for deep cavity neurosurgical closures.",
     clinicalCategory: "following",
-    tags: ["#Surgery", "#SurgicalKnot", "#ORResident", "#SurgicalPearls"],
-    likesCount: 2980,
-    commentsCount: 184,
-    savesCount: 1650,
-    sharesCount: 520,
-    isLiked: true,
+    tags: ["#Neurosurgery", "#SurgicalTechnique", "#Residents"],
+    likesCount: 1240,
+    commentsCount: 92,
+    savesCount: 410,
+    sharesCount: 178,
+    isLiked: false,
     isSaved: true,
     isFollowing: true,
     createdAt: "2 days ago"
   },
   {
     id: "clip-3",
-    authorId: "stu-1",
-    authorName: "Rohan Verma",
-    authorSpecialty: "Medical Student (Final MBBS)",
-    authorAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=100&h=100&fit=crop&crop=faces",
+    authorId: "mgr-1",
+    authorName: "MedMedia Administrator",
+    authorSpecialty: "Clinical Governance",
+    authorAvatar: "https://images.unsplash.com/photo-1612349317150-e413f6a5b16d?w=150&h=150&fit=crop",
     isVerified: true,
-    videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
-    thumbnailUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&h=1000&fit=crop",
-    caption: "Radiology High-Yield: The Rigler Sign vs Continuous Diaphragm Sign on emergency abdominal X-Rays. Never miss pneumoperitoneum!",
-    clinicalCategory: "social update",
-    tags: ["#Radiology", "#XRayInterpretation", "#MBBSPrep", "#Emergency"],
-    likesCount: 840,
+    videoUrl: "https://assets.mixkit.co/videos/preview/mixkit-medical-researcher-in-a-laboratory-looking-at-a-microscope-43408-large.mp4",
+    thumbnailUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&h=900&fit=crop",
+    caption: "Clinical Practice Update: 2026 Guidelines on Patient De-identification & Ethical Case Sharing in Social Medicine.",
+    clinicalCategory: "following",
+    tags: ["#Ethics", "#HIPAA", "#MedicalEducation"],
+    likesCount: 620,
     commentsCount: 45,
-    savesCount: 510,
-    sharesCount: 95,
+    savesCount: 190,
+    sharesCount: 75,
     isLiked: false,
     isSaved: false,
-    isFollowing: false,
+    isFollowing: true,
     createdAt: "3 days ago"
+  }
+];
+
+export const COMMUNITIES: Community[] = [
+  // 1. Specialty Communities
+  {
+    id: "comm-cardio",
+    name: "Cardiology & Vascular Medicine",
+    iconUrl: "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=150&h=150&fit=crop",
+    description: "Hub for cardiologists, cardiac surgeons, and fellows. ECG challenges, cath lab trials, and heart failure protocols.",
+    category: "Specialty",
+    membersCount: 4820,
+    maxCapacity: 10000,
+    creatorId: "doc-1",
+    creatorName: "Dr. Arvind Ramesh",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-neuro",
+    name: "Neurology & Neurosurgery",
+    iconUrl: "https://images.unsplash.com/photo-1559757175-5700dde675bc?w=150&h=150&fit=crop",
+    description: "Brain imaging, stroke management, neuroendoscopy, and spine surgery clinical discussions.",
+    category: "Specialty",
+    membersCount: 3950,
+    maxCapacity: 10000,
+    creatorId: "doc-2",
+    creatorName: "Dr. Priya Nair",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-surgery",
+    name: "General & Laparoscopic Surgery",
+    iconUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=150&h=150&fit=crop",
+    description: "OR tips, minimally invasive surgical procedures, post-op complication reviews, and surgical residency forum.",
+    category: "Specialty",
+    membersCount: 5210,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-derma",
+    name: "Dermatology & Cosmetology",
+    iconUrl: "https://images.unsplash.com/photo-1522337360788-8b13dee7a37e?w=150&h=150&fit=crop",
+    description: "Dermoscopy patterns, rare rashes, autoimmune skin disorders, and aesthetic lasers.",
+    category: "Specialty",
+    membersCount: 2640,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-pediatrics",
+    name: "Pediatrics & Neonatology",
+    iconUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=150&h=150&fit=crop",
+    description: "NICU management, pediatric milestones, vaccination updates, and childhood disease case reviews.",
+    category: "Specialty",
+    membersCount: 3120,
+    maxCapacity: 10000,
+    creatorId: "doc-2",
+    creatorName: "Dr. Priya Nair",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-ortho",
+    name: "Orthopedics & Sports Medicine",
+    iconUrl: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=150&h=150&fit=crop",
+    description: "Arthroplasty, fracture fixation, arthroscopy, and spine stabilization case sharing.",
+    category: "Specialty",
+    membersCount: 2980,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-radiology",
+    name: "Radiology & Imaging Diagnostics",
+    iconUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=150&h=150&fit=crop",
+    description: "CT, MRI, Ultrasound, and PET-CT film discussions with consultant radiologists.",
+    category: "Specialty",
+    membersCount: 4400,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+
+  // 2. Student Year Communities
+  {
+    id: "comm-year1",
+    name: "1st Year MBBS Medical Cohort",
+    iconUrl: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=150&h=150&fit=crop",
+    description: "Anatomy dissection tips, Physiology graphs, Biochemistry pathways, and professional foundation.",
+    category: "Student Cohort",
+    membersCount: 3890,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Student Wing",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-year2",
+    name: "2nd Year MBBS Medical Cohort",
+    iconUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=150&h=150&fit=crop",
+    description: "Pathology gross specimens, Pharmacology drug tables, and Microbiology culture identification.",
+    category: "Student Cohort",
+    membersCount: 4210,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Student Wing",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-year3",
+    name: "3rd Year MBBS Medical Cohort",
+    iconUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=150&h=150&fit=crop",
+    description: "Ophthalmology fundus exams, ENT tuning forks, Forensic medicine, and Community health field postings.",
+    category: "Student Cohort",
+    membersCount: 3670,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Student Wing",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "comm-year4",
+    name: "Final Year MBBS & Clinical Interns",
+    iconUrl: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
+    description: "Medicine, Surgery, OBG, Pediatrics bedside case presentations, NEET-PG & USMLE high-yield tips.",
+    category: "Student Cohort",
+    membersCount: 6890,
+    maxCapacity: 10000,
+    creatorId: "stu-1",
+    creatorName: "Rohan Verma",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  }
+];
+
+export const COURSES: CourseItem[] = [
+  {
+    id: "crs-who",
+    name: "WHO Academy: Clinical Infection Prevention & Outbreak Control",
+    provider: "WHO Academy",
+    logoUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=150&h=150&fit=crop",
+    description: "Official World Health Organization training module on standard precautions, PPE sequencing, hospital disinfection, and IPC audit execution.",
+    link: "https://academy.who.int",
+    isFree: true,
+    cmeCredits: 4
+  },
+  {
+    id: "crs-stanford",
+    name: "Stanford Medicine: Antimicrobial Stewardship & Critical Care",
+    provider: "Stanford University",
+    logoUrl: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150&h=150&fit=crop",
+    description: "Advanced antimicrobial decision pathways, empirical vs targeted antibiotic de-escalation, and reducing MDR organism emergence in tertiary care.",
+    link: "https://online.stanford.edu",
+    isFree: true,
+    cmeCredits: 6
+  },
+  {
+    id: "crs-nih",
+    name: "NIH: Principles & Practice of Clinical Research (IPPCR)",
+    provider: "National Institutes of Health",
+    logoUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=150&h=150&fit=crop",
+    description: "Comprehensive curriculum from the NIH Clinical Center covering clinical study design, biostatistics, FDA IND/IDE regulations, and medical ethics.",
+    link: "https://ocr.od.nih.gov",
+    isFree: true,
+    cmeCredits: 8
+  },
+  {
+    id: "crs-harvard",
+    name: "Harvard Medical School: Mechanical Ventilation in Critical Illness",
+    provider: "Harvard University",
+    logoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=150&h=150&fit=crop",
+    description: "Practical ICU physiology, ventilator waveform interpretation, lung-protective ventilation in ARDS, and patient-ventilator dyssynchrony troubleshooting.",
+    link: "https://pll.harvard.edu",
+    isFree: true,
+    cmeCredits: 5
+  },
+  {
+    id: "crs-research",
+    name: "Cochrane Clinical Trials Review & Systematic Literature Synthesis",
+    provider: "Research Courses",
+    logoUrl: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=150&h=150&fit=crop",
+    description: "Methodology of systematic reviews, PRISMA flowcharts, risk-of-bias assessment tools, and meta-analytic forest plot interpretation for clinician investigators.",
+    link: "https://www.authoraid.info",
+    isFree: true,
+    cmeCredits: 4
+  },
+  {
+    id: "crs-ai",
+    name: "AI & Deep Learning Applications in Diagnostic Radiology",
+    provider: "AI Courses",
+    logoUrl: "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop",
+    description: "Demystifying computer vision convolutional networks for CXR, brain CT hemorrhage triage, and integrating CAD algorithms into hospital PACS workflows.",
+    link: "https://coursera.org",
+    isFree: true,
+    cmeCredits: 6
+  },
+  {
+    id: "crs-unicef",
+    name: "UNICEF Agora: Integrated Management of Neonatal & Child Illness",
+    provider: "UNICEF Agora",
+    logoUrl: "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=150&h=150&fit=crop",
+    description: "Emergency triage, assessment, and treatment (ETAT) guidelines for infants, pediatric dehydration management, and severe acute malnutrition protocols.",
+    link: "https://agora.unicef.org",
+    isFree: true,
+    cmeCredits: 3
+  },
+  {
+    id: "crs-openwho",
+    name: "OpenWHO: Public Health Emergency Operations & Mass Casualty Triage",
+    provider: "OpenWHO",
+    logoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=150&h=150&fit=crop",
+    description: "Fast-track international emergency health guidelines, incident management frameworks, and chemical/biological disaster triage algorithms.",
+    link: "https://openwho.org",
+    isFree: true,
+    cmeCredits: 4
+  }
+];
+
+export const SCHOLARSHIPS: ScholarshipItem[] = [
+  {
+    id: "sch-icmr",
+    name: "ICMR Short Term Studentship (STS) 2026",
+    organization: "Indian Council of Medical Research",
+    logoUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=150&h=150&fit=crop",
+    fundingAmount: "₹50,000 Stipend + ICMR Certificate",
+    description: "Prestigious national research grant for undergraduate MBBS/BDS students to conduct 2 months of mentored clinical or laboratory research.",
+    deadline: "October 30, 2026",
+    applyLink: "https://icmr.gov.in"
+  },
+  {
+    id: "sch-wellcome",
+    name: "Wellcome Trust International Clinical Fellowship",
+    organization: "Wellcome Trust Foundation",
+    logoUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=150&h=150&fit=crop",
+    fundingAmount: "£180,000 / 3-Year Grant",
+    description: "Enables early-career clinical specialists to conduct groundbreaking global health and translational epidemiology studies with UK host institutions.",
+    deadline: "November 15, 2026",
+    applyLink: "https://wellcome.org"
+  },
+  {
+    id: "sch-rhodes",
+    name: "Rhodes Medical Sciences Scholarship (Oxford)",
+    organization: "Oxford University Rhodes Trust",
+    logoUrl: "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150&h=150&fit=crop",
+    fundingAmount: "100% Tuition + £19,000 / year stipend",
+    description: "Postgraduate medical scholars scholarship covering MSc or DPhil in Clinical Neurosciences, Oncology, or Global Health at University of Oxford.",
+    deadline: "December 01, 2026",
+    applyLink: "https://www.rhodeshouse.ox.ac.uk"
+  },
+  {
+    id: "sch-harvard",
+    name: "Harvard Global Health Travel & Research Fellowship",
+    organization: "Harvard Global Health Institute",
+    logoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=150&h=150&fit=crop",
+    fundingAmount: "$12,000 Project Sponsorship",
+    description: "Provides travel, laboratory logistics, and publication sponsorship for collaborative health equity and low-resource clinical trials.",
+    deadline: "January 10, 2027",
+    applyLink: "https://globalhealth.harvard.edu"
+  }
+];
+
+export const RESEARCH_PROJECTS: ResearchProject[] = [
+  {
+    id: "res-1",
+    projectName: "Multi-Center AI-ECG Early Arrhythmia Detection Trial",
+    instituteName: "Apollo Hospitals & AIIMS Consortium",
+    departmentName: "Department of Cardiology & Health Informatics",
+    place: "Bangalore, India",
+    description: "Investigating deep learning model sensitivity in detecting subtle paroxysmal atrial fibrillation and subclinical QT prolongation on standard 12-lead ECGs prior to cardiac arrest events. #Cardiology #MachineLearning #Arrhythmia #ClinicalTrial",
+    tags: ["#Cardiology", "#AI", "#ClinicalTrial", "#ECG"],
+    photosOrLink: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=900&h=500&fit=crop",
+    creatorId: "doc-1",
+    creatorName: "Dr. Arvind Ramesh, MD, DM",
+    creatorAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
+    memberIds: ["doc-1", "stu-1"],
+    pendingJoinRequestIds: [],
+    notes: [
+      {
+        id: "note-1",
+        title: "Cohort Inclusion Criteria Protocol v2.1",
+        content: "Patients aged 18-75 presenting with intermittent palpitation episodes and baseline normal Sinus Rhythm. Exclude patients with implanted permanent pacemakers or severe valvular stenosis.",
+        authorId: "doc-1",
+        authorName: "Dr. Arvind Ramesh",
+        updatedAt: "2 days ago"
+      },
+      {
+        id: "note-2",
+        title: "Interim De-identified Dataset Snapshot",
+        content: "240 anonymized recordings collected from Apollo Cath Unit 2. Validation ROC AUC currently at 0.942 on external validation set.",
+        authorId: "stu-1",
+        authorName: "Rohan Verma",
+        updatedAt: "Yesterday"
+      }
+    ],
+    messages: [
+      {
+        id: "rm-1",
+        senderId: "doc-1",
+        senderName: "Dr. Arvind Ramesh",
+        senderAvatar: "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
+        text: "Team, the IRB ethical clearance renewal has been formally approved. We can expand cohort intake to 500 patients.",
+        timestamp: "10:30 AM"
+      },
+      {
+        id: "rm-2",
+        senderId: "stu-1",
+        senderName: "Rohan Verma",
+        senderAvatar: "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
+        text: "Excellent news Dr. Ramesh! I will finalize the anonymization log for the incoming patient records today.",
+        timestamp: "10:45 AM"
+      }
+    ],
+    createdAt: "2026-02-10"
+  },
+  {
+    id: "res-2",
+    projectName: "Pediatric Neuroendoscopy Hydrocephalus Outcome Registry",
+    instituteName: "Manipal Hospital & NIMHANS",
+    departmentName: "Department of Pediatric Neurosurgery",
+    place: "Bangalore, India",
+    description: "Prospective registry analyzing 24-month shunt-free survival in infants undergoing ETV with choroid plexus cauterization (ETV+CPC). #Neurosurgery #Pediatrics #Hydrocephalus",
+    tags: ["#Neurosurgery", "#Pediatrics", "#Hydrocephalus"],
+    photosOrLink: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop",
+    creatorId: "doc-2",
+    creatorName: "Dr. Priya Nair, MS, MCh",
+    creatorAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
+    memberIds: ["doc-2"],
+    pendingJoinRequestIds: ["stu-1"],
+    notes: [
+      {
+        id: "note-3",
+        title: "ETV Success Score (ETVSS) Stratification Table",
+        content: "Age < 1 month (score 0), 1-6 months (score 10), etiology post-infectious vs congenital stenosis, previous shunt history.",
+        authorId: "doc-2",
+        authorName: "Dr. Priya Nair",
+        updatedAt: "3 days ago"
+      }
+    ],
+    messages: [
+      {
+        id: "rm-3",
+        senderId: "doc-2",
+        senderName: "Dr. Priya Nair",
+        senderAvatar: "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
+        text: "Welcoming candidate co-investigators for the 2026 surgical cohort follow-up audit.",
+        timestamp: "Yesterday"
+      }
+    ],
+    createdAt: "2026-02-18"
+  }
+];
+
+export const LOCUM_GIGS: LocumGig[] = [
+  {
+    id: "locum-1",
+    instituteName: "Apollo Emergency Center",
+    place: "Bannerghatta Road, Bangalore",
+    duration: "2 Weeks (Covering Oct 15 - Oct 30, Weekend Duty)",
+    gigName: "Consultant Interventional Cardiologist On-Call Locum",
+    stipend: "₹45,000 / Weekend Shift + Travel Covered",
+    documentsUrl: "https://example.com/locum-guidelines.pdf",
+    email: "cardio.locum@apollohospitals.org",
+    phone: "+91 98450 11223",
+    otherLink: "https://apollohospitals.org/careers",
+    creatorId: "doc-1",
+    creatorName: "Dr. Arvind Ramesh",
+    createdAt: "2026-09-10"
+  },
+  {
+    id: "locum-2",
+    instituteName: "Fortis Super Specialty Hospital",
+    place: "Cunningham Road, Bangalore",
+    duration: "1 Month (Night Shift ICU Cover)",
+    gigName: "Critical Care / ICU Registrar Night Locum",
+    stipend: "₹3,500 / 12-Hour Night Shift",
+    email: "hr.bangalore@fortishealthcare.com",
+    phone: "+91 80 4199 4444",
+    otherLink: "https://fortishealthcare.com",
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    createdAt: "2026-09-12"
+  },
+  {
+    id: "locum-3",
+    instituteName: "St. John's Community Outreach Hospital",
+    place: "Rural Karnataka Health Outpost",
+    duration: "3 Days (Tribal Health & Clinical Screening Camp)",
+    gigName: "Community Pediatric Screening Volunteer Clinician",
+    stipend: "Experience only (Official Institutional Certificate & All Boarding Covered)",
+    email: "outreach@stjohns.in",
+    phone: "+91 80 2206 5000",
+    creatorId: "doc-2",
+    creatorName: "Dr. Priya Nair",
+    createdAt: "2026-09-15"
+  }
+];
+
+export const LOCUM_APPLICATIONS: LocumApplication[] = [
+  {
+    id: "loc-app-1",
+    gigId: "locum-2",
+    gigName: "Critical Care / ICU Registrar Night Locum",
+    name: "Dr. Vikram Seth",
+    qualification: "MBBS, MD Anesthesiology",
+    resumeUrl: "https://example.com/vikram_seth_cv.pdf",
+    email: "vikram.seth@gmail.com",
+    contactNumber: "+91 98801 44552",
+    otherLink: "https://linkedin.com/in/vikram-seth-md",
+    applicantId: "doc-1",
+    submittedAt: "2026-09-18"
   }
 ];
 
 export const JOBS: Job[] = [
   {
     id: "job-1",
-    title: "Consultant Interventional Cardiologist",
+    title: "Senior Consultant Interventional Cardiologist",
     category: "Doctor jobs",
     type: "Full time",
-    companyName: "Fortis Memorial Research Institute",
-    place: "Gurugram, NCR",
-    experience: "5+ Years Post DM/DNB",
-    salary: "₹38,00,000 - ₹55,00,000 / annum",
-    description: "Seeking a dedicated Interventional Cardiologist to lead our second state-of-the-art Cath Lab unit. Responsibilities include primary PCIs, radial interventions, device implantation, and participation in academic seminars.",
-    preferenceEducation: "DM / DNB in Cardiology with recognized medical council registration. FACC or FSCAI fellowship preferred.",
-    skills: ["Complex PCI", "Cath Lab Leadership", "Rotablation", "IVUS & OCT", "TAVR Assistance"],
+    companyName: "Apollo Hospitals",
+    place: "Bangalore, Karnataka",
+    experience: "8+ Years Post DM / DNB",
+    salary: "₹38 - 55 Lakhs P.A.",
+    description: "Seeking an experienced consultant to lead the structural heart disease program, TAVR clinical pathway, and advanced cardiac catheterization suite. High-volume center with state-of-the-art biplane cath labs.",
+    preferenceEducation: "MBBS, MD Internal Medicine, DM/DNB Cardiology, FSCAI preferred",
+    skills: ["TAVR", "CTO Angioplasty", "IVUS", "Rotablation", "IABP"],
     hospitalLogoUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=120&h=120&fit=crop",
     postedAt: "1 day ago"
   },
   {
     id: "job-2",
-    title: "Assistant Professor - Department of Pathology",
+    title: "Assistant Professor & Clinical Fellow - Pediatric Neurosurgery",
     category: "academic jobs",
     type: "Full time",
-    companyName: "St. John's National Academy of Health Sciences",
+    companyName: "Manipal Hospital Academic Medical Center",
     place: "Bangalore, Karnataka",
-    experience: "2-4 Years Post MD",
-    salary: "₹18,00,000 - ₹24,00,000 / annum",
-    description: "Inviting applications for full-time faculty in Histopathology and Cytogenetics. Role entails teaching MBBS & MD candidates, clinical reporting, and research grant execution.",
-    preferenceEducation: "MD Pathology with minimum 3 publications in PubMed-indexed peer-reviewed journals.",
-    skills: ["Histopathology Reporting", "Undergraduate Lectures", "Immunohistochemistry", "Curriculum Mentorship"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1586773860418-d37222d8fce3?w=120&h=120&fit=crop",
+    experience: "3-5 Years Post MCh / DNB",
+    salary: "₹24 - 32 Lakhs P.A.",
+    description: "Academic faculty position involving resident teaching, micro-neurosurgical pediatric theater cases, and clinical research trial management.",
+    preferenceEducation: "MBBS, MS General Surgery, MCh / DNB Neurosurgery",
+    skills: ["Pediatric Brain Tumors", "Endoscopy", "Craniosynostosis", "Medical Teaching"],
+    hospitalLogoUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=120&h=120&fit=crop",
     postedAt: "3 days ago"
   },
   {
     id: "job-3",
-    title: "Clinical Research & Oncology Internship 2026",
+    title: "Junior Clinical Resident & Ward Registrar",
     category: "Internship",
-    type: "Part time",
-    companyName: "Tata Memorial Centre / ACTREC",
-    place: "Mumbai, Maharashtra (Hybrid)",
-    experience: "MBBS Intern / Final Year Student",
-    salary: "₹35,000 / month stipend",
-    description: "6-month rotational research internship focusing on immunotherapy clinical trials, data abstraction, biobanking protocols, and GCP guidelines.",
-    preferenceEducation: "Final year MBBS students, recent graduates, or B.Pharm students with strong interest in clinical oncology.",
-    skills: ["GCP Guidelines", "Clinical Trial Protocol", "SPSS / R Analysis", "Patient Registry Management"],
+    type: "Full time",
+    companyName: "Fortis Memorial Healthcare Institute",
+    place: "New Delhi / Gurgaon",
+    experience: "Fresh MBBS Graduates / 0-2 Years",
+    salary: "₹85,000 - 1,10,000 / month",
+    description: "Comprehensive in-patient care, triage stabilization, daily ward rounds with senior faculty, and preparation for PG medical entrance.",
+    preferenceEducation: "MBBS (NMC / State Council Registered)",
+    skills: ["Emergency Triaging", "ACLS / BLS", "Arterial Line Insertion", "Patient Management"],
     hospitalLogoUrl: "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=120&h=120&fit=crop",
-    postedAt: "Just now"
+    postedAt: "5 days ago"
   },
   {
     id: "job-4",
-    title: "Fellowship in Pediatric Critical Care Medicine (PICU)",
+    title: "Post-Doctoral Fellow in Clinical Oncology Research",
     category: "fellowship",
     type: "Full time",
-    companyName: "Rainbow Children's Hospitals",
-    place: "Hyderabad, Telangana",
-    experience: "MD / DNB Pediatrics Completed",
-    salary: "₹1,20,000 / month stipend + Accommodation",
-    description: "Accredited 1-year clinical fellowship covering ECMO management, high-frequency oscillatory ventilation, advanced pediatric resuscitation, and bedside echocardiography.",
-    preferenceEducation: "MD / DNB in Pediatrics or Child Health.",
-    skills: ["Pediatric ECMO", "Advanced Airway", "Point-of-Care Ultrasound (POCUS)", "Invasive Hemodynamic Monitoring"],
-    hospitalLogoUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=120&h=120&fit=crop",
-    postedAt: "4 days ago"
+    companyName: "Tata Memorial Medical Centre",
+    place: "Mumbai, Maharashtra",
+    experience: "1-3 Years",
+    salary: "₹18 - 24 Lakhs P.A. + Grant",
+    description: "Dedicated fellowship in molecular oncology, genomic targeted therapies, and Phase II/III immuno-oncology clinical trials.",
+    preferenceEducation: "MD / DNB / DM Oncology or Pharmacology",
+    skills: ["Genomic Profiling", "Immunotherapy Protocols", "Biostatistics", "IRB Documentation"],
+    hospitalLogoUrl: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=120&h=120&fit=crop",
+    postedAt: "1 week ago"
   }
 ];
 
 export const OPPORTUNITIES: OpportunityItem[] = [
   {
     id: "opp-1",
-    type: "RESEARCH",
-    title: "Multi-Center Study: AI-Powered ECG Detection of Early Cardiomyopathy",
-    subtitle: "Principal Investigator: Dr. Arvind Ramesh | Open Collaboration Call",
-    description: "Seeking 3 medical student / resident co-investigators across tertiary teaching hospitals for patient cohort anonymization and digital ECG record validation. Co-authorship guaranteed on IEEE/Lancet digital health submission.",
-    tags: ["#ResearchCall", "#Cardiology", "#MachineLearning", "#CoAuthorWanted"],
-    organizerOrAffiliation: "Apollo Research Innovations & Health AI Lab",
-    actionLabel: "Join Research Project"
+    type: "EVENT",
+    title: "77th Annual All India Medical & Surgical Congress",
+    subtitle: "Indian Medical Association National Forum",
+    description: "Premier academic assembly bringing 2,500+ surgeons, physicians, and medical students together. Keynotes by international AIIMS and Harvard faculty.",
+    tags: ["#MedicalConference", "#CME", "#Surgery", "#InternalMedicine"],
+    organizerOrAffiliation: "Indian Medical Association (IMA)",
+    locationOrVenue: "Bangalore International Exhibition Centre (BIEC)",
+    dateTime: "Nov 14-16, 2026 • 09:00 AM IST",
+    contactEmail: "congress2026@ima-india.org",
+    actionLabel: "Register for CME",
+    cmeCredits: 6
   },
   {
     id: "opp-2",
-    type: "FREELANCE",
-    title: "Emergency Department Weekend Locum Coverage",
-    subtitle: "Columbia Asia / Manipal Hospital - Whitefield",
-    description: "Urgent locum shifts available for licensed MBBS / MD physicians for 12-hour trauma & casualty weekend coverage. Competitive hourly compensation with on-call quarters provided.",
-    tags: ["#LocumTenens", "#EmergencyDuty", "#DoctorFreelancing", "#WeekendShift"],
-    organizerOrAffiliation: "Manipal Hospital Casualty Division",
-    locationOrVenue: "Whitefield, Bangalore",
-    dateTime: "Upcoming Saturday & Sunday Shifts",
-    actionLabel: "Apply for Locum"
-  },
-  {
-    id: "opp-3",
     type: "EVENT",
-    title: "77th Annual All India Medical Congress & Surgical Expo 2026",
-    subtitle: "Accredited with 6 CME Credit Hours by Medical Council",
-    description: "3-day premier medical event bringing together over 4,000 surgeons, clinicians, and medical scholars. Features live robotic surgery broadcasts, simulated trauma bootcamps, and abstract competitions.",
-    tags: ["#MedicalCongress", "#CMEEvent", "#RoboticSurgery", "#Exhibition"],
-    organizerOrAffiliation: "Indian Medical Association & Surgical Society",
-    locationOrVenue: "Bangalore International Exhibition Centre (BIEC)",
-    dateTime: "Nov 14 - Nov 16, 2026 • 09:00 AM IST",
-    contactEmail: "cme-secretariat@ima-events.org",
-    actionLabel: "RSVP & Register"
-  },
-  {
-    id: "opp-4",
-    type: "COURSE",
-    title: "Mastering Bedside Point-of-Care Ultrasound (POCUS) in Critical Care",
-    subtitle: "Certified Comprehensive Online & Simulation Hybrid Module",
-    description: "Endorsed by the Society of Critical Care Medicine. 12 comprehensive modules on eFAST, lung ultrasound (B-lines vs A-lines), and focused cardiac evaluation.",
-    tags: ["#POCUS", "#UltrasoundMastery", "#CriticalCare", "#OnlineCME"],
-    organizerOrAffiliation: "MedMedia Academy & International Ultrasound Society",
-    cmeCredits: 4.5,
-    actionLabel: "Enroll in Course"
+    title: "Hands-on Workshop: Critical Care Hemodynamic Ultrasound (POCUS)",
+    subtitle: "Apollo Institute of Critical Care Simulation",
+    description: "Intensive 2-day simulation workshop covering cardiac echo windows, lung sliding signs for pneumothorax, and IVC collapsibility assessment.",
+    tags: ["#POCUS", "#Ultrasound", "#CriticalCare", "#EmergencyMedicine"],
+    organizerOrAffiliation: "Apollo Simulation Center",
+    locationOrVenue: "Apollo Hospitals Simulation Lab, 5th Floor, Bangalore",
+    dateTime: "Oct 22-23, 2026 • 08:30 AM IST",
+    contactEmail: "simulation.pocus@apollohospitals.org",
+    actionLabel: "Book Workshop Seat",
+    cmeCredits: 4
   }
 ];
 
-export const SEARCH_INDEX = {
-  categories: ["Accounts", "community", "associations", "posts", "job offers", "Hospital"],
-  accounts: USERS,
-  communities: [
-    { id: "com-1", name: "Cardiovascular Specialists Network", membersCount: 14200, branch: "Karnataka State Chapter" },
-    { id: "com-2", name: "All India Medical Student Council (AIMSC)", membersCount: 38900, branch: "National Student Wing" },
-    { id: "com-3", name: "Hospital Pharmacists & Clinical Toxicologists", membersCount: 8400, branch: "South Zone" }
-  ],
-  associations: [
-    { id: "ass-1", name: "Association of Physicians of India (API)", regId: "API-CENTRAL-01" },
-    { id: "ass-2", name: "Indian Society of Critical Care Medicine (ISCCM)", regId: "ISCCM-HQ" },
-    { id: "ass-3", name: "Pharmacy Council of India Professional Forum", regId: "PCI-EDU-09" }
-  ],
-  hospitals: [
-    { id: "hosp-1", name: "Apollo Hospitals", city: "Bangalore, Chennai, Delhi", type: "Multi-Super Specialty" },
-    { id: "hosp-2", name: "Manipal Hospital", city: "Bangalore, Mangalore, Jaipur", type: "Tertiary Teaching Hospital" },
-    { id: "hosp-3", name: "All India Institute of Medical Sciences (AIIMS)", city: "New Delhi", type: "Apex Autonomous Medical Institute" }
-  ],
-  networkingSuggestions: [
-    {
-      id: "net-1",
-      name: "Dr. Sandeep Kulkarni",
-      roleText: "Cardiologist @ Narayana Health",
-      reason: "Alumni connection: AIIMS New Delhi (Class of 2012)",
-      avatar: "https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&h=100&fit=crop"
-    },
-    {
-      id: "net-2",
-      name: "Sneha Rao",
-      roleText: "Final Year MBBS @ Bangalore Medical College (BMCRI)",
-      reason: "Likely preference: Interested in Cardiothoracic Surgery",
-      avatar: "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=100&h=100&fit=crop"
-    }
-  ]
-};
+export const NOTIFICATIONS: NotificationItem[] = [
+  {
+    id: "notif-1",
+    userId: "doc-1",
+    type: "CONFERENCE",
+    title: "Conference Call: 77th Annual Medical Congress Registration Open",
+    description: "Early bird registration and abstract submission for the National Medical Congress is now open. 6 CME credits granted.",
+    timestamp: "10 mins ago",
+    isRead: false,
+    actionUrl: "opportunities?tab=events"
+  },
+  {
+    id: "notif-2",
+    userId: "doc-1",
+    type: "JOB_APPLICATION",
+    title: "Job Application Update: Apollo Interventional Fellow Position",
+    description: "Dr. Sandeep Kulkarni has shortlisted your profile for the Senior Consultant review panel.",
+    timestamp: "1 hour ago",
+    isRead: false,
+    actionUrl: "opportunities?tab=jobs"
+  },
+  {
+    id: "notif-3",
+    userId: "doc-1",
+    type: "JOB_UPDATE",
+    title: "New Job Alert: Academic Faculty Opening in Pediatric Neurosurgery",
+    description: "Manipal Hospital posted a new position matching your clinical network interests.",
+    timestamp: "3 hours ago",
+    isRead: true,
+    actionUrl: "opportunities?tab=jobs"
+  },
+  {
+    id: "notif-4",
+    userId: "doc-1",
+    type: "FOLLOW_ACCEPTED",
+    title: "Dr. Sandeep Kulkarni accepted your follow request",
+    description: "You are now connected with Dr. Sandeep Kulkarni (CTVS Surgeon @ AIIMS).",
+    timestamp: "Yesterday",
+    isRead: true,
+    actionUrl: "users/doc-3"
+  }
+];
+
+export const SUPPORT_TICKETS: SupportTicket[] = [
+  {
+    id: "ticket-1001",
+    userId: "doc-1",
+    userName: "Dr. Arvind Ramesh",
+    userEmail: "dr.ramesh@apollohospitals.org",
+    category: "Verification",
+    description: "Requesting additional Board Certification badge update for FSCAI credential.",
+    forwardedTo: "medmedia1409@gmail.com",
+    status: "RESOLVED",
+    createdAt: "2026-09-15"
+  }
+];
