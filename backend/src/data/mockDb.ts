@@ -113,10 +113,12 @@ export interface Medclip {
 export interface Community {
   id: string;
   name: string;
-  iconUrl: string;
+  iconUrl?: string;
+  avatarUrl?: string;
   description: string;
   category: string;
   membersCount: number;
+  maxMembers?: number;
   maxCapacity: number; // 10,000 maximum capacity limit enforced
   creatorId: string;
   creatorName: string;

@@ -1,3 +1,5 @@
+import path from 'path';
+import fs from 'fs';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -16,6 +18,19 @@ dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+
+// Resolve candidate dist paths for web frontend
+const candidateDistPaths = [
+  path.resolve(__dirname, '../../web/dist'),
+  path.resolve(process.cwd(), 'web/dist'),
+  path.resolve(process.cwd(), '../web/dist')
+];
+const frontendDist = candidateDistPaths.find(p => fs.existsSync(p));
+
+if (frontendDist) {
+  console.log(`[MedMedia] Serving production frontend build from: ${frontendDist}`);
+  app.use(express.static(frontendDist));
+}
 
 // Middleware (support larger payloads for device image uploads)
 app.use(cors({ origin: '*' }));
@@ -43,6 +58,20 @@ app.use('/api/users', usersRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
+
+// Fallback to React index.html for SPA routes (if frontend dist exists)
+if (frontendDist) {
+  app.get('*', (req, res, next) => {
+    if (req.path.startsWith('/api')) {
+      return next();
+    }
+    const indexPath = path.join(frontendDist, 'index.html');
+    if (fs.existsSync(indexPath)) {
+      return res.sendFile(indexPath);
+    }
+    next();
+  });
+}
 
 // 404 handler
 app.use((req, res) => {

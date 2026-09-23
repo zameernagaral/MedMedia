@@ -5,11 +5,11 @@ import { UserProfile, Post, Story } from './mockDb';
 
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 
-const DB_HOST = process.env.DB_HOST || 'localhost';
-const DB_PORT = Number(process.env.DB_PORT) || 3306;
-const DB_USER = process.env.DB_USER || 'root';
-const DB_PASSWORD = process.env.DB_PASSWORD || 'root';
-const DB_NAME = process.env.DB_NAME || 'medmedia_db';
+const DB_HOST = process.env.MYSQLHOST || process.env.DB_HOST || 'localhost';
+const DB_PORT = Number(process.env.MYSQLPORT || process.env.DB_PORT) || 3306;
+const DB_USER = process.env.MYSQLUSER || process.env.DB_USER || 'root';
+const DB_PASSWORD = process.env.MYSQLPASSWORD || process.env.DB_PASSWORD || 'root';
+const DB_NAME = process.env.MYSQLDATABASE || process.env.DB_NAME || 'medmedia_db';
 
 class MySQLDatabaseManager {
   private pool: Pool | null = null;

@@ -2,7 +2,11 @@
   "name": "medmedia-workspace",
   "version": "1.0.0",
   "description": "MedMedia Healthcare Professional & Student Platform (Web + Native Mobile + Backend + Docs)",
+  "main": "backend/dist/server.js",
   "scripts": {
+    "postinstall": "npm --prefix backend install && npm --prefix web install",
+    "build": "npm --prefix backend run build && npm --prefix web run build",
+    "start": "node backend/dist/server.js",
     "web:dev": "npm --prefix web run dev",
     "web:build": "npm --prefix web run build",
     "web:preview": "npm --prefix web run preview",
@@ -11,5 +15,8 @@
     "backend:start": "npm --prefix backend start",
     "mobile:start": "npm --prefix mobile start",
     "mobile:android": "npm --prefix mobile run android"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
