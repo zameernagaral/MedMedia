@@ -31,15 +31,21 @@ import {
   INITIAL_NOTIFICATIONS
 } from '../data/mockData';
 
+
 const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
   ? 'http://localhost:5001/api'
   : '/api';
+
+const fetchWithAuth = (url: string, options: RequestInit = {}) => {
+  return fetch(url, { ...options, credentials: 'include' });
+};
+
 
 export const apiService = {
   // 1. GET POSTS (Persistent laptop database)
   async getPosts(): Promise<Post[]> {
     try {
-      const res = await fetch(`${API_BASE}/posts`);
+      const res = await fetchWithAuth(`${API_BASE}/posts`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       if (data.posts && Array.isArray(data.posts)) {
@@ -63,7 +69,7 @@ export const apiService = {
   async createPost(post: Partial<Post>): Promise<Post> {
     let savedPost: Post | null = null;
     try {
-      const res = await fetch(`${API_BASE}/posts`, {
+      const res = await fetchWithAuth(`${API_BASE}/posts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(post)
@@ -112,7 +118,7 @@ export const apiService = {
   // 3. GET USERS (Persistent laptop database)
   async getUsers(): Promise<UserProfile[]> {
     try {
-      const res = await fetch(`${API_BASE}/users`);
+      const res = await fetchWithAuth(`${API_BASE}/users`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       if (data.users && Array.isArray(data.users) && data.users.length > 0) {
@@ -136,7 +142,7 @@ export const apiService = {
   async registerUser(userData: any): Promise<UserProfile> {
     let savedUser: UserProfile | null = null;
     try {
-      const res = await fetch(`${API_BASE}/auth/register`, {
+      const res = await fetchWithAuth(`${API_BASE}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(userData)
@@ -181,7 +187,7 @@ export const apiService = {
 
   async loginUser(identifier: string, password?: string): Promise<UserProfile | null> {
     try {
-      const res = await fetch(`${API_BASE}/auth/login`, {
+      const res = await fetchWithAuth(`${API_BASE}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ identifier, password })
@@ -210,7 +216,7 @@ export const apiService = {
   // 6. UPDATE USER PROFILE
   async updateUserProfile(userId: string, updates: Partial<UserProfile>): Promise<UserProfile | null> {
     try {
-      const res = await fetch(`${API_BASE}/users/${userId}`, {
+      const res = await fetchWithAuth(`${API_BASE}/users/${userId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -230,7 +236,7 @@ export const apiService = {
 
   async getClips(): Promise<Medclip[]> {
     try {
-      const res = await fetch(`${API_BASE}/clips`);
+      const res = await fetchWithAuth(`${API_BASE}/clips`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       if (data.clips && Array.isArray(data.clips)) {
@@ -251,7 +257,7 @@ export const apiService = {
 
   async getJobs(): Promise<Job[]> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/jobs`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/jobs`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       return data.jobs || INITIAL_JOBS;
@@ -262,7 +268,7 @@ export const apiService = {
 
   async deleteJob(jobId: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/jobs/${jobId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/jobs/${jobId}`, { method: 'DELETE' });
       return res.ok;
     } catch {
       return false;
@@ -271,7 +277,7 @@ export const apiService = {
 
   async getOpportunities(): Promise<OpportunityItem[]> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/hub`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/hub`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       return data.opportunities || INITIAL_OPPORTUNITIES;
@@ -282,7 +288,7 @@ export const apiService = {
 
   async likePost(postId: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/posts/${postId}/like`, { method: 'POST' });
+      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/like`, { method: 'POST' });
       const data = await res.json();
       return data.isLiked;
     } catch {
@@ -292,7 +298,7 @@ export const apiService = {
 
   async savePost(postId: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/posts/${postId}/save`, { method: 'POST' });
+      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/save`, { method: 'POST' });
       const data = await res.json();
       return data.isSaved;
     } catch {
@@ -302,7 +308,7 @@ export const apiService = {
 
   async votePoll(postId: string, optionId: string): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/posts/${postId}/poll`, {
+      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/poll`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ optionId })
@@ -316,7 +322,7 @@ export const apiService = {
   // 7. GET STORIES (Local database & MySQL)
   async getStories(): Promise<Story[]> {
     try {
-      const res = await fetch(`${API_BASE}/stories`);
+      const res = await fetchWithAuth(`${API_BASE}/stories`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
       if (data.stories && Array.isArray(data.stories)) {
@@ -338,7 +344,7 @@ export const apiService = {
   async createClip(clipData: any): Promise<Medclip> {
     let savedClip: Medclip | null = null;
     try {
-      const res = await fetch(`${API_BASE}/clips`, {
+      const res = await fetchWithAuth(`${API_BASE}/clips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(clipData)
@@ -398,7 +404,7 @@ export const apiService = {
   }): Promise<Story> {
     let savedStory: Story | null = null;
     try {
-      const res = await fetch(`${API_BASE}/stories`, {
+      const res = await fetchWithAuth(`${API_BASE}/stories`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(storyData)
@@ -439,7 +445,7 @@ export const apiService = {
   // 9. DELETE STORY
   async deleteStory(id: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/stories/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`${API_BASE}/stories/${id}`, { method: 'DELETE' });
       if (res.ok) {
         const raw = localStorage.getItem('medmedia_stories_cache');
         if (raw) {
@@ -457,7 +463,7 @@ export const apiService = {
   // 10. DELETE POST
   async deletePost(id: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/posts/${id}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`${API_BASE}/posts/${id}`, { method: 'DELETE' });
       if (res.ok) {
         const raw = localStorage.getItem('medmedia_posts_cache');
         if (raw) {
@@ -475,7 +481,7 @@ export const apiService = {
   // Wipe all test data (Clean Slate)
   async clearAllData(): Promise<void> {
     try {
-      await fetch(`${API_BASE}/admin/clear`, { method: 'POST' });
+      await fetchWithAuth(`${API_BASE}/admin/clear`, { method: 'POST' });
     } catch (e) {
       console.warn('[MedMedia API] Backend clear error:', e);
     }
@@ -493,7 +499,7 @@ export const apiService = {
       if (category && category !== 'All') params.append('category', category);
       if (search) params.append('search', search);
 
-      const res = await fetch(`${API_BASE}/opportunities/communities?${params.toString()}`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         return data.communities || INITIAL_COMMUNITIES;
@@ -504,7 +510,7 @@ export const apiService = {
 
   async createCommunity(community: Partial<Community>): Promise<{ success: boolean; community?: Community; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/communities`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(community)
@@ -517,7 +523,7 @@ export const apiService = {
 
   async joinCommunity(communityId: string, userId: string): Promise<{ success: boolean; message: string; membersCount?: number }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/communities/${communityId}/join`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities/${communityId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -530,7 +536,7 @@ export const apiService = {
 
   async deleteCommunity(communityId: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/communities/${communityId}`, { method: 'DELETE' });
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities/${communityId}`, { method: 'DELETE' });
       return res.ok;
     } catch {
       return false;
@@ -545,7 +551,7 @@ export const apiService = {
       const params = new URLSearchParams();
       if (search) params.append('search', search);
       if (tag) params.append('tag', tag);
-      const res = await fetch(`${API_BASE}/opportunities/research?${params.toString()}`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         return data.researchProjects || INITIAL_RESEARCH_PROJECTS;
@@ -556,7 +562,7 @@ export const apiService = {
 
   async createResearchProject(proj: Partial<ResearchProject>): Promise<ResearchProject | null> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(proj)
@@ -571,7 +577,7 @@ export const apiService = {
 
   async joinResearch(projectId: string, userId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/join`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research/${projectId}/join`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -584,7 +590,7 @@ export const apiService = {
 
   async approveResearch(projectId: string, userId: string): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/approve`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research/${projectId}/approve`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ userId })
@@ -597,7 +603,7 @@ export const apiService = {
 
   async addResearchNote(projectId: string, note: Partial<ResearchNote>): Promise<ResearchNote | null> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/notes`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research/${projectId}/notes`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(note)
@@ -612,7 +618,7 @@ export const apiService = {
 
   async editResearchNote(projectId: string, noteId: string, title: string, content: string): Promise<ResearchNote | null> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/notes/${noteId}`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research/${projectId}/notes/${noteId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ title, content })
@@ -627,7 +633,7 @@ export const apiService = {
 
   async sendResearchMessage(projectId: string, msg: Partial<ResearchMessage>): Promise<ResearchMessage | null> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/research/${projectId}/messages`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/research/${projectId}/messages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(msg)
@@ -645,7 +651,7 @@ export const apiService = {
   // ==========================================
   async getLocumGigs(): Promise<LocumGig[]> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/locum`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/locum`);
       if (res.ok) {
         const data = await res.json();
         return data.locumGigs || INITIAL_LOCUM_GIGS;
@@ -656,7 +662,7 @@ export const apiService = {
 
   async createLocumGig(gig: Partial<LocumGig>): Promise<{ success: boolean; gig?: LocumGig; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/locum`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/locum`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(gig)
@@ -669,7 +675,7 @@ export const apiService = {
 
   async applyLocum(gigId: string, app: Partial<LocumApplication>): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/locum/${gigId}/apply`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/locum/${gigId}/apply`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(app)
@@ -685,7 +691,7 @@ export const apiService = {
   // ==========================================
   async getScholarships(): Promise<ScholarshipItem[]> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/scholarships`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/scholarships`);
       if (res.ok) {
         const data = await res.json();
         return data.scholarships || INITIAL_SCHOLARSHIPS;
@@ -696,7 +702,7 @@ export const apiService = {
 
   async getCourses(): Promise<CourseItem[]> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/courses`);
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/courses`);
       if (res.ok) {
         const data = await res.json();
         return data.courses || INITIAL_COURSES;
@@ -710,7 +716,7 @@ export const apiService = {
   // ==========================================
   async createJob(job: Partial<Job>): Promise<{ success: boolean; job?: Job; message?: string }> {
     try {
-      const res = await fetch(`${API_BASE}/opportunities/jobs`, {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/jobs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(job)
@@ -727,7 +733,7 @@ export const apiService = {
   async getNotifications(userId?: string): Promise<NotificationItem[]> {
     try {
       const url = userId ? `${API_BASE}/notifications?userId=${userId}` : `${API_BASE}/notifications`;
-      const res = await fetch(url);
+      const res = await fetchWithAuth(url);
       if (res.ok) {
         const data = await res.json();
         return data.notifications || INITIAL_NOTIFICATIONS;
@@ -738,7 +744,7 @@ export const apiService = {
 
   async markNotificationRead(id: string): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/notifications/${id}/read`, { method: 'POST' });
+      const res = await fetchWithAuth(`${API_BASE}/notifications/${id}/read`, { method: 'POST' });
       return res.ok;
     } catch {
       return false;
@@ -747,7 +753,7 @@ export const apiService = {
 
   async addNotification(notif: any): Promise<boolean> {
     try {
-      const res = await fetch(`${API_BASE}/notifications`, {
+      const res = await fetchWithAuth(`${API_BASE}/notifications`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(notif)
@@ -769,7 +775,7 @@ export const apiService = {
     description: string;
   }): Promise<{ success: boolean; message: string }> {
     try {
-      const res = await fetch(`${API_BASE}/admin/support`, {
+      const res = await fetchWithAuth(`${API_BASE}/admin/support`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ticket)
@@ -788,13 +794,33 @@ export const apiService = {
   // ==========================================
   async search(query: string, category: string = 'Accounts'): Promise<any> {
     try {
-      const res = await fetch(`${API_BASE}/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
+      const res = await fetchWithAuth(`${API_BASE}/search?q=${encodeURIComponent(query)}&category=${encodeURIComponent(category)}`);
       if (res.ok) {
         const data = await res.json();
         return data.results;
       }
     } catch {}
     return null;
+  },
+
+  // ==========================================
+  // MEDIA UPLOAD
+  // ==========================================
+  async uploadMedia(file: File): Promise<string> {
+    const formData = new FormData();
+    formData.append('media', file);
+    
+    const res = await fetchWithAuth(`${API_BASE}/upload`, {
+      method: 'POST',
+      body: formData
+    });
+    
+    if (!res.ok) {
+      throw new Error('Upload failed');
+    }
+    
+    const data = await res.json();
+    return data.url;
   }
 };
 

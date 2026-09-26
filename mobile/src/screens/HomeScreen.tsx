@@ -8,8 +8,10 @@ import {
   StyleSheet, 
   SafeAreaView, 
   TextInput 
+  ActivityIndicator
 } from 'react-native';
 import { Post, UserProfile } from '../types';
+import { apiService } from '../services/api';
 
 interface HomeScreenProps {
   currentUser: UserProfile;
@@ -24,47 +26,22 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
   onOpenNotifications,
   onOpenMessages
 }) => {
-  const [posts, setPosts] = useState<Post[]>([
-    {
-      id: 'post-1',
-      authorName: 'Dr. Arvind Ramesh',
-      authorUsername: 'cardio_ramesh',
-      authorAvatar: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop',
-      authorRole: 'DOCTOR',
-      specialtyOrYear: 'Interventional Cardiology',
-      isVerified: true,
-      content: '🚨 58-year-old male with acute retrosternal chest pain. Notice ST elevations in II, III, aVF with complete AV dissociation. What is your culprit vessel?',
-      imageUrl: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&h=500&fit=crop',
-      tags: ['#Cardiology', '#STEMI', '#ECGChallenge'],
-      pollQuestion: 'Primary Culprit Vessel:',
-      pollOptions: [
-        { id: '1', text: 'Proximal RCA', votes: 142 },
-        { id: '2', text: 'LAD Diagonal', votes: 18 },
-        { id: '3', text: 'LCx Dominant', votes: 34 }
-      ],
-      likesCount: 342,
-      commentsCount: 48,
-      savesCount: 114,
-      isLiked: false,
-      createdAt: '2h ago'
-    },
-    {
-      id: 'post-2',
-      authorName: 'Rohan Verma',
-      authorUsername: 'medical student',
-      authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
-      authorRole: 'STUDENT',
-      specialtyOrYear: 'Final Year MBBS (KIMS)',
-      isVerified: true,
-      content: 'High-yield note for university exams: The sublingual capillary flow index correlates significantly better with septic shock 28-day survival than central venous oxygen saturation.',
-      tags: ['#MedicalStudents', '#CriticalCare', '#NEJM'],
-      likesCount: 189,
-      commentsCount: 22,
-      savesCount: 78,
-      isLiked: true,
-      createdAt: '4h ago'
-    }
-  ]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  React.useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const data = await apiService.getPosts();
+        setPosts(data);
+      } catch (error) {
+        console.warn('Could not load posts from backend, ensure API is running:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchPosts();
+  }, []);
 
   const toggleLike = (id: string) => {
     setPosts(posts.map(p => {

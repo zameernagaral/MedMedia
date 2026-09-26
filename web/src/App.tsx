@@ -7,7 +7,11 @@ import { MedclipsPlayer } from './components/MedclipsPlayer';
 import { OpportunitiesHub } from './components/OpportunitiesHub';
 import { ProfileView } from './components/ProfileView';
 import { SearchAndNetworking } from './components/SearchAndNetworking';
-import { AuthModal } from './components/AuthModal';
+import { Routes, Route } from 'react-router-dom';
+import { Login } from './pages/Login';
+import { Register } from './pages/Register';
+import { ProtectedRoute } from './components/ProtectedRoute';
+import { useAuth } from './context/AuthContext';
 import { CreatePostModal } from './components/CreatePostModal';
 import { ClinicalChatDrawer } from './components/ClinicalChatDrawer';
 import { MentorshipModal } from './components/MentorshipModal';
@@ -47,7 +51,7 @@ import {
   ShieldAlert
 } from 'lucide-react';
 
-export const App: React.FC = () => {
+const MainApp: React.FC = () => {
   // Dark Mode Theme State
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
     if (typeof window !== 'undefined') {
@@ -69,19 +73,9 @@ export const App: React.FC = () => {
   }, [isDarkMode]);
 
   // Application State
+  const { user, setUser, logout } = useAuth();
   const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('medmedia_current_user');
-      if (saved) {
-        try {
-          const parsed = JSON.parse(saved);
-          if (parsed && parsed.id) return parsed;
-        } catch {}
-      }
-    }
-    return INITIAL_USERS[2]; // Default to student scholar
-  });
+  const currentUser = user || INITIAL_USERS[2];
   const [selectedProfileUser, setSelectedProfileUser] = useState<UserProfile | null>(null);
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -112,7 +106,7 @@ export const App: React.FC = () => {
           try {
             const parsed = JSON.parse(saved);
             const found = loadedUsers.find(u => u.id === parsed.id || u.email === parsed.email);
-            if (found) setCurrentUser(found);
+            if (found) setUser(found);
           } catch {}
         }
       }
@@ -306,7 +300,7 @@ export const App: React.FC = () => {
   };
 
   const handleSwitchPersona = (user: UserProfile) => {
-    setCurrentUser(user);
+    setUser(user);
     setSelectedProfileUser(null);
     setToastMessage(`Switched active profile to ${user.fullName}`);
     setTimeout(() => setToastMessage(null), 3500);
@@ -360,7 +354,7 @@ export const App: React.FC = () => {
               return nextVal;
             });
           }}
-          onSwitchUser={(u) => setCurrentUser(u)}
+          onSwitchUser={(u) => setUser(u)}
           onClearAllTestData={handleClearAllTestData}
           onCreatePost={() => {
             setCreateModalMode('post');
@@ -661,7 +655,7 @@ export const App: React.FC = () => {
                     onOpenHelpCenter={() => setShowSupportModal(true)}
                     onOpenSupportModal={() => setShowSupportModal(true)}
                     onUpdateProfile={(updated) => {
-                      setCurrentUser(prev => ({ ...prev, ...updated }));
+                      setUser((prev: any) => prev ? ({ ...prev, ...updated }) : null);
                       setUsers(prev => prev.map(u => u.id === currentUser.id ? { ...u, ...updated } : u));
                       setToastMessage("Profile updated successfully!");
                       setTimeout(() => setToastMessage(null), 3000);
@@ -911,52 +905,7 @@ export const App: React.FC = () => {
       />
 
       {/* Auth & Verification Modal (Slide 2, 3, 4) */}
-      <AuthModal
-        isOpen={showAuthModal}
-        onClose={() => setShowAuthModal(false)}
-        onLoginSuccess={(newUser, initialPostContent) => {
-          setUsers([newUser, ...users]);
-          setCurrentUser(newUser);
-          if (initialPostContent && initialPostContent.trim()) {
-            const introPost: Post = {
-              id: `post-${Date.now()}`,
-              authorId: newUser.id,
-              authorName: newUser.fullName,
-              authorUsername: newUser.username,
-              authorAvatar: newUser.avatarUrl,
-              authorRole: newUser.role,
-              authorSpecializationOrDiscipline: newUser.role === 'DOCTOR' 
-                ? (newUser.doctorDetails?.specialization || 'Clinical Specialist')
-                : (newUser.studentDetails?.discipline.replace('_', ' ') || 'Medical Student'),
-              isVerified: newUser.verificationStatus === 'VERIFIED',
-              postType: 'CLINICAL_DISCUSSION',
-              content: initialPostContent.trim(),
-              clinicalTags: [
-                newUser.role === 'DOCTOR' ? 'ClinicalPractice' : 'StudentIntro',
-                'MedMediaCommunity',
-                'PeerDiscussion'
-              ],
-              likesCount: 0,
-              commentsCount: 0,
-              savesCount: 0,
-              sharesCount: 0,
-              isLiked: false,
-              isSaved: false,
-              targetAudience: 'ALL',
-              recommendationReason: 'Welcome Introductory Post',
-              createdAt: 'Just now'
-            };
-            setPosts([introPost, ...posts]);
-            setToastMessage(`Welcome ${newUser.fullName}! Your introductory clinical post is live.`);
-            setTimeout(() => setToastMessage(null), 4000);
-          } else {
-            setToastMessage(`Welcome to MedMedia, ${newUser.fullName}!`);
-            setTimeout(() => setToastMessage(null), 3000);
-          }
-        }}
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
-      />
+      
 
       {/* Create Post & Story Creator Studio Modal (Slide 5: Top + button) */}
       <CreatePostModal
@@ -1017,6 +966,20 @@ export const App: React.FC = () => {
       )}
 
     </div>
+  );
+};
+
+export const App: React.FC = () => {
+  return (
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/*" element={
+        <ProtectedRoute>
+          <MainApp />
+        </ProtectedRoute>
+      } />
+    </Routes>
   );
 };
 

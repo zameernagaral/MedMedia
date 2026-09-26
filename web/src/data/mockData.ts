@@ -1,4 +1,4 @@
-﻿import { UserProfile, Story, Post, Medclip, Job, OpportunityItem, DeviceSession } from '../types';
+import { UserProfile, Story, Post, Medclip, Job, OpportunityItem, DeviceSession } from '../types';
 
 export const INITIAL_USERS: UserProfile[] = [
   {
@@ -193,6 +193,7 @@ export const INITIAL_POSTS: Post[] = [];
 export const INITIAL_CLIPS: Medclip[] = [
   {
     id: "clip-1",
+    clipType: "Clinical Update",
     authorId: "doc-1",
     authorName: "Dr. Arvind Ramesh",
     authorSpecialty: "Interventional Cardiology",
@@ -214,6 +215,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-2",
+    clipType: "Clinical Update",
     authorId: "doc-2",
     authorName: "Dr. Priya Nair",
     authorSpecialty: "Pediatric Neurosurgery",
@@ -235,6 +237,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-3",
+    clipType: "Social Update",
     authorId: "stu-1",
     authorName: "Rohan Verma",
     authorSpecialty: "Medical Student (Final MBBS)",
@@ -256,6 +259,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-4",
+    clipType: "Clinical Update",
     authorId: "prof-1",
     authorName: "Prof. (Dr.) Rajeshwar Sharma",
     authorSpecialty: "HOD Cardiology (KMC / AIIMS)",
@@ -278,6 +282,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-5",
+    clipType: "Clinical Update",
     authorId: "prof-2",
     authorName: "Prof. (Dr.) Meenakshi Sundaram",
     authorSpecialty: "Professor of Surgery (BMCRI)",
@@ -300,6 +305,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-6",
+    clipType: "Social Update",
     authorId: "stu-2",
     authorName: "Ananya Desai",
     authorSpecialty: "Clinical Pharmacy Scholar",
@@ -321,6 +327,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-7",
+    clipType: "Social Update",
     authorId: "doc-1",
     authorName: "Dr. Arvind Ramesh",
     authorSpecialty: "Interventional Cardiology",
@@ -342,6 +349,7 @@ export const INITIAL_CLIPS: Medclip[] = [
   },
   {
     id: "clip-8",
+    clipType: "Social Update",
     authorId: "prof-1",
     authorName: "Prof. (Dr.) Rajeshwar Sharma",
     authorSpecialty: "HOD Cardiology (KMC / AIIMS)",

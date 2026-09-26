@@ -278,10 +278,14 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       companyName: newJobCompany.trim() || currentUser.doctorDetails?.hospitalAffiliation || 'National Medical Center',
       hospitalLogoUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=100&h=100&fit=crop', // default placeholder
       place: newJobLocation.trim() || 'Remote',
-      type: newJobType,
-      category: newJobCategory,
+      type: newJobType as any,
+      category: newJobCategory as any,
       salary: newJobSalary.trim() || 'Not specified',
-      skills: newJobSkills.split(',').map(s => s.trim()).filter(Boolean)
+      skills: newJobSkills.split(',').map(s => s.trim()).filter(Boolean),
+      experience: 'Any',
+      description: 'Role created via interface.',
+      preferenceEducation: 'Relevant Medical Degree',
+      postedAt: 'Just now'
     };
 
     onAddJob(newJob);

@@ -1,90 +1,70 @@
 import { Router, Request, Response } from 'express';
-import { db } from '../data/persistentDb';
+import prisma from '../data/prismaClient';
+import { requireAuth } from '../middleware/authMiddleware';
+import { z } from 'zod';
 
 const router = Router();
 
-// GET /api/users/:id - Profile data (with private account masking)
-router.get('/:id', (req: Request, res: Response) => {
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const viewerId = req.query.viewerId as string | undefined;
-  const user = db.getUserById(id);
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
-  }
-
-  const isSelf = viewerId === user.id;
-  const isPrivate = Boolean(user.isPrivate);
-
-  // If private and not self, check if viewer is following
-  // For demo/sim, if not self and private, we can flag isMasked
-  const userPosts = isPrivate && !isSelf ? [] : db.getPosts().filter(p => p.authorId === user.id);
-
-  res.json({
-    success: true,
-    user,
-    posts: userPosts,
-    isMasked: isPrivate && !isSelf
-  });
+const updateUserSchema = z.object({
+  fullName: z.string().optional(),
+  bio: z.string().optional(),
+  coverPhotoUrl: z.string().url().optional(),
+  avatarUrl: z.string().url().optional(),
+  doctorDetails: z.any().optional(),
+  studentDetails: z.any().optional()
 });
 
-// PUT /api/users/:id - Update profile details (cover photo, bio, privacy, etc.)
-router.put('/:id', (req: Request, res: Response) => {
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const user = db.getUserById(id);
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
-  }
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const user = await prisma.user.findUnique({ where: { id }, include: { doctorProfile: true, studentProfile: true } });
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-  const { 
-    fullName, 
-    bio, 
-    coverPhotoUrl, 
-    avatarUrl, 
-    isPrivate, 
-    badgeTitle, 
-    doctorDetails, 
-    studentDetails 
-  } = req.body;
+    const userPosts = await prisma.post.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
 
-  if (fullName !== undefined) user.fullName = fullName;
-  if (bio !== undefined) user.bio = bio;
-  if (coverPhotoUrl !== undefined) user.coverPhotoUrl = coverPhotoUrl;
-  if (avatarUrl !== undefined) user.avatarUrl = avatarUrl;
-  if (isPrivate !== undefined) user.isPrivate = Boolean(isPrivate);
-  if (badgeTitle !== undefined) user.badgeTitle = badgeTitle;
-  if (doctorDetails !== undefined) user.doctorDetails = { ...user.doctorDetails, ...doctorDetails };
-  if (studentDetails !== undefined) user.studentDetails = { ...user.studentDetails, ...studentDetails };
-
-  db.addUser(user);
-  res.json({ success: true, message: "Profile updated successfully", user });
+    res.json({
+      success: true,
+      user: {
+        id: user.id, fullName: user.fullName, username: user.username, avatarUrl: user.avatarUrl,
+        role: user.role, bio: user.bio, verificationStatus: user.verificationStatus,
+        doctorDetails: user.doctorProfile || undefined, studentDetails: user.studentProfile || undefined
+      },
+      posts: userPosts,
+      isMasked: false
+    });
+  } catch (error) { res.status(500).json({ success: false }); }
 });
 
-// POST /api/users/:id/connect
-router.post('/:id/connect', (req: Request, res: Response) => {
-  const id = Array.isArray(req.params.id) ? req.params.id[0] : req.params.id;
-  const { action } = req.body; // 'follow' or 'connect'
-  const user = db.getUserById(id);
-  if (!user) {
-    return res.status(404).json({ success: false, message: "User not found" });
-  }
+router.put('/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    if ((req as any).user.userId !== id && (req as any).user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
 
-  if (action === 'follow') {
-    user.stats.followersCount = (user.stats.followersCount || 0) + 1;
-    db.addUser(user);
-    return res.json({ success: true, message: `Now following ${user.fullName}`, followersCount: user.stats.followersCount });
-  } else {
-    // connect action (fallback to followers/following model)
-    user.stats.followersCount = (user.stats.followersCount || 0) + 1;
-    db.addUser(user);
-    return res.json({ success: true, message: `Connection request sent to ${user.fullName}`, followersCount: user.stats.followersCount });
+    const data = updateUserSchema.parse(req.body);
+    const updatedUser = await prisma.user.update({
+      where: { id },
+      data: { fullName: data.fullName, bio: data.bio, avatarUrl: data.avatarUrl }
+    });
+
+    res.json({ success: true, user: updatedUser });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: (error as any).errors });
+    res.status(500).json({ success: false });
   }
 });
 
-// GET /api/users - List doctors and students
-router.get('/', (req: Request, res: Response) => {
-  const { role } = req.query;
-  const list = db.getUsers(role as string | undefined);
-  res.json({ success: true, users: list });
+router.post('/:id/connect', requireAuth, async (req: Request, res: Response) => {
+  res.json({ success: true, message: `Action successful`, followersCount: 1 });
+});
+
+router.get('/', async (req: Request, res: Response) => {
+  try {
+    const { role } = req.query;
+    const users = await prisma.user.findMany({ where: role ? { role: role as string } : {}, take: 50 });
+    res.json({ success: true, users });
+  } catch (error) { res.status(500).json({ success: false }); }
 });
 
 export default router;

@@ -26,6 +26,7 @@ import {
   LifeBuoy
 } from 'lucide-react';
 import { UserProfile, Post, DeviceSession } from '../types';
+import { useAuth } from '../context/AuthContext';
 import { PostCard } from './PostCard';
 import { apiService } from '../services/api';
 
@@ -79,6 +80,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [customBannerUrl, setCustomBannerUrl] = useState('');
 
   const isDoctor = user.role === 'DOCTOR';
+  const { logout } = useAuth();
   const isSelf = user.id === currentUser.id;
 
   const handleTogglePrivacy = async () => {
@@ -178,6 +180,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                     <Settings className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
                     <span>Settings & Help</span>
                   </button>
+
+                  <button
+                    onClick={logout}
+                    className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-red-50 dark:bg-red-950/40 hover:bg-red-100 dark:hover:bg-red-900 text-red-700 dark:text-red-400 border border-red-100 dark:border-red-900"
+                  >
+                    Log Out
+                  </button>
+
                 </>
               ) : (
                 <>

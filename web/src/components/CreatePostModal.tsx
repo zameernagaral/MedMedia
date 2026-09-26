@@ -67,6 +67,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [isVideo, setIsVideo] = useState(false);
   const [deviceFileName, setDeviceFileName] = useState<string | null>(null);
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Post Specific State
@@ -89,7 +90,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   if (!isOpen) return null;
 
   // Handle device file upload (Images & Videos with 30-sec limit checking)
-  const handleDeviceUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  
+  const handleDeviceUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -99,7 +101,6 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     const isVid = file.type.startsWith('video/');
     setIsVideo(isVid);
 
-    // 30s video limit check
     if (isVid) {
       const vidObj = document.createElement('video');
       vidObj.preload = 'metadata';
@@ -114,14 +115,24 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       vidObj.src = URL.createObjectURL(file);
     }
 
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (reader.result) {
-        setMediaUrl(reader.result as string);
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      setIsUploading(true);
+      const url = await apiService.uploadMedia(file);
+      setMediaUrl(url);
+    } catch (err) {
+      alert('Failed to upload media. Using local base64 fallback.');
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        if (reader.result) {
+          setMediaUrl(reader.result as string);
+        }
+      };
+      reader.readAsDataURL(file);
+    } finally {
+      setIsUploading(false);
+    }
   };
+
 
   const toggleTag = (tag: string) => {
     if (creationMode === 'post') {
@@ -416,19 +427,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <span>{deviceFileName ? 'Change File from Device' : 'Upload Image / Video from Device'}</span>
                 </button>
 
-                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">or URL:</span>
-                
-                <input
-                  type="text"
-                  value={mediaUrl}
-                  onChange={(e) => {
-                    setMediaUrl(e.target.value);
-                    setDeviceFileName(null);
-                  }}
-                  placeholder="https://..."
-                  className="flex-1 w-full text-xs p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none"
-                />
-              </div>
+                </div>
 
               {mediaUrl && (
                 <div className="mt-2 relative rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 max-h-48 bg-slate-950 flex items-center justify-center">
