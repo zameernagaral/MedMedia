@@ -16,6 +16,10 @@ export const Register: React.FC = () => {
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters long.');
+      return;
+    }
     try {
       const res = await axios.post('http://localhost:5001/api/auth/register', { 
         email, password, fullName, username, role 
@@ -59,7 +63,7 @@ export const Register: React.FC = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700">Password</label>
-              <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+              <input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700">I am a...</label>

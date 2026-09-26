@@ -93,14 +93,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   // Complete Signup (with or without first post) - Saves to local laptop database
   const handleFinalSignUp = async (skipPost: boolean) => {
+    if (password.length < 8) {
+      setStatusMessage('Password must be at least 8 characters long.');
+      return;
+    }
     setStatusMessage("Saving verified account to your laptop database...");
 
     const hasCred = fileUploaded || Boolean(medicalRegNumber.trim());
+    const usernameBase = (fullName.trim() || (selectedRole === 'DOCTOR' ? specialization : selectedDiscipline))
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_|_$/g, '') || 'medmedia_user';
     const userData = {
       fullName: fullName.trim() || (selectedRole === 'DOCTOR' ? "Dr. Healthcare Clinician" : "Medical Scholar"),
-      username: selectedRole === 'DOCTOR' 
-        ? (specialization.toLowerCase().replace(/[^a-z0-9]/g, '_') || 'dr_specialist')
-        : (selectedDiscipline.toLowerCase().replace(/_/g, '_') || 'med_scholar'),
+      username: `${usernameBase}_${Date.now().toString(36)}`,
       email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone.replace(/\D/g, '')}@medmedia.health`,
       phoneNumber: emailOrPhone.includes('@') ? undefined : emailOrPhone,
       password,
