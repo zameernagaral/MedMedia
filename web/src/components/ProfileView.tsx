@@ -39,7 +39,7 @@ interface ProfileViewProps {
   onRevokeSession: (sessionId: string) => void;
   onLikePost: (postId: string) => void;
   onSavePost: (postId: string) => void;
-  onConnectUser: (userId: string) => void;
+  onConnectUser: (userId: string, isFollowing: boolean) => void;
   onOpenHelpCenter?: () => void;
   onOpenSupportModal?: () => void;
   onRequestMentorship?: (professor: UserProfile) => void;
@@ -74,7 +74,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'settings_help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(false);
+  const [isFollowing, setIsFollowing] = useState(Boolean((user as UserProfile & { isFollowing?: boolean }).isFollowing));
   const [coverPhoto, setCoverPhoto] = useState(user.coverPhotoUrl || '');
   const [isPrivateAccount, setIsPrivateAccount] = useState(Boolean(user.isPrivate));
   const [showBannerModal, setShowBannerModal] = useState(false);
@@ -189,8 +189,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   {/* Follow only — Connections removed, platform uses Followers/Following model */}
                   <button
                     onClick={() => {
-                      setIsFollowing(!isFollowing);
-                      onConnectUser(user.id); // reuses endpoint for follow action
+                      const nextFollowing = !isFollowing;
+                      setIsFollowing(nextFollowing);
+                      onConnectUser(user.id, nextFollowing);
                     }}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       isFollowing

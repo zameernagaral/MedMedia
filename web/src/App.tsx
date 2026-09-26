@@ -640,8 +640,14 @@ const MainApp: React.FC = () => {
                     onRevokeSession={handleRevokeSession}
                     onLikePost={handleLikePost}
                     onSavePost={handleSavePost}
-                    onConnectUser={(id) => {
-                      setToastMessage(`Connected with user #${id}!`);
+                    onConnectUser={async (id, isFollowing) => {
+                      try {
+                        if (isFollowing) await apiService.followUser(id);
+                        else await apiService.unfollowUser(id);
+                        setToastMessage(isFollowing ? 'Following user.' : 'Unfollowed user.');
+                      } catch (error) {
+                        setToastMessage(error instanceof Error ? error.message : 'Could not update follow status.');
+                      }
                       setTimeout(() => setToastMessage(null), 3000);
                     }}
                     onOpenHelpCenter={() => setShowSupportModal(true)}

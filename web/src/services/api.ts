@@ -254,12 +254,26 @@ export const apiService = {
 
   async savePost(postId: string): Promise<boolean> {
     try {
-      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/save`, { method: 'POST' });
+      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/bookmark`, { method: 'POST' });
       const data = await res.json();
       return data.isSaved;
     } catch {
       return false;
     }
+  },
+
+  async followUser(userId: string): Promise<boolean> {
+    const res = await fetchWithAuth(`${API_BASE}/users/${userId}/follow`, { method: 'POST' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to follow user');
+    return Boolean(data.isFollowing);
+  },
+
+  async unfollowUser(userId: string): Promise<boolean> {
+    const res = await fetchWithAuth(`${API_BASE}/users/${userId}/follow`, { method: 'DELETE' });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to unfollow user');
+    return Boolean(data.isFollowing);
   },
 
   async votePoll(postId: string, optionId: string): Promise<any> {
@@ -743,7 +757,7 @@ export const apiService = {
 
   async markNotificationRead(id: string): Promise<boolean> {
     try {
-      const res = await fetchWithAuth(`${API_BASE}/notifications/${id}/read`, { method: 'POST' });
+      const res = await fetchWithAuth(`${API_BASE}/notifications/${id}/read`, { method: 'PATCH' });
       return res.ok;
     } catch {
       return false;
