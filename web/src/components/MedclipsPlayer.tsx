@@ -26,7 +26,6 @@ interface MedclipsPlayerProps {
   currentUser: UserProfile;
   onLikeClip: (clipId: string) => void;
   onSaveClip: (clipId: string) => void;
-  onConnectAuthor: (authorName: string) => void;
   onSelectUser?: (userId: string) => void;
 }
 
@@ -35,7 +34,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   currentUser,
   onLikeClip,
   onSaveClip,
-  onConnectAuthor,
   onSelectUser
 }) => {
   // Tabs: Following (with green dot, default), Clinical Updates, Social Updates
@@ -44,6 +42,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [showMoreDrawer, setShowMoreDrawer] = useState(false);
+  const [showShareDrawer, setShowShareDrawer] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [clipComments, setClipComments] = useState<string[]>([
@@ -93,6 +92,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     if (activeClipList.length === 0) return;
     setCurrentIndex(prev => (prev < activeClipList.length - 1 ? prev + 1 : 0));
     setShowMoreDrawer(false);
+    setShowShareDrawer(false);
     setShowCommentsModal(false);
   }, [activeClipList.length]);
 
@@ -100,6 +100,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     if (activeClipList.length === 0) return;
     setCurrentIndex(prev => (prev > 0 ? prev - 1 : activeClipList.length - 1));
     setShowMoreDrawer(false);
+    setShowShareDrawer(false);
     setShowCommentsModal(false);
   }, [activeClipList.length]);
 
@@ -376,10 +377,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
         {/* Share - Transparent Icon */}
         <button
-          onClick={() => {
-            navigator.clipboard?.writeText?.(`https://medmedia.health/clips/${currentClip.id}`);
-            showToast("Medclip link copied to clipboard!");
-          }}
+          onClick={() => setShowShareDrawer(true)}
           className="flex flex-col items-center group cursor-pointer bg-transparent border-0 p-0"
           title="Share Medclip"
         >
@@ -523,14 +521,13 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
           <div className="py-2 space-y-1">
             <button
               onClick={() => {
-                onConnectAuthor(currentClip.authorName);
                 setShowMoreDrawer(false);
-                showToast(`Connection request sent to ${currentClip.authorName}`);
+                showToast(`Started following ${currentClip.authorName}`);
               }}
               className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >
-              <UserPlus className="w-4 h-4 text-sky-400" />
-              Connect with {currentClip.authorName}
+              <UserPlus className="w-4 h-4 text-emerald-400" />
+              Follow {currentClip.authorName}
             </button>
 
             <button
@@ -565,6 +562,96 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
             >
               <Flag className="w-4 h-4 text-rose-400" />
               Report Clip / Ethics
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Share Drawer Modal */}
+      {showShareDrawer && (
+        <div className="absolute inset-x-0 bottom-0 z-40 bg-slate-900/98 backdrop-blur-2xl border-t border-slate-700 rounded-t-3xl p-5 animate-in slide-in-from-bottom duration-200">
+          <div className="flex items-center justify-between pb-3 border-b border-slate-800">
+            <h4 className="text-white text-xs font-bold uppercase tracking-wider">Share Medclip</h4>
+            <button
+              onClick={() => setShowShareDrawer(false)}
+              className="text-white/60 hover:text-white text-xs cursor-pointer"
+            >
+              ✕
+            </button>
+          </div>
+
+          <div className="py-2 space-y-1">
+            <button
+              onClick={() => {
+                window.open(`https://www.instagram.com/`, '_blank');
+                setShowShareDrawer(false);
+                showToast("Opening Instagram...");
+              }}
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded bg-gradient-to-tr from-yellow-400 via-pink-500 to-purple-500 flex items-center justify-center">
+                <Share2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              Instagram
+            </button>
+
+            <button
+              onClick={() => {
+                const url = `https://medmedia.health/clips/${currentClip.id}`;
+                window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, '_blank');
+                setShowShareDrawer(false);
+                showToast("Opening Facebook...");
+              }}
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded bg-blue-600 flex items-center justify-center">
+                <Share2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              Facebook
+            </button>
+
+            <button
+              onClick={() => {
+                const url = `https://medmedia.health/clips/${currentClip.id}`;
+                window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent('Check out this Medclip: ' + url)}`, '_blank');
+                setShowShareDrawer(false);
+                showToast("Opening WhatsApp...");
+              }}
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded bg-green-500 flex items-center justify-center">
+                <MessageCircle className="w-3.5 h-3.5 text-white" />
+              </div>
+              WhatsApp
+            </button>
+
+            <button
+              onClick={() => {
+                const url = `https://medmedia.health/clips/${currentClip.id}`;
+                window.open(`mailto:?subject=Medclip&body=${encodeURIComponent('Check out this Medclip: ' + url)}`, '_blank');
+                setShowShareDrawer(false);
+                showToast("Opening Email...");
+              }}
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded bg-slate-600 flex items-center justify-center">
+                <Send className="w-3.5 h-3.5 text-white" />
+              </div>
+              Email
+            </button>
+
+            <button
+              onClick={() => {
+                navigator.clipboard?.writeText?.(`https://medmedia.health/clips/${currentClip.id}`);
+                setShowShareDrawer(false);
+                showToast("Medclip link copied to clipboard!");
+              }}
+              className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
+            >
+              <div className="w-6 h-6 rounded bg-slate-700 flex items-center justify-center">
+                <Copy className="w-3.5 h-3.5 text-white" />
+              </div>
+              Copy Link
             </button>
           </div>
         </div>

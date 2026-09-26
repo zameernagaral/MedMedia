@@ -20,6 +20,38 @@ router.get('/', (req: Request, res: Response) => {
   });
 });
 
+// POST /api/clips (Create new Medclip)
+router.post('/', (req: Request, res: Response) => {
+  const newClip = {
+    id: `clip-${Date.now()}`,
+    authorId: req.body.userId,
+    authorName: req.body.userName,
+    authorSpecialty: req.body.userSpecialty || '',
+    authorAvatar: req.body.userAvatar,
+    isVerified: true,
+    videoUrl: req.body.mediaUrl,
+    thumbnailUrl: req.body.mediaUrl,
+    caption: req.body.caption,
+    clinicalCategory: req.body.clinicalCategory || 'Clinical Update',
+    tags: req.body.clinicalTags || [],
+    likesCount: 0,
+    commentsCount: 0,
+    savesCount: 0,
+    sharesCount: 0,
+    isLiked: false,
+    isSaved: false,
+    isFollowing: false,
+    createdAt: 'Just now'
+  };
+
+  db.addClip(newClip);
+
+  res.status(201).json({
+    success: true,
+    clip: newClip
+  });
+});
+
 // POST /api/clips/:id/action (Slide 6 side actions: Like, comment, Share, Save, more)
 router.post('/:id/action', (req: Request, res: Response) => {
   const { action } = req.body; // 'like' | 'save' | 'follow' | 'connect' | 'interested' | 'report'
@@ -33,15 +65,18 @@ router.post('/:id/action', (req: Request, res: Response) => {
     case 'like':
       clip.isLiked = !clip.isLiked;
       clip.likesCount += clip.isLiked ? 1 : -1;
+      db.updateClip(clip);
       return res.json({ success: true, action: 'like', isLiked: clip.isLiked, count: clip.likesCount });
 
     case 'save':
       clip.isSaved = !clip.isSaved;
       clip.savesCount += clip.isSaved ? 1 : -1;
+      db.updateClip(clip);
       return res.json({ success: true, action: 'save', isSaved: clip.isSaved, count: clip.savesCount });
 
     case 'follow':
       clip.isFollowing = !clip.isFollowing;
+      db.updateClip(clip);
       return res.json({ success: true, action: 'follow', isFollowing: clip.isFollowing });
 
     case 'connect':

@@ -36,6 +36,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'recovery'>('signup');
   const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1);
+  const [recoveryStep, setRecoveryStep] = useState<1 | 2 | 3>(1);
+  const [recoveryOtp, setRecoveryOtp] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const [selectedRole, setSelectedRole] = useState<UserRole>('DOCTOR');
   const [selectedDiscipline, setSelectedDiscipline] = useState<StudentDiscipline>('MEDICAL_STUDENT');
   
@@ -914,52 +917,158 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* RECOVERY FORM                                                             */}
         {/* ========================================================================= */}
         {mode === 'recovery' && (
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              setStatusMessage("Reset code dispatched via SMS / Encrypted Email.");
-            }} 
-            className="p-6 space-y-4 max-h-[70vh] overflow-y-auto"
-          >
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Registered Phone or Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="doctor@hospital.org or +91 98765 43210"
-                  value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
-                  className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
-            </div>
+          <div className="p-6 space-y-4 max-h-[70vh] overflow-y-auto">
+            {recoveryStep === 1 && (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setStatusMessage("Reset code dispatched via SMS / Encrypted Email.");
+                  setTimeout(() => {
+                    setRecoveryStep(2);
+                    setStatusMessage('');
+                  }, 1500);
+                }} 
+                className="space-y-4"
+              >
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Registered Phone or Email
+                  </label>
+                  <div className="relative">
+                    <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    <input
+                      type="text"
+                      required
+                      placeholder="doctor@hospital.org or +91 98765 43210"
+                      value={emailOrPhone}
+                      onChange={(e) => setEmailOrPhone(e.target.value)}
+                      className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+                </div>
 
-            {statusMessage && (
-              <p className="text-xs text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 py-2 rounded-lg">
-                {statusMessage}
-              </p>
+                {statusMessage && (
+                  <p className="text-xs text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 py-2 rounded-lg">
+                    {statusMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Send Recovery Code</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+
+            {recoveryStep === 2 && (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  if (recoveryOtp === '123456') {
+                    setStatusMessage("OTP verified successfully.");
+                    setTimeout(() => {
+                      setRecoveryStep(3);
+                      setStatusMessage('');
+                    }, 1000);
+                  } else {
+                    setStatusMessage("Invalid OTP. For demo, use 123456.");
+                  }
+                }} 
+                className="space-y-4"
+              >
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    Enter 6-digit OTP
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    maxLength={6}
+                    placeholder="e.g. 123456"
+                    value={recoveryOtp}
+                    onChange={(e) => setRecoveryOtp(e.target.value)}
+                    className="w-full text-center text-xl tracking-widest font-mono py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  />
+                </div>
+
+                {statusMessage && (
+                  <p className="text-xs text-center font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 py-2 rounded-lg">
+                    {statusMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Verify OTP</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              </form>
+            )}
+
+            {recoveryStep === 3 && (
+              <form 
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  setStatusMessage("Password updated successfully!");
+                  setTimeout(() => {
+                    setMode('signin');
+                    setRecoveryStep(1);
+                    setStatusMessage('');
+                    setPassword('');
+                  }, 2000);
+                }} 
+                className="space-y-4"
+              >
+                <div>
+                  <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                    <input
+                      type="password"
+                      required
+                      placeholder="••••••••••••"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    />
+                  </div>
+                </div>
+
+                {statusMessage && (
+                  <p className="text-xs text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 py-2 rounded-lg">
+                    {statusMessage}
+                  </p>
+                )}
+
+                <button
+                  type="submit"
+                  className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
+                >
+                  <span>Reset Password</span>
+                  <Check className="w-4 h-4" />
+                </button>
+              </form>
             )}
 
             <button
-              type="submit"
-              className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Send Recovery Code</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-
-            <button
               type="button"
-              onClick={() => setMode('signin')}
-              className="w-full py-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
+              onClick={() => {
+                setMode('signin');
+                setRecoveryStep(1);
+                setStatusMessage('');
+              }}
+              className="w-full py-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer mt-4"
             >
               Back to Sign In
             </button>
-          </form>
+          </div>
         )}
 
       </div>

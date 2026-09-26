@@ -588,6 +588,19 @@ export const MEDCLIPS: Medclip[] = [
 export const COMMUNITIES: Community[] = [
   // 1. Specialty Communities
   {
+    id: "comm-anatomic",
+    name: "Anatomic Community",
+    iconUrl: "https://images.unsplash.com/photo-1530026405186-ed1f139313f8?w=150&h=150&fit=crop", // generic medical or anatomy related image
+    description: "Official community for all Anatomic healthcare professionals. Join domain-based clinical discussions.",
+    category: "Organization",
+    membersCount: 840,
+    maxCapacity: 10000,
+    creatorId: "mgr-1",
+    creatorName: "MedMedia Administration",
+    isOfficial: true,
+    createdAt: "2026-01-01"
+  },
+  {
     id: "comm-cardio",
     name: "Cardiology & Vascular Medicine",
     iconUrl: "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=150&h=150&fit=crop",

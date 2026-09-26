@@ -81,7 +81,6 @@ router.post('/register', (req: Request, res: Response) => {
 
   const verificationStatus = hasCredential ? 'VERIFIED' : 'UNVERIFIED';
 
-  // Determine auto-joined communities
   const autoJoinedCommunities: string[] = [];
   if (role === 'DOCTOR' && doctorDetails?.specialization) {
     const matchedCommId = SPECIALTY_COMMUNITY_MAP[doctorDetails.specialization] || "comm-surgery";
@@ -89,6 +88,11 @@ router.post('/register', (req: Request, res: Response) => {
   } else if (role === 'STUDENT' && studentDetails?.academicYear) {
     const matchedCommId = STUDENT_YEAR_COMMUNITY_MAP[studentDetails.academicYear] || "comm-year1";
     autoJoinedCommunities.push(matchedCommId);
+  }
+
+  // Domain-based auto join for Anatomic Community
+  if (email && email.toLowerCase().includes('@anatomic.com')) {
+    autoJoinedCommunities.push("comm-anatomic");
   }
 
   const newUser: UserProfile = {

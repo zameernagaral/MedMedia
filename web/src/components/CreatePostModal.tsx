@@ -25,6 +25,7 @@ interface CreatePostModalProps {
   onClose: () => void;
   onPostCreated: (post: Post) => void;
   onStoryCreated?: (story: Story) => void;
+  onClipCreated?: (clip: any) => void;
 }
 
 const POPULAR_POST_TAGS = [
@@ -55,10 +56,11 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   initialMode = 'post',
   onClose,
   onPostCreated,
-  onStoryCreated
+  onStoryCreated,
+  onClipCreated
 }) => {
-  // Toggle between creating a regular Post vs a 24-Hour Story
-  const [creationMode, setCreationMode] = useState<'post' | 'story'>(initialMode);
+  // Toggle between creating a regular Post vs a 24-Hour Story vs Medclip
+  const [creationMode, setCreationMode] = useState<'post' | 'story' | 'medclip'>(initialMode as any);
 
   // Common Media & File State
   const [mediaUrl, setMediaUrl] = useState(() => initialMode === 'story' ? SAMPLE_STORY_IMAGES[0].url : '');
@@ -78,6 +80,9 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   // Story Specific State
   const [storyCaption, setStoryCaption] = useState('');
   const [storyTags, setStoryTags] = useState<string[]>(['#BedsideRounds', '#MedicalStudent']);
+
+  // Medclip Specific State
+  const [clipCategory, setClipCategory] = useState<'Clinical Update' | 'Social Update'>('Clinical Update');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -138,7 +143,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   // Submit Post
   const handlePostSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!content.trim()) return;
+    if (!content.trim() && !mediaUrl) return;
 
     const tags = tagInput.split(' ').filter(t => t.startsWith('#'));
 
@@ -203,6 +208,35 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     }
   };
 
+  // Submit Medclip
+  const handleClipSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!mediaUrl) return;
+
+    setIsSubmitting(true);
+    try {
+      const created = await apiService.createClip({
+        userId: currentUser.id,
+        userName: currentUser.fullName,
+        userSpecialty: currentUser.role === 'DOCTOR' ? currentUser.doctorDetails?.specialization : currentUser.studentDetails?.discipline.replace('_', ' '),
+        userAvatar: currentUser.avatarUrl,
+        mediaUrl: mediaUrl,
+        caption: storyCaption.trim() || 'Medclip update',
+        clinicalTags: storyTags,
+        clinicalCategory: clipCategory
+      });
+
+      if (onClipCreated) {
+        onClipCreated(created);
+      }
+      onClose();
+    } catch (err) {
+      console.error('Failed to create clip:', err);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
       <div className="relative w-full max-w-xl bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-200 dark:border-slate-800 overflow-hidden my-6 animate-in fade-in zoom-in-95 transition-colors duration-200">
@@ -259,6 +293,22 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             <span className="text-[9px] px-1.5 py-0.2 rounded-full bg-rose-100 dark:bg-rose-950 text-rose-600 dark:text-rose-300 font-extrabold">
               30s Max
             </span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => {
+              setCreationMode('medclip');
+              if (!mediaUrl) setMediaUrl(SAMPLE_STORY_IMAGES[0].url);
+            }}
+            className={`flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
+              creationMode === 'medclip'
+                ? 'bg-white dark:bg-slate-900 text-sky-600 dark:text-sky-400 shadow-sm'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <Film className="w-4 h-4 text-purple-500" />
+            <span>MedClip Reel</span>
           </button>
         </div>
 
@@ -467,7 +517,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={!hipaaAcknowledged || !content.trim()}
+                disabled={!hipaaAcknowledged || (!content.trim() && !mediaUrl)}
                 className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
@@ -670,6 +720,157 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <>
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Share 30s Story</span>
+                  </>
+                )}
+              </button>
+            </div>
+
+          </form>
+        )}
+
+        {/* ================= MODE 3: ADD MEDCLIP ================= */}
+        {creationMode === 'medclip' && (
+          <form onSubmit={handleClipSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+            
+            {/* Medclip Category Selection */}
+            <div className="flex border-b border-slate-100 dark:border-slate-800 pb-2 gap-2 text-xs font-semibold">
+              <button
+                type="button"
+                onClick={() => setClipCategory('Clinical Update')}
+                className={`px-4 py-2 rounded-xl transition cursor-pointer flex-1 ${
+                  clipCategory === 'Clinical Update'
+                    ? 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 font-bold border border-sky-200 dark:border-sky-800'
+                    : 'text-slate-500 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                🏥 Clinical Update
+              </button>
+              <button
+                type="button"
+                onClick={() => setClipCategory('Social Update')}
+                className={`px-4 py-2 rounded-xl transition cursor-pointer flex-1 ${
+                  clipCategory === 'Social Update'
+                    ? 'bg-purple-50 dark:bg-purple-950/60 text-purple-600 dark:text-purple-400 font-bold border border-purple-200 dark:border-purple-800'
+                    : 'text-slate-500 bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/40 dark:hover:bg-slate-800/80 border border-slate-200 dark:border-slate-700'
+                }`}
+              >
+                👋 Social Update
+              </button>
+            </div>
+
+            {/* Device Media Upload (Video) */}
+            <div className="space-y-2 p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700">
+              <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Upload MedClip Video:</span>
+                {deviceFileName && (
+                  <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold truncate max-w-[180px]">
+                    ✓ {deviceFileName}
+                  </span>
+                )}
+              </label>
+
+              <input
+                type="file"
+                ref={fileInputRef}
+                accept="video/*"
+                className="hidden"
+                onChange={handleDeviceUpload}
+              />
+
+              <div
+                onClick={() => fileInputRef.current?.click()}
+                className="border-2 border-dashed border-sky-300 dark:border-sky-700 hover:border-sky-500 bg-sky-50/50 dark:bg-sky-950/30 rounded-2xl p-4 text-center cursor-pointer transition group"
+              >
+                <div className="w-10 h-10 rounded-full bg-sky-100 dark:bg-sky-900/60 text-sky-600 dark:text-sky-300 flex items-center justify-center mx-auto mb-2 group-hover:scale-110 transition">
+                  <Upload className="w-5 h-5" />
+                </div>
+                <p className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                  {deviceFileName ? 'Change Video from Device' : 'Choose Video from Device'}
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  Supports MP4, MOV (Recommended aspect ratio 9:16)
+                </p>
+              </div>
+
+              {/* Medclip Media Preview */}
+              {mediaUrl && (
+                <div className="relative rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700 h-64 bg-slate-950 flex items-center justify-center mt-2">
+                  {isVideo ? (
+                    <video src={mediaUrl} controls className="w-full h-full object-contain" />
+                  ) : (
+                    <img src={mediaUrl} alt="Medclip Preview" className="w-full h-full object-cover" />
+                  )}
+                  <div className="absolute top-2 left-2 px-2 py-0.5 rounded-full bg-purple-600/80 text-white text-[10px] font-bold flex items-center gap-1">
+                    <Film className="w-3 h-3 text-white" />
+                    <span>Medclip</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMediaUrl('');
+                      setDeviceFileName(null);
+                      setIsVideo(false);
+                      setVideoWarning(null);
+                    }}
+                    className="absolute top-2 right-2 p-1 bg-black/60 hover:bg-black/80 text-white rounded-full cursor-pointer"
+                    title="Remove Media"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              )}
+              
+              <div className="mt-2">
+                <span className="text-[11px] text-slate-400 font-medium hidden sm:inline">or paste Video URL:</span>
+                <input
+                  type="text"
+                  value={mediaUrl}
+                  onChange={(e) => {
+                    setMediaUrl(e.target.value);
+                    setDeviceFileName(null);
+                    setIsVideo(true); // Assuming URL is video for medclips
+                  }}
+                  placeholder="https://..."
+                  className="flex-1 w-full mt-1 text-xs p-2 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none"
+                />
+              </div>
+            </div>
+
+            {/* Caption Input */}
+            <div>
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
+                MedClip Description:
+              </label>
+              <textarea
+                rows={2}
+                required
+                placeholder="Describe your MedClip..."
+                value={storyCaption}
+                onChange={(e) => setStoryCaption(e.target.value)}
+                className="w-full text-xs p-3 border border-slate-200 dark:border-slate-700 rounded-xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-sky-500"
+              />
+            </div>
+
+            {/* Medclip Action Buttons */}
+            <div className="flex justify-end gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !mediaUrl}
+                className="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
+              >
+                {isSubmitting ? (
+                  <span>Publishing...</span>
+                ) : (
+                  <>
+                    <Film className="w-3.5 h-3.5" />
+                    <span>Publish MedClip</span>
                   </>
                 )}
               </button>

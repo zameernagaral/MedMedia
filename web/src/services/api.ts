@@ -233,10 +233,20 @@ export const apiService = {
       const res = await fetch(`${API_BASE}/clips`);
       if (!res.ok) throw new Error('API error');
       const data = await res.json();
-      return data.clips || INITIAL_CLIPS;
+      if (data.clips && Array.isArray(data.clips)) {
+        localStorage.setItem('medmedia_clips_cache', JSON.stringify(data.clips));
+        return data.clips;
+      }
     } catch {
-      return INITIAL_CLIPS;
+      console.warn('[MedMedia API] Backend not reachable for clips');
     }
+    const cached = localStorage.getItem('medmedia_clips_cache');
+    if (cached) {
+      try {
+        return JSON.parse(cached);
+      } catch {}
+    }
+    return INITIAL_CLIPS;
   },
 
   async getJobs(): Promise<Job[]> {
@@ -323,6 +333,56 @@ export const apiService = {
       } catch {}
     }
     return INITIAL_STORIES;
+  },
+
+  async createClip(clipData: any): Promise<Medclip> {
+    let savedClip: Medclip | null = null;
+    try {
+      const res = await fetch(`${API_BASE}/clips`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(clipData)
+      });
+      if (res.ok) {
+        const data = await res.json();
+        savedClip = data.clip;
+      }
+    } catch (e) {
+      console.warn('[MedMedia API] Failed to post clip to backend:', e);
+    }
+
+    if (!savedClip) {
+      savedClip = {
+        id: `clip-${Date.now()}`,
+        authorId: clipData.userId,
+        authorName: clipData.userName,
+        authorSpecialty: clipData.userSpecialty || '',
+        authorAvatar: clipData.userAvatar,
+        isVerified: true,
+        videoUrl: clipData.mediaUrl,
+        thumbnailUrl: clipData.mediaUrl, // use same for fallback
+        caption: clipData.caption,
+        clinicalCategory: clipData.clinicalCategory,
+        tags: clipData.clinicalTags || [],
+        likesCount: 0,
+        commentsCount: 0,
+        savesCount: 0,
+        sharesCount: 0,
+        isLiked: false,
+        isSaved: false,
+        isFollowing: false,
+        createdAt: 'Just now'
+      };
+    }
+
+    try {
+      const existingRaw = localStorage.getItem('medmedia_clips_cache');
+      const list: Medclip[] = existingRaw ? JSON.parse(existingRaw) : [...INITIAL_CLIPS];
+      list.unshift(savedClip);
+      localStorage.setItem('medmedia_clips_cache', JSON.stringify(list));
+    } catch {}
+
+    return savedClip;
   },
 
   // 8. CREATE STORY
@@ -678,6 +738,19 @@ export const apiService = {
   async markNotificationRead(id: string): Promise<boolean> {
     try {
       const res = await fetch(`${API_BASE}/notifications/${id}/read`, { method: 'POST' });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  },
+
+  async addNotification(notif: any): Promise<boolean> {
+    try {
+      const res = await fetch(`${API_BASE}/notifications`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(notif)
+      });
       return res.ok;
     } catch {
       return false;

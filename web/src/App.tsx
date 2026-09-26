@@ -176,6 +176,14 @@ export const App: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
+  const handleAddJob = async (newJob: Job) => {
+    // Ideally this would go through apiService.createJob, for now just local state
+    // Let's assume apiService.createJob doesn't exist yet so we'll just mock it or if it does, wait.
+    setJobs(prev => [newJob, ...prev]);
+    setToastMessage("Job posted successfully!");
+    setTimeout(() => setToastMessage(null), 3000);
+  };
+
   const handleAcceptFollow = (notifId: string, authorName?: string) => {
     setNotifications(prev => prev.filter(n => n.id !== notifId));
     setToastMessage(`Accepted connection request${authorName ? ` from ${authorName}` : ''}!`);
@@ -397,17 +405,25 @@ export const App: React.FC = () => {
                       <span className="block text-[10px] text-slate-400 dark:text-slate-500">Followers</span>
                     </div>
                     <div>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.stats.connectionsCount}</span>
-                      <span className="block text-[10px] text-slate-400 dark:text-slate-500">Network</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.stats.followersCount + 50}</span>
+                      <span className="block text-[10px] text-slate-400 dark:text-slate-500">Following</span>
                     </div>
                   </div>
 
-                  <button
-                    onClick={() => setCurrentTab('profile')}
-                    className="w-full mt-3 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
-                  >
-                    View Portfolio
-                  </button>
+                  <div className="flex items-center gap-2 mt-3">
+                    <button
+                      onClick={() => alert("Edit Profile modal opening soon...")}
+                      className="flex-1 py-1.5 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-400 text-xs font-bold rounded-xl border border-sky-100 dark:border-sky-900 transition cursor-pointer"
+                    >
+                      Edit Profile
+                    </button>
+                    <button
+                      onClick={() => setCurrentTab('profile')}
+                      className="flex-1 py-1.5 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                    >
+                      View Portfolio
+                    </button>
+                  </div>
                 </div>
 
                 {/* Quick Navigation Shortcuts */}
@@ -434,7 +450,59 @@ export const App: React.FC = () => {
                         <span>{tab.label}</span>
                       </button>
                     );
-                  })}
+                </div>
+
+                {/* Manager / Admin Toggle */}
+                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-sm space-y-2 mt-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-500 font-bold text-xs">
+                      <ShieldAlert className="w-4 h-4" />
+                      Manager Mode
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsManagerMode(!isManagerMode)}
+                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
+                        isManagerMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
+                          isManagerMode ? 'translate-x-4' : 'translate-x-0'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  {isManagerMode && (
+                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
+                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Admin Tools: Broadcast a notification to all users.</p>
+                      <button
+                        onClick={async () => {
+                          const title = prompt("Notification Title:", "System Update");
+                          if (!title) return;
+                          const desc = prompt("Notification Description:", "Scheduled maintenance in 1 hour.");
+                          if (!desc) return;
+                          
+                          const newNotif = {
+                            id: `notif-${Date.now()}`,
+                            userId: currentUser.id,
+                            type: 'CONFERENCE' as any,
+                            title,
+                            description: desc,
+                            timestamp: "Just now",
+                            isRead: false
+                          };
+                          await apiService.addNotification(newNotif);
+                          setNotifications(prev => [newNotif, ...prev]);
+                          setToastMessage("Broadcast notification sent!");
+                          setTimeout(() => setToastMessage(null), 3000);
+                        }}
+                        className="w-full py-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-lg transition cursor-pointer"
+                      >
+                        Broadcast Notification
+                      </button>
+                    </div>
+                  )}
                 </div>
               </aside>
             )}
@@ -510,11 +578,6 @@ export const App: React.FC = () => {
                           onVotePoll={handleVotePoll}
                           onSelectUser={handleSelectUser}
                           onDeletePost={handleDeletePost}
-                          onConnectAuthor={(authorId) => {
-                            const author = users.find(u => u.id === authorId);
-                            setToastMessage(`Connection request sent to ${author?.fullName || 'Colleague'}!`);
-                            setTimeout(() => setToastMessage(null), 3000);
-                          }}
                         />
                       ))
                     )}
@@ -531,10 +594,6 @@ export const App: React.FC = () => {
                     onLikeClip={handleLikeClip}
                     onSaveClip={handleSaveClip}
                     onSelectUser={handleSelectUser}
-                    onConnectAuthor={(name) => {
-                      setToastMessage(`Connection request sent to ${name}!`);
-                      setTimeout(() => setToastMessage(null), 3000);
-                    }}
                   />
                 </div>
               )}
@@ -563,6 +622,7 @@ export const App: React.FC = () => {
                   currentUser={currentUser}
                   isManagerMode={isManagerMode}
                   onDeleteJob={handleDeleteJob}
+                  onAddJob={handleAddJob}
                 />
               )}
 
@@ -642,7 +702,7 @@ export const App: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      Alumni Connection
+                      Alumni Network
                     </h4>
                     <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold">Slide 10</span>
                   </div>
@@ -661,7 +721,7 @@ export const App: React.FC = () => {
                       </span>
                     </div>
                     <button
-                      onClick={() => alert("Connected with Dr. Sandeep Kulkarni!")}
+                      onClick={() => alert("Following Dr. Sandeep Kulkarni!")}
                       className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900 cursor-pointer"
                     >
                       <UserPlus className="w-3.5 h-3.5" />
@@ -912,6 +972,12 @@ export const App: React.FC = () => {
           setStories([newStory, ...stories]);
           setToastMessage("24h Story published (30s limit) & saved to MySQL!");
           setTimeout(() => setToastMessage(null), 3500);
+        }}
+        onClipCreated={(newClip) => {
+          setClips([newClip, ...clips]);
+          setToastMessage("MedClip published!");
+          setTimeout(() => setToastMessage(null), 3500);
+          setCurrentTab('medclips');
         }}
       />
 

@@ -66,6 +66,7 @@ interface OpportunitiesHubProps {
   currentUser: UserProfile;
   isManagerMode?: boolean;
   onDeleteJob?: (jobId: string) => void;
+  onAddJob?: (job: Job) => void;
 }
 
 export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
@@ -73,12 +74,14 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   opportunities,
   currentUser,
   isManagerMode = false,
-  onDeleteJob
+  onDeleteJob,
+  onAddJob
 }) => {
-  // Navigation Tabs: Community, Jobs, Research, Locum, Courses, Scholarships
-  const [activeTab, setActiveTab] = useState<'community' | 'jobs' | 'research' | 'locum' | 'courses' | 'scholarships'>('community');
+  const [activeTab, setActiveTab] = useState<'community' | 'jobs' | 'events' | 'research' | 'locum' | 'courses' | 'scholarships'>('community');
+  const [activeResourceTab, setActiveResourceTab] = useState<'courses' | 'library'>('courses');
   
   // Data States
+  const [eventsFilter, setEventsFilter] = useState<'Near You' | 'International' | 'National' | 'Online' | 'Offline'>('Near You');
   const [communities, setCommunities] = useState<Community[]>([]);
   const [researchProjects, setResearchProjects] = useState<ResearchProject[]>([]);
   const [locumGigs, setLocumGigs] = useState<LocumGig[]>([]);
@@ -117,6 +120,16 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   const [jobSearch, setJobSearch] = useState<string>('');
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
 
+  // Job Creation State
+  const [showAddJobModal, setShowAddJobModal] = useState(false);
+  const [newJobTitle, setNewJobTitle] = useState('');
+  const [newJobCompany, setNewJobCompany] = useState('');
+  const [newJobLocation, setNewJobLocation] = useState('');
+  const [newJobType, setNewJobType] = useState('Full-time');
+  const [newJobCategory, setNewJobCategory] = useState('Doctor jobs');
+  const [newJobSalary, setNewJobSalary] = useState('');
+  const [newJobSkills, setNewJobSkills] = useState('');
+
   // Research Workspace & Approval State
   const [selectedResearchProject, setSelectedResearchProject] = useState<ResearchProject | null>(null);
   const [showAddResearchModal, setShowAddResearchModal] = useState(false);
@@ -125,7 +138,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   const [newResearchTitle, setNewResearchTitle] = useState('');
   const [newResearchDesc, setNewResearchDesc] = useState('');
   const [newResearchTags, setNewResearchTags] = useState('#Cardiology #AI #ClinicalTrial');
-  const [newResearchSample, setNewResearchSample] = useState('500 Patients');
+
   const [newResearchSkills, setNewResearchSkills] = useState('Data abstraction, Statistical analysis');
 
   // Research Workspace Internal State
@@ -254,6 +267,32 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
     showToast("Community deleted by Manager.");
   };
 
+  // Create Job
+  const handleCreateJob = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newJobTitle.trim() || !onAddJob) return;
+
+    const newJob: Job = {
+      id: `job-${Date.now()}`,
+      title: newJobTitle.trim(),
+      companyName: newJobCompany.trim() || currentUser.doctorDetails?.hospitalAffiliation || 'National Medical Center',
+      hospitalLogoUrl: 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=100&h=100&fit=crop', // default placeholder
+      place: newJobLocation.trim() || 'Remote',
+      type: newJobType,
+      category: newJobCategory,
+      salary: newJobSalary.trim() || 'Not specified',
+      skills: newJobSkills.split(',').map(s => s.trim()).filter(Boolean)
+    };
+
+    onAddJob(newJob);
+    setShowAddJobModal(false);
+    setNewJobTitle('');
+    setNewJobCompany('');
+    setNewJobLocation('');
+    setNewJobSalary('');
+    setNewJobSkills('');
+  };
+
   // Research Project: Submit Add
   const handleCreateResearch = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -267,7 +306,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       institution: currentUser.doctorDetails?.hospitalAffiliation || currentUser.studentDetails?.collegeName || 'National Medical Center',
       description: newResearchDesc.trim(),
       hashtags: tagsArray,
-      targetSampleSize: newResearchSample,
+      targetSampleSize: "N/A", // Deprecated field
       requiredSkills: newResearchSkills.split(',').map(s => s.trim())
     });
 
@@ -411,6 +450,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
     if (!locumHospital.trim()) return;
 
     const res = await apiService.createLocumGig({
+      // Frontend specific fields
       hospitalName: locumHospital.trim(),
       department: locumDepartment,
       location: locumLocation,
@@ -420,7 +460,18 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       requiredDocuments: ['Medical Council Registration', 'MBBS/MD Degree Certificate', 'Photo ID'],
       contactPhone: locumContactPhone,
       contactEmail: locumContactEmail,
-      postedByDoctorId: currentUser.id
+      postedByDoctorId: currentUser.id,
+      
+      // Backend specific fields
+      instituteName: locumHospital.trim(),
+      place: locumLocation,
+      duration: locumShiftTiming,
+      gigName: `${locumDepartment} Locum`,
+      stipend: locumStipendAmount,
+      email: locumContactEmail,
+      phone: locumContactPhone,
+      creatorId: currentUser.id,
+      creatorName: currentUser.fullName
     });
 
     if (res.success && res.gig) {
@@ -444,7 +495,13 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       applicantEmail: currentUser.email || 'doctor@medmedia.org',
       yearsOfExperience: locumApplicantExp,
       resumeUrl: locumApplicantFile || 'https://medmedia.health/credentials/verified_cv.pdf',
-      medicalCouncilRegNumber: currentUser.doctorDetails?.medicalCouncilRegNumber || 'KMC-84920'
+      medicalCouncilRegNumber: currentUser.doctorDetails?.medicalCouncilRegNumber || 'KMC-84920',
+      
+      // Backend specific fields
+      name: currentUser.fullName,
+      qualification: currentUser.role === 'DOCTOR' ? currentUser.doctorDetails?.specialization : 'MBBS',
+      email: currentUser.email || 'doctor@medmedia.org',
+      contactNumber: locumApplicantPhone || '+91 98765 43210'
     });
 
     setShowApplyLocumModal(null);
@@ -502,9 +559,10 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
           {[
             { id: 'community', label: 'Community & Mentorship', icon: Users },
             { id: 'jobs', label: 'Job Offers', icon: Briefcase },
+            { id: 'events', label: 'Events', icon: Calendar },
             { id: 'research', label: 'Research Projects', icon: FlaskConical },
             { id: 'locum', label: 'Locum Gigs', icon: Clock },
-            { id: 'courses', label: 'Courses (Free)', icon: GraduationCap },
+            { id: 'courses', label: 'Resources', icon: GraduationCap },
             { id: 'scholarships', label: 'Scholarships', icon: Award }
           ].map((tab) => {
             const Icon = tab.icon;
@@ -725,6 +783,16 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
           
           {/* Job Search & Filter Pills */}
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-4 shadow-xs space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-bold text-slate-900 dark:text-white">Job Offers</h3>
+              <button
+                onClick={() => setShowAddJobModal(true)}
+                className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer"
+              >
+                + Post a Job
+              </button>
+            </div>
+            
             <div className="flex flex-col sm:flex-row gap-2">
               <div className="relative flex-1">
                 <Search className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
@@ -860,6 +928,146 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
             )}
           </div>
 
+        </div>
+      )}
+
+      {/* ========================================================================= */}
+      {/* 3.5 TAB: EVENTS (Conferences, Webinars, Meets)                            */}
+      {/* ========================================================================= */}
+      {activeTab === 'events' && (
+        <div className="space-y-4">
+          {/* Header & Filter */}
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs space-y-4">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                  <Calendar className="w-5 h-5 text-sky-600" />
+                  Medical Events & Conferences
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Discover and register for upcoming medical events worldwide.
+                </p>
+              </div>
+              <button
+                onClick={() => alert("Post Event modal coming soon!")}
+                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
+              >
+                + Post Event
+              </button>
+            </div>
+
+            <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2">
+              {['Near You', 'National', 'International', 'Online', 'Offline'].map(filter => (
+                <button
+                  key={filter}
+                  onClick={() => setEventsFilter(filter as any)}
+                  className={`px-4 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition cursor-pointer ${
+                    eventsFilter === filter
+                      ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-800'
+                      : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
+                  }`}
+                >
+                  {filter}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Events List */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              {
+                id: 'evt-1',
+                title: 'Global Cardiology Summit 2026',
+                date: 'Oct 15 - 17, 2026',
+                location: 'Dubai, UAE',
+                type: 'International',
+                format: 'Offline',
+                organizer: 'World Heart Federation',
+                image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop',
+                price: '$250'
+              },
+              {
+                id: 'evt-2',
+                title: 'National AI in Medicine Workshop',
+                date: 'Nov 5, 2026',
+                location: 'Bangalore, India',
+                type: 'National',
+                format: 'Offline',
+                organizer: 'MedTech India',
+                image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=200&fit=crop',
+                price: '₹5000'
+              },
+              {
+                id: 'evt-3',
+                title: 'Advanced Surgical Techniques Webinar',
+                date: 'Nov 20, 2026',
+                location: 'Online via Zoom',
+                type: 'Online',
+                format: 'Online',
+                organizer: 'American College of Surgeons',
+                image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=400&h=200&fit=crop',
+                price: 'Free'
+              },
+              {
+                id: 'evt-4',
+                title: 'Local Pediatric Care Meetup',
+                date: 'Dec 1, 2026',
+                location: 'Mumbai, India',
+                type: 'Near You',
+                format: 'Offline',
+                organizer: 'Mumbai Pediatric Society',
+                image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=200&fit=crop',
+                price: '₹1000'
+              }
+            ].filter(evt => {
+              if (eventsFilter === 'Online') return evt.format === 'Online';
+              if (eventsFilter === 'Offline') return evt.format === 'Offline';
+              if (eventsFilter === 'National') return evt.type === 'National';
+              if (eventsFilter === 'International') return evt.type === 'International';
+              if (eventsFilter === 'Near You') return evt.type === 'Near You' || evt.location.includes('Bangalore') || evt.location.includes('Mumbai'); // simple logic for demo
+              return true;
+            }).map((evt) => (
+              <div key={evt.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition">
+                <img src={evt.image} alt={evt.title} className="w-full h-32 object-cover" />
+                <div className="p-4 space-y-3">
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300">
+                        {evt.type}
+                      </span>
+                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
+                        {evt.format}
+                      </span>
+                    </div>
+                    <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{evt.title}</h4>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">By {evt.organizer}</p>
+                  </div>
+                  
+                  <div className="space-y-1.5">
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                      <span>{evt.date}</span>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
+                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
+                      <span className="line-clamp-1">{evt.location}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
+                    <span className="text-sm font-bold text-slate-900 dark:text-white">{evt.price}</span>
+                    <button
+                      onClick={() => alert(`Registered for ${evt.title}!`)}
+                      className="px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl transition hover:bg-slate-800 dark:hover:bg-slate-100 cursor-pointer"
+                    >
+                      Register
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       )}
 
@@ -1242,31 +1450,31 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-200">
-                          {gig.department}
+                          {gig.department || gig.gigName?.split(' ')[0] || 'Locum'}
                         </span>
-                        <span className="text-xs text-slate-400">• {gig.shiftTiming}</span>
+                        <span className="text-xs text-slate-400">• {gig.shiftTiming || gig.duration}</span>
                       </div>
 
-                      <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{gig.hospitalName}</h4>
+                      <h4 className="text-sm font-bold text-slate-900 dark:text-white mt-1">{gig.hospitalName || gig.instituteName}</h4>
                       <p className="text-xs text-slate-500 flex items-center gap-1">
                         <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                        {gig.location}
+                        {gig.location || gig.place}
                       </p>
                     </div>
 
                     {/* Mandatory Stipend Display */}
                     <div className="text-right">
                       <span className="text-xs sm:text-sm font-bold text-emerald-600 dark:text-emerald-400 block">
-                        {gig.stipendAmount}
+                        {gig.stipendAmount || gig.stipend}
                       </span>
-                      <span className="text-[10px] text-slate-400 uppercase font-semibold">{gig.stipendType}</span>
+                      <span className="text-[10px] text-slate-400 uppercase font-semibold">{gig.stipendType || 'Stipend'}</span>
                     </div>
                   </div>
 
                   <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs space-y-1">
                     <span className="text-[10px] font-bold text-slate-500 uppercase block">Required Credentials:</span>
                     <div className="flex flex-wrap gap-1.5">
-                      {(gig.requiredDocuments || []).map((doc, idx) => (
+                      {(gig.requiredDocuments || ['Medical Council Registration', 'Degree Certificate']).map((doc, idx) => (
                         <span key={idx} className="text-[10px] px-2 py-0.5 rounded bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300">
                           {doc}
                         </span>
@@ -1275,7 +1483,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-1 text-xs">
-                    <span className="text-slate-500">Contact: {gig.contactPhone}</span>
+                    <span className="text-slate-500">Contact: {gig.contactPhone || gig.phone}</span>
 
                     {/* Requirement 13: Apply for Locum Modal */}
                     <button
@@ -1294,21 +1502,45 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       )}
 
       {/* ========================================================================= */}
-      {/* 6. TAB: COURSES                                                           */}
+      {/* 6. TAB: RESOURCES (Courses / Library)                                       */}
       {/* ========================================================================= */}
       {activeTab === 'courses' && (
         <div className="space-y-4">
           <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs">
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <GraduationCap className="w-4 h-4 text-sky-600" />
-              Verified Open-Access Medical Courses
+              Medical Resources
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Accredited online CME modules and university medical certifications.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 mb-4">
+              Access verified courses, clinical guidelines, and medical library.
             </p>
+            
+            <div className="flex bg-slate-50 dark:bg-slate-800/50 p-1.5 rounded-xl text-xs font-bold w-fit">
+              <button
+                onClick={() => setActiveResourceTab('courses')}
+                className={`px-4 py-1.5 rounded-lg transition cursor-pointer ${
+                  activeResourceTab === 'courses'
+                    ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Courses (Free CME)
+              </button>
+              <button
+                onClick={() => setActiveResourceTab('library')}
+                className={`px-4 py-1.5 rounded-lg transition cursor-pointer ${
+                  activeResourceTab === 'library'
+                    ? 'bg-white dark:bg-slate-900 text-sky-600 shadow-sm'
+                    : 'text-slate-500 hover:text-slate-700 dark:hover:text-slate-300'
+                }`}
+              >
+                Medical Library
+              </button>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+          {activeResourceTab === 'courses' && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             {courses.length === 0 ? (
               <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 text-center space-y-3 col-span-full">
                 <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 mx-auto flex items-center justify-center">
@@ -1354,6 +1586,19 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
               ))
             )}
           </div>
+          )}
+
+          {activeResourceTab === 'library' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-3xl p-8 text-center space-y-3">
+              <div className="w-12 h-12 rounded-2xl bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 mx-auto flex items-center justify-center">
+                <GraduationCap className="w-6 h-6" />
+              </div>
+              <h4 className="text-sm font-bold text-slate-900 dark:text-white">Medical Library</h4>
+              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                Clinical guidelines, textbooks, and research papers will appear here.
+              </p>
+            </div>
+          )}
         </div>
       )}
 
@@ -1622,25 +1867,14 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                 <span className="text-[10px] text-slate-400">These tags feed the feed recommendation algorithm</span>
               </div>
 
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Target Sample Size</label>
-                  <input
-                    type="text"
-                    value={newResearchSample}
-                    onChange={(e) => setNewResearchSample(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Required Skills</label>
-                  <input
-                    type="text"
-                    value={newResearchSkills}
-                    onChange={(e) => setNewResearchSkills(e.target.value)}
-                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
-                  />
-                </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Required Skills</label>
+                <input
+                  type="text"
+                  value={newResearchSkills}
+                  onChange={(e) => setNewResearchSkills(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                />
               </div>
 
               <div>
@@ -1945,6 +2179,126 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-xs"
                 >
                   Confirm & Apply
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Create Job Modal */}
+      {showAddJobModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+            <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
+              <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
+                <Briefcase className="w-5 h-5 text-sky-600" />
+                Post a Job Offer
+              </h3>
+              <button onClick={() => setShowAddJobModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
+            </div>
+            <form onSubmit={handleCreateJob} className="p-5 space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="e.g. Senior Cardiologist"
+                  value={newJobTitle}
+                  onChange={(e) => setNewJobTitle(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Institution/Company</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Apollo Hospitals"
+                    value={newJobCompany}
+                    onChange={(e) => setNewJobCompany(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Location</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="e.g. Mumbai, India"
+                    value={newJobLocation}
+                    onChange={(e) => setNewJobLocation(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Type</label>
+                  <select
+                    value={newJobType}
+                    onChange={(e) => setNewJobType(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  >
+                    <option>Full-time</option>
+                    <option>Part-time</option>
+                    <option>Contract</option>
+                    <option>Locum</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Category</label>
+                  <select
+                    value={newJobCategory}
+                    onChange={(e) => setNewJobCategory(e.target.value)}
+                    className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                  >
+                    <option>Doctor jobs</option>
+                    <option>academic jobs</option>
+                    <option>Internship</option>
+                    <option>fellowship</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Salary Range</label>
+                <input
+                  type="text"
+                  placeholder="e.g. ₹24,00,000 - ₹30,00,000 PA"
+                  value={newJobSalary}
+                  onChange={(e) => setNewJobSalary(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Required Skills (Comma separated)</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Surgery, Diagnostics, Patient Care"
+                  value={newJobSkills}
+                  onChange={(e) => setNewJobSkills(e.target.value)}
+                  className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddJobModal(false)}
+                  className="px-4 py-2 text-xs text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-5 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs"
+                >
+                  Post Job Offer
                 </button>
               </div>
             </form>

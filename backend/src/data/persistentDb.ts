@@ -301,7 +301,17 @@ class PersistentDatabase {
   public addClip(clip: Medclip): Medclip {
     this.data.clips.unshift(clip);
     this.saveToDisk();
+    mysqlDb.syncClip(clip).catch(e => console.error("MySQL Sync Error:", e));
     return clip;
+  }
+
+  public updateClip(clip: Medclip): void {
+    const idx = this.data.clips.findIndex(c => c.id === clip.id);
+    if (idx !== -1) {
+      this.data.clips[idx] = clip;
+      this.saveToDisk();
+      mysqlDb.syncClip(clip).catch(e => console.error("MySQL Sync Error:", e));
+    }
   }
 
   // --- Jobs ---

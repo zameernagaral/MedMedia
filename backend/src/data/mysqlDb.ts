@@ -112,7 +112,26 @@ class MySQLDatabaseManager {
       ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
     `);
 
-    console.log(`[MedMedia MySQL] Verified database schema for users, posts, and stories tables.`);
+    // Medclips table
+    await this.pool.query(`
+      CREATE TABLE IF NOT EXISTS medclips (
+        id VARCHAR(100) PRIMARY KEY,
+        author_id VARCHAR(100) NOT NULL,
+        video_url LONGTEXT NOT NULL,
+        thumbnail_url LONGTEXT,
+        caption TEXT,
+        clinical_category VARCHAR(100),
+        tags TEXT,
+        likes_count INT DEFAULT 0,
+        comments_count INT DEFAULT 0,
+        saves_count INT DEFAULT 0,
+        shares_count INT DEFAULT 0,
+        data JSON,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+    `);
+
+    console.log(`[MedMedia MySQL] Verified database schema for users, posts, stories, and medclips tables.`);
   }
 
   public getStatus(): { connected: boolean; host: string; database: string } {
@@ -228,6 +247,48 @@ class MySQLDatabaseManager {
   }
 
   // Seed default items if tables are empty
+  // Sync / insert Medclip
+  public async syncClip(clip: any): Promise<void> {
+    if (!this.pool || !this.isConnected) return;
+    try {
+      const sql = `
+        INSERT INTO medclips (id, author_id, video_url, thumbnail_url, caption, clinical_category, tags, likes_count, comments_count, saves_count, shares_count, data)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          video_url = VALUES(video_url),
+          thumbnail_url = VALUES(thumbnail_url),
+          caption = VALUES(caption),
+          clinical_category = VALUES(clinical_category),
+          tags = VALUES(tags),
+          likes_count = VALUES(likes_count),
+          comments_count = VALUES(comments_count),
+          saves_count = VALUES(saves_count),
+          shares_count = VALUES(shares_count),
+          data = VALUES(data)
+      `;
+      
+      const values = [
+        clip.id,
+        clip.authorId,
+        clip.videoUrl,
+        clip.thumbnailUrl || clip.videoUrl,
+        clip.caption || '',
+        clip.clinicalCategory || 'Clinical Update',
+        JSON.stringify(clip.tags || []),
+        clip.likesCount || 0,
+        clip.commentsCount || 0,
+        clip.savesCount || 0,
+        clip.sharesCount || 0,
+        JSON.stringify(clip)
+      ];
+
+      await this.pool.execute(sql, values);
+      console.log(`[MedMedia MySQL] Synced Clip: ${clip.id}`);
+    } catch (err) {
+      console.error(`[MedMedia MySQL] Failed to sync clip ${clip.id}:`, err);
+    }
+  }
+
   public async seedInitialDataIfEmpty(users: UserProfile[], posts: Post[], stories: Story[]): Promise<void> {
     if (!this.pool || !this.isConnected) return;
     try {

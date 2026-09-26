@@ -27,7 +27,6 @@ interface PostCardProps {
   onLike: (postId: string) => void;
   onSave: (postId: string) => void;
   onVotePoll?: (postId: string, optionId: string) => void;
-  onConnectAuthor?: (authorId: string) => void;
   onSelectUser?: (userId: string) => void;
   onDeletePost?: (postId: string) => void;
 }
@@ -38,7 +37,6 @@ export const PostCard: React.FC<PostCardProps> = ({
   onLike,
   onSave,
   onVotePoll,
-  onConnectAuthor,
   onSelectUser,
   onDeletePost
 }) => {
@@ -168,18 +166,6 @@ export const PostCard: React.FC<PostCardProps> = ({
                   <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400" />
                   {copiedLink ? "Link Copied!" : "Copy Link"}
                 </button>
-                {onConnectAuthor && (
-                  <button
-                    onClick={() => {
-                      onConnectAuthor(post.authorId);
-                      setShowMoreMenu(false);
-                    }}
-                    className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
-                  >
-                    <UserPlus className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                    Connect Professionally
-                  </button>
-                )}
                 <button
                   onClick={() => {
                     alert("Marked as interested. Your feed preferences have been updated.");
@@ -295,11 +281,19 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* Media Images (No shorts/reels) */}
       {post.mediaUrls && post.mediaUrls.length > 0 && (
         <div className="border-t border-b border-slate-100 dark:border-slate-800 bg-slate-900">
-          <img
-            src={post.mediaUrls[0]}
-            alt="Clinical visual"
-            className="w-full max-h-[460px] object-cover hover:opacity-95 transition"
-          />
+          {post.mediaUrls[0].includes('data:video') || post.mediaUrls[0].match(/\.(mp4|webm|ogg|mov)$/i) ? (
+            <video
+              src={post.mediaUrls[0]}
+              controls
+              className="w-full max-h-[460px] object-contain hover:opacity-95 transition"
+            />
+          ) : (
+            <img
+              src={post.mediaUrls[0]}
+              alt="Clinical visual"
+              className="w-full max-h-[460px] object-cover hover:opacity-95 transition"
+            />
+          )}
         </div>
       )}
 
