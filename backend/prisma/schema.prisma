@@ -22,20 +22,21 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  doctorProfile      DoctorProfile?
-  studentProfile     StudentProfile?
-  sessions           DeviceSession[]
-  posts              Post[]
-  medclips           Medclip[]
-  jobApplications    JobApplication[]
-  stories            Story[]
-  communitiesOwned   Community[]
-  communityMessages  CommunityMessage[]
-  supportTickets     SupportTicket[]
-  isPrivate          Boolean  @default(false)
-  notifPush          Boolean  @default(true)
-  notifEmail         Boolean  @default(true)
-  coverPhotoUrl      String?
+  doctorProfile     DoctorProfile?
+  studentProfile    StudentProfile?
+  sessions          DeviceSession[]
+  posts             Post[]
+  medclips          Medclip[]
+  jobApplications   JobApplication[]
+  stories           Story[]
+  communitiesOwned  Community[]
+  communityMessages CommunityMessage[]
+  supportTickets    SupportTicket[]
+  comments          Comment[]                 @relation("CommentAuthor")
+  isPrivate         Boolean                   @default(false)
+  notifPush         Boolean                   @default(true)
+  notifEmail        Boolean                   @default(true)
+  coverPhotoUrl     String?
   following         Follow[]                  @relation("Following")
   followers         Follow[]                  @relation("Followers")
   bookmarks         Bookmark[]
@@ -101,6 +102,24 @@ model Post {
   sharesCount   Int        @default(0)
   createdAt     DateTime   @default(now())
   bookmarks     Bookmark[]
+  comments      Comment[]
+}
+
+model Comment {
+  id        String   @id @default(uuid())
+  postId    String
+  authorId  String
+  parentId  String?
+  content   String
+  createdAt DateTime @default(now())
+
+  post    Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+  author  User      @relation("CommentAuthor", fields: [authorId], references: [id], onDelete: Cascade)
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([postId, createdAt])
+  @@index([parentId])
 }
 
 model Follow {
@@ -229,24 +248,24 @@ model JobApplication {
 }
 
 model Community {
-  id               String   @id @default(uuid())
+  id               String             @id @default(uuid())
   name             String
   iconUrl          String?
   avatarUrl        String?
   description      String
   category         String
-  membersCount     Int      @default(1)
-  maxCapacity      Int      @default(10000)
+  membersCount     Int                @default(1)
+  maxCapacity      Int                @default(10000)
   creatorId        String
-  creator          User     @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  isOfficial       Boolean  @default(false)
+  creator          User               @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  isOfficial       Boolean            @default(false)
   announcementText String?
-  createdAt        DateTime @default(now())
+  createdAt        DateTime           @default(now())
   messages         CommunityMessage[]
 }
 
 model CommunityMessage {
-  id          String   @id @default(uuid())
+  id          String    @id @default(uuid())
   text        String
   imageUrl    String?
   videoUrl    String?
@@ -327,15 +346,14 @@ model MedicalEvent {
   createdAt   DateTime @default(now())
 }
 
-
 model SupportTicket {
-  id          String   @id @default(uuid())
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
-  subject     String
-  message     String
-  type        String   @default("SUPPORT")
-  category    String   @default("general")
-  status      String   @default("open")
-  createdAt   DateTime @default(now())
+  id        String   @id @default(uuid())
+  userId    String?
+  user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  subject   String
+  message   String
+  type      String   @default("SUPPORT")
+  category  String   @default("general")
+  status    String   @default("open")
+  createdAt DateTime @default(now())
 }

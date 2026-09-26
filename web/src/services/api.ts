@@ -262,6 +262,32 @@ export const apiService = {
     }
   },
 
+  async getPostComments(postId: string): Promise<any[]> {
+    const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/comments`);
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed to load comments');
+    return data.comments || [];
+  },
+
+  async createPostComment(postId: string, content: string, parentId?: string): Promise<any> {
+    const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/comments`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content, parentId })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.comment) throw new Error(data.message || 'Failed to post comment');
+    return data.comment;
+  },
+
+  async deletePostComment(postId: string, commentId: string): Promise<void> {
+    const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/comments/${commentId}`, { method: 'DELETE' });
+    if (!res.ok) {
+      const data = await res.json();
+      throw new Error(data.message || 'Failed to delete comment');
+    }
+  },
+
   async followUser(userId: string): Promise<boolean> {
     const res = await fetchWithAuth(`${API_BASE}/users/${userId}/follow`, { method: 'POST' });
     const data = await res.json();

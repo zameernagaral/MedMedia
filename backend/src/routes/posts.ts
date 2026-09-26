@@ -14,6 +14,11 @@ const createPostSchema = z.object({
   linkUrl: z.string().url().optional()
 });
 
+const createCommentSchema = z.object({
+  content: z.string().trim().min(1).max(2000),
+  parentId: z.string().optional()
+});
+
 // GET /api/posts - Home Feed
 router.get('/', async (req: Request, res: Response) => {
   try {
@@ -105,6 +110,71 @@ router.post('/:id/like', requireAuth, async (req: Request, res: Response) => {
     await createNotification({ recipientId: post.userId, actorId: (req as any).user.userId, type: 'LIKE', message: 'liked your post', entityId: id });
     res.json({ success: true, isLiked: true, likesCount: updated.likesCount });
   } catch (e) { res.status(500).json({ success: false }); }
+});
+
+router.get('/:id/comments', async (req: Request, res: Response) => {
+  try {
+    const postId = req.params.id as string;
+    const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const comments = await prisma.comment.findMany({
+      where: { postId },
+      include: { author: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json({ success: true, comments: comments.map(comment => ({
+      id: comment.id, postId: comment.postId, parentId: comment.parentId,
+      authorId: comment.authorId, authorName: comment.author.fullName,
+      authorUsername: comment.author.username, authorAvatar: comment.author.avatarUrl,
+      authorRole: comment.author.role, isVerified: comment.author.verificationStatus === 'VERIFIED',
+      content: comment.content, createdAt: comment.createdAt.toISOString()
+    })) });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to fetch comments' });
+  }
+});
+
+router.post('/:id/comments', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const postId = req.params.id as string;
+    const authorId = (req as any).user.userId as string;
+    const data = createCommentSchema.parse(req.body);
+    const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true, userId: true } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (data.parentId && !(await prisma.comment.findFirst({ where: { id: data.parentId, postId } }))) {
+      return res.status(400).json({ success: false, message: 'Reply target not found' });
+    }
+    const comment = await prisma.comment.create({
+      data: { postId, authorId, parentId: data.parentId, content: data.content },
+      include: { author: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } }
+    });
+    await prisma.post.update({ where: { id: postId }, data: { commentsCount: { increment: 1 } } });
+    if (post.userId !== authorId) await createNotification({ recipientId: post.userId, actorId: authorId, type: 'COMMENT', message: 'commented on your post', entityId: postId });
+    res.status(201).json({ success: true, comment: {
+      id: comment.id, postId, parentId: comment.parentId, authorId,
+      authorName: comment.author.fullName, authorUsername: comment.author.username,
+      authorAvatar: comment.author.avatarUrl, authorRole: comment.author.role,
+      isVerified: comment.author.verificationStatus === 'VERIFIED', content: comment.content,
+      createdAt: comment.createdAt.toISOString()
+    } });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
+    res.status(500).json({ success: false, message: 'Failed to create comment' });
+  }
+});
+
+router.delete('/:postId/comments/:commentId', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const comment = await prisma.comment.findFirst({ where: { id: req.params.commentId as string, postId: req.params.postId as string } });
+    if (!comment) return res.status(404).json({ success: false, message: 'Comment not found' });
+    const user = (req as any).user;
+    if (comment.authorId !== user.userId && user.role !== 'ADMIN') return res.status(403).json({ success: false, message: 'Forbidden' });
+    await prisma.comment.delete({ where: { id: comment.id } });
+    await prisma.post.update({ where: { id: comment.postId }, data: { commentsCount: { decrement: 1 } } });
+    res.json({ success: true, commentId: comment.id });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete comment' });
+  }
 });
 
 router.post('/:id/save', requireAuth, async (req: Request, res: Response) => {
