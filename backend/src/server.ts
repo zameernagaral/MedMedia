@@ -23,6 +23,7 @@ import notificationsRoutes from './routes/notifications';
 import eventsRoutes from './routes/events';
 import resourcesRoutes from './routes/resources';
 import settingsRoutes from './routes/settings';
+import conversationsRoutes from './routes/conversations';
 
 dotenv.config();
 
@@ -102,6 +103,7 @@ app.use('/api/events', eventsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/upload', uploadRoutes);
 app.use('/api/settings', settingsRoutes);
+app.use('/api/conversations', conversationsRoutes);
 
 // Fallback to React index.html for SPA routes (if frontend dist exists)
 if (frontendDist) {

@@ -140,42 +140,14 @@ export const apiService = {
 
   // 4. REGISTER NEW USER
   async registerUser(userData: any): Promise<UserProfile> {
-    let savedUser: UserProfile | null = null;
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(userData)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        savedUser = data.user;
-      }
-    } catch (e) {
-      console.warn('[MedMedia API] Backend registration error, saving locally:', e);
-    }
-
-    if (!savedUser) {
-      const hasCred = Boolean(userData.medicalCouncilCredentialUrl || userData.studentIdCredentialUrl);
-      savedUser = {
-        id: `usr-${Date.now()}`,
-        fullName: userData.fullName || 'Medical Member',
-        username: userData.username || 'user_member',
-        email: userData.email || 'user@medmedia.health',
-        avatarUrl: userData.role === 'DOCTOR'
-          ? 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop'
-          : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
-        coverPhotoUrl: userData.coverPhotoUrl || 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=1200&h=400&fit=crop',
-        role: userData.role || 'DOCTOR',
-        verificationStatus: hasCred ? 'VERIFIED' : 'UNVERIFIED',
-        badgeTitle: userData.role === 'DOCTOR' ? (hasCred ? 'Verified Specialist' : 'Specialist') : (hasCred ? 'Verified Student Scholar' : 'Student Scholar'),
-        bio: userData.bio || 'Healthcare Member on MedMedia.',
-        isPrivate: Boolean(userData.isPrivate),
-        doctorDetails: userData.doctorDetails,
-        studentDetails: userData.studentDetails,
-        stats: { postsCount: 0, followersCount: 15, followingCount: 8 }
-      };
-    }
+    const res = await fetchWithAuth(`${API_BASE}/auth/register`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(userData)
+    });
+    const data = await res.json();
+    if (!res.ok || !data.user) throw new Error(data.message || 'Registration failed');
+    const savedUser = data.user as UserProfile;
 
     const currentUsers = await this.getUsers();
     const updatedUsers = [savedUser, ...currentUsers.filter(u => u.id !== savedUser?.id)];
@@ -185,32 +157,16 @@ export const apiService = {
     return savedUser;
   },
 
-  async loginUser(identifier: string, password?: string): Promise<UserProfile | null> {
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ identifier, password })
-      });
-      if (res.ok) {
-        const data = await res.json();
-        if (data.user) {
-          localStorage.setItem('medmedia_current_user', JSON.stringify(data.user));
-          return data.user;
-        }
-      }
-    } catch {}
-
-    const users = await this.getUsers();
-    const match = users.find(u => 
-      u.email.toLowerCase() === identifier.toLowerCase() || 
-      u.username.toLowerCase() === identifier.toLowerCase()
-    );
-    if (match) {
-      localStorage.setItem('medmedia_current_user', JSON.stringify(match));
-      return match;
-    }
-    return null;
+  async loginUser(identifier: string, password?: string): Promise<UserProfile> {
+    const res = await fetchWithAuth(`${API_BASE}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ identifier: identifier.trim(), password })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.user) throw new Error(data.message || 'Login failed');
+    localStorage.setItem('medmedia_current_user', JSON.stringify(data.user));
+    return data.user;
   },
 
   // 6. UPDATE USER PROFILE

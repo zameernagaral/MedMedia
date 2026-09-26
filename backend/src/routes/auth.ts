@@ -20,8 +20,8 @@ if (!JWT_SECRET) throw new Error("FATAL: JWT_SECRET environment variable is miss
 // POST /api/auth/login
 router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
-    let { identifier, password } = req.body;
-    if (identifier) identifier = identifier.toLowerCase();
+    const identifier = String(req.body.identifier || req.body.email || req.body.phoneNumber || '').trim();
+    const password = String(req.body.password || '');
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: "Identifier and password required" });
@@ -30,8 +30,9 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
     const user = await prisma.user.findFirst({
       where: {
         OR: [
-          { email: identifier },
-          { username: identifier }
+          { email: identifier.toLowerCase() },
+          { username: identifier },
+          { phoneNumber: identifier }
         ]
       },
       include: {
@@ -85,7 +86,11 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
           collegeName: user.studentProfile.collegeName,
           academicYear: user.studentProfile.academicYear
         } : undefined,
-        stats: { postsCount: 0, followersCount: 0, followingCount: 0 }
+        stats: {
+          postsCount: await prisma.post.count({ where: { userId: user.id } }),
+          followersCount: await prisma.follow.count({ where: { followingId: user.id } }),
+          followingCount: await prisma.follow.count({ where: { followerId: user.id } })
+        }
       }
     });
   } catch (error) {
@@ -97,19 +102,29 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
-    let { 
+    let {
       fullName, username, email, phoneNumber, password, role, 
       doctorDetails, studentDetails 
     } = req.body;
     if (email) email = email.toLowerCase();
     if (username) username = username.toLowerCase();
 
-    if (!email) {
-      return res.status(400).json({ success: false, message: "Email is required" });
+    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
+    const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
+    const normalizedPhone = typeof phoneNumber === 'string' ? phoneNumber.trim() : undefined;
+
+    if (!fullName?.trim() || !normalizedUsername || !normalizedEmail || !password || password.length < 8) {
+      return res.status(400).json({ success: false, message: "Full name, username, email, and a password of at least 8 characters are required" });
     }
 
     const existingUser = await prisma.user.findFirst({
-      where: { OR: [{ email }, { username: username || '' }] }
+      where: {
+        OR: [
+          { email: normalizedEmail },
+          { username: normalizedUsername },
+          ...(normalizedPhone ? [{ phoneNumber: normalizedPhone }] : [])
+        ]
+      }
     });
 
     if (existingUser) {
@@ -121,11 +136,11 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
 
     const newUser = await prisma.user.create({
       data: {
-        fullName: fullName || "New User",
-        username: username || email.split('@')[0] + Date.now(),
-        email,
+        fullName: fullName.trim(),
+        username: normalizedUsername,
+        email: normalizedEmail,
         passwordHash,
-        phoneNumber,
+        phoneNumber: normalizedPhone,
         role: role || "DOCTOR",
         avatarUrl: null,
         verificationStatus,

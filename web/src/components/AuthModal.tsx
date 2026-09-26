@@ -141,8 +141,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       const finalPostText = skipPost ? undefined : (firstPostContent.trim() || undefined);
       onLoginSuccess(newUser, finalPostText);
       onClose();
-    } catch {
-      onClose();
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Registration failed. Please try again.');
     }
   };
 
@@ -155,12 +155,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
     setStatusMessage("Authenticating with local database...");
 
-    const user = await apiService.loginUser(emailOrPhone, password);
-    if (user) {
+    try {
+      const user = await apiService.loginUser(emailOrPhone, password);
       onLoginSuccess(user);
       onClose();
-    } else {
-      setStatusMessage("Account not found. Please register or check your email/phone.");
+    } catch (error) {
+      setStatusMessage(error instanceof Error ? error.message : 'Login failed. Please check your credentials.');
     }
   };
 

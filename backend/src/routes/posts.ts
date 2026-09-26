@@ -2,6 +2,7 @@ import { Router, Request, Response } from 'express';
 import prisma from '../data/prismaClient';
 import { requireAuth } from '../middleware/authMiddleware';
 import { z } from 'zod';
+import { createNotification } from '../services/notificationService';
 
 const router = Router();
 
@@ -22,6 +23,7 @@ router.get('/', async (req: Request, res: Response) => {
     const skip = (pageNum - 1) * limitNum;
 
     let where: any = {};
+    const currentUserId = (req as any).user?.userId;
     if (type) where.postType = type;
     if (tag) where.clinicalTags = { contains: tag as string };
 
@@ -31,7 +33,10 @@ router.get('/', async (req: Request, res: Response) => {
       skip,
       take: limitNum,
       orderBy: { createdAt: 'desc' },
-      include: { user: { include: { doctorProfile: true, studentProfile: true } } }
+      include: {
+        user: { include: { doctorProfile: true, studentProfile: true } },
+        ...(currentUserId ? { bookmarks: { where: { userId: currentUserId }, select: { id: true } } } : {})
+      }
     });
 
     const posts = prismaPosts.map(p => ({
@@ -53,7 +58,7 @@ router.get('/', async (req: Request, res: Response) => {
       savesCount: p.savesCount,
       sharesCount: p.sharesCount,
       isLiked: false,
-      isSaved: false,
+      isSaved: currentUserId ? p.bookmarks.length > 0 : false,
       createdAt: p.createdAt.toISOString()
     }));
 
@@ -94,7 +99,10 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 router.post('/:id/like', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
     const updated = await prisma.post.update({ where: { id }, data: { likesCount: { increment: 1 } } });
+    await createNotification({ recipientId: post.userId, actorId: (req as any).user.userId, type: 'LIKE', message: 'liked your post', entityId: id });
     res.json({ success: true, isLiked: true, likesCount: updated.likesCount });
   } catch (e) { res.status(500).json({ success: false }); }
 });
@@ -102,9 +110,51 @@ router.post('/:id/like', requireAuth, async (req: Request, res: Response) => {
 router.post('/:id/save', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    const userId = (req as any).user.userId as string;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
+    if (existing) {
+      await prisma.bookmark.delete({ where: { id: existing.id } });
+      const updated = await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
+      return res.json({ success: true, isSaved: false, savesCount: Math.max(0, updated.savesCount) });
+    }
+    await prisma.bookmark.create({ data: { userId, postId: id } });
     const updated = await prisma.post.update({ where: { id }, data: { savesCount: { increment: 1 } } });
     res.json({ success: true, isSaved: true, savesCount: updated.savesCount });
   } catch (e) { res.status(500).json({ success: false }); }
+});
+
+router.post('/:id/bookmark', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const id = req.params.id as string;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
+    if (existing) {
+      await prisma.bookmark.delete({ where: { id: existing.id } });
+      const updated = await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
+      return res.json({ success: true, isSaved: false, savesCount: Math.max(0, updated.savesCount) });
+    }
+    await prisma.bookmark.create({ data: { userId, postId: id } });
+    const updated = await prisma.post.update({ where: { id }, data: { savesCount: { increment: 1 } } });
+    res.json({ success: true, isSaved: true, savesCount: updated.savesCount });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to bookmark post' }); }
+});
+
+router.delete('/:id/bookmark', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const id = req.params.id as string;
+    const bookmark = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
+    if (bookmark) {
+      await prisma.bookmark.delete({ where: { id: bookmark.id } });
+      await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
+    }
+    const post = await prisma.post.findUnique({ where: { id }, select: { savesCount: true } });
+    res.json({ success: true, isSaved: false, savesCount: Math.max(0, post?.savesCount || 0) });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to remove bookmark' }); }
 });
 
 export default router;
