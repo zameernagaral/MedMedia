@@ -264,52 +264,92 @@ export const StoriesBar: React.FC<StoriesBarProps> = ({
       {/* Horizontal Story Bubble Row */}
       <div className="flex items-center gap-3.5 overflow-x-auto no-scrollbar py-1">
         
-        {/* Current User Add Story Bubble */}
-        <div
-          onClick={() => onOpenCreateStory ? onOpenCreateStory() : setShowCreateModal(true)}
-          className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
-          title="Share a 24-hour clinical story update from your device"
-        >
-          <div className="relative w-16 h-16 rounded-full p-0.5 border-2 border-dashed border-sky-400 dark:border-sky-500 group-hover:border-sky-600 transition">
-            <img
-              src={currentUser.avatarUrl}
-              alt="My Story"
-              className="w-full h-full rounded-full object-cover group-hover:scale-95 transition"
-            />
-            <div className="absolute bottom-0 right-0 w-5 h-5 bg-sky-600 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm">
-              <Plus className="w-3.5 h-3.5 stroke-[3]" />
-            </div>
-          </div>
-          <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
-            Your Pearl
-          </span>
-        </div>
+        {/* Current User Story Bubble (Merged Create + View) */}
+        {(() => {
+          const myStoryIndex = stories.findIndex(s => s.userId === currentUser.id);
+          const hasStory = myStoryIndex !== -1;
+          const myStory = hasStory ? stories[myStoryIndex] : null;
 
-        {/* Stories List */}
-        {stories.map((story, idx) => (
-          <div
-            key={story.id}
-            onClick={() => handleOpenStory(idx)}
-            className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
-          >
-            <div className={`w-16 h-16 rounded-full p-0.5 transition transform group-hover:scale-105 ${
-              story.isViewed
-                ? 'border-2 border-slate-300 dark:border-slate-700'
-                : 'bg-gradient-to-tr from-cyan-400 via-teal-500 to-sky-600 p-[2.5px] shadow-[0_0_12px_rgba(6,182,212,0.35)]'
-            }`}>
-              <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-0.5">
-                <img
-                  src={story.userAvatar}
-                  alt={story.userName}
-                  className="w-full h-full rounded-full object-cover"
-                />
+          return (
+            <div
+              onClick={() => {
+                if (hasStory) {
+                  handleOpenStory(myStoryIndex);
+                } else if (onOpenCreateStory) {
+                  onOpenCreateStory();
+                } else {
+                  setShowCreateModal(true);
+                }
+              }}
+              className="flex flex-col items-center flex-shrink-0 cursor-pointer group relative"
+              title={hasStory ? "View your story" : "Share a 24-hour clinical story update"}
+            >
+              <div className={`w-16 h-16 rounded-full p-0.5 transition transform group-hover:scale-105 ${
+                hasStory 
+                  ? (myStory!.isViewed ? 'border-2 border-slate-300 dark:border-slate-700' : 'bg-gradient-to-tr from-cyan-400 via-teal-500 to-sky-600 p-[2.5px] shadow-[0_0_12px_rgba(6,182,212,0.35)]')
+                  : 'border-2 border-dashed border-sky-400 dark:border-sky-500 group-hover:border-sky-600'
+              }`}>
+                <div className={`w-full h-full rounded-full ${hasStory ? 'bg-white dark:bg-slate-900 p-0.5' : ''}`}>
+                  <img
+                    src={currentUser.avatarUrl}
+                    alt="My Story"
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </div>
               </div>
+              
+              {/* Plus Badge */}
+              <div 
+                onClick={(e) => {
+                  // If they have a story, clicking the + specifically should add another one
+                  if (hasStory) {
+                    e.stopPropagation();
+                    if (onOpenCreateStory) onOpenCreateStory();
+                    else setShowCreateModal(true);
+                  }
+                }}
+                className={`absolute ${hasStory ? 'bottom-5 right-0' : 'bottom-5 right-0'} w-5 h-5 bg-sky-600 hover:bg-sky-500 text-white rounded-full flex items-center justify-center border-2 border-white dark:border-slate-900 shadow-sm cursor-pointer z-10 transition`}
+                title="Add to your story"
+              >
+                <Plus className="w-3.5 h-3.5 stroke-[3]" />
+              </div>
+
+              <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
+                Your Pearl
+              </span>
             </div>
-            <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
-              {story.userName.split(' ')[story.userName.startsWith('Dr.') ? 1 : 0]}
-            </span>
-          </div>
-        ))}
+          );
+        })()}
+
+        {/* Other Users' Stories List */}
+        {stories.map((story, idx) => {
+          if (story.userId === currentUser.id) return null; // Already rendered as Your Pearl
+
+          return (
+            <div
+              key={story.id}
+              onClick={() => handleOpenStory(idx)}
+              className="flex flex-col items-center flex-shrink-0 cursor-pointer group"
+            >
+              <div className={`w-16 h-16 rounded-full p-0.5 transition transform group-hover:scale-105 ${
+                story.isViewed
+                  ? 'border-2 border-slate-300 dark:border-slate-700'
+                  : 'bg-gradient-to-tr from-cyan-400 via-teal-500 to-sky-600 p-[2.5px] shadow-[0_0_12px_rgba(6,182,212,0.35)]'
+              }`}>
+                <div className="w-full h-full rounded-full bg-white dark:bg-slate-900 p-0.5">
+                  <img
+                    src={story.userAvatar}
+                    alt={story.userName}
+                    className="w-full h-full rounded-full object-cover"
+                  />
+                </div>
+              </div>
+              <span className="text-[11px] font-medium text-slate-700 dark:text-slate-300 mt-1 max-w-[68px] truncate">
+                {story.userName.split(' ')[story.userName.startsWith('Dr.') ? 1 : 0]}
+              </span>
+            </div>
+          );
+        })}
       </div>
 
       {/* CREATE STORY MODAL (With Device Media Upload, Caption & Hashtags) */}

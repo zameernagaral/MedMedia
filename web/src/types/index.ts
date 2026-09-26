@@ -449,3 +449,18 @@ export interface PasswordResetRequest {
   resetToken: string;
   newPassword: string;
 }
+
+export interface MedicalEvent {
+  id: string;
+  title: string;
+  date: string;
+  location: string;
+  category: string;
+  type: string;
+  description: string;
+  organizer?: string;
+  imageUrl?: string;
+  linkUrl?: string;
+  attendees: number;
+  createdAt: string;
+}

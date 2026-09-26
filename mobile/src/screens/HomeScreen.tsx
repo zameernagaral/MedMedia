@@ -7,7 +7,7 @@ import {
   TouchableOpacity, 
   StyleSheet, 
   SafeAreaView, 
-  TextInput 
+  TextInput,
   ActivityIndicator
 } from 'react-native';
 import { Post, UserProfile } from '../types';

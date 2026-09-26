@@ -43,12 +43,7 @@ const POPULAR_POST_TAGS = [
   '#NEETPG'
 ];
 
-const SAMPLE_STORY_IMAGES = [
-  { label: 'Cath Lab Procedure', url: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=700&h=1000&fit=crop' },
-  { label: 'Pediatric Rounds', url: 'https://images.unsplash.com/photo-1516549655169-df83a0774514?w=700&h=1000&fit=crop' },
-  { label: 'Surgical OR Prep', url: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=700&h=1000&fit=crop' },
-  { label: 'Ward Rounds', url: 'https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=700&h=1000&fit=crop' }
-];
+
 
 export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   isOpen,
@@ -63,7 +58,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [creationMode, setCreationMode] = useState<'post' | 'story' | 'medclip'>(initialMode as any);
 
   // Common Media & File State
-  const [mediaUrl, setMediaUrl] = useState(() => initialMode === 'story' ? SAMPLE_STORY_IMAGES[0].url : '');
+  const [mediaUrl, setMediaUrl] = useState('');
   const [isVideo, setIsVideo] = useState(false);
   const [deviceFileName, setDeviceFileName] = useState<string | null>(null);
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
@@ -194,7 +189,8 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   // Submit Story (30s limit saved to MySQL & local database)
   const handleStorySubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const finalMedia = mediaUrl || SAMPLE_STORY_IMAGES[0].url;
+    const finalMedia = mediaUrl;
+    if (!finalMedia) return;
 
     setIsSubmitting(true);
     try {
@@ -291,7 +287,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             type="button"
             onClick={() => {
               setCreationMode('story');
-              if (!mediaUrl) setMediaUrl(SAMPLE_STORY_IMAGES[0].url);
+
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               creationMode === 'story'
@@ -310,7 +306,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             type="button"
             onClick={() => {
               setCreationMode('medclip');
-              if (!mediaUrl) setMediaUrl(SAMPLE_STORY_IMAGES[0].url);
+
             }}
             className={`flex-1 py-2 text-xs font-bold rounded-xl transition flex items-center justify-center gap-2 cursor-pointer ${
               creationMode === 'medclip'
@@ -619,35 +615,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                 </div>
               )}
 
-              {/* Sample preset images */}
-              <div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 font-medium mb-1.5">
-                  Or select sample clinical case image:
-                </p>
-                <div className="grid grid-cols-4 gap-2">
-                  {SAMPLE_STORY_IMAGES.map((img, i) => (
-                    <div
-                      key={i}
-                      onClick={() => {
-                        setMediaUrl(img.url);
-                        setDeviceFileName(null);
-                        setIsVideo(false);
-                        setVideoWarning(null);
-                      }}
-                      className={`relative rounded-xl overflow-hidden cursor-pointer border-2 transition ${
-                        mediaUrl === img.url && !deviceFileName
-                          ? 'border-sky-600 ring-2 ring-sky-300 dark:ring-sky-800 scale-95'
-                          : 'border-slate-200 dark:border-slate-700 hover:opacity-90'
-                      }`}
-                    >
-                      <img src={img.url} alt="" className="w-full h-12 object-cover" />
-                      <span className="absolute bottom-0.5 left-0.5 text-[8px] font-bold bg-black/70 text-white px-1 py-0.5 rounded line-clamp-1">
-                        {img.label}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              </div>
+
             </div>
 
             {/* Story Caption Input */}

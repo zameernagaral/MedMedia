@@ -48,6 +48,7 @@ import {
   CourseItem 
 } from '../types';
 import { apiService } from '../services/api';
+import { CommunityModal } from './CommunityModal';
 import { JobDetailModal } from './JobDetailModal';
 import { INITIAL_COURSES, INITIAL_SCHOLARSHIPS } from '../data/mockData';
 
@@ -62,20 +63,22 @@ const PRESET_COMMUNITY_AVATARS = [
 
 interface OpportunitiesHubProps {
   jobs: Job[];
+  events?: any[];
   opportunities: OpportunityItem[];
   currentUser: UserProfile;
-  isManagerMode?: boolean;
   onDeleteJob?: (jobId: string) => void;
   onAddJob?: (job: Job) => void;
+  onOpenCreateEvent?: () => void;
 }
 
 export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   jobs,
+  events = [],
   opportunities,
   currentUser,
-  isManagerMode = false,
   onDeleteJob,
-  onAddJob
+  onAddJob,
+  onOpenCreateEvent
 }) => {
   const [activeTab, setActiveTab] = useState<'community' | 'jobs' | 'events' | 'research' | 'locum' | 'courses' | 'scholarships'>('community');
   const [activeResourceTab, setActiveResourceTab] = useState<'courses' | 'library'>('courses');
@@ -97,6 +100,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   const [newCommAvatar, setNewCommAvatar] = useState<string>('');
   const commFileInputRef = useRef<HTMLInputElement>(null);
   const [joinedCommunities, setJoinedCommunities] = useState<Record<string, boolean>>({});
+  const [selectedCommunity, setSelectedCommunity] = useState<Community | null>(null);
 
   const handleCommPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -546,11 +550,6 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
           <div>
             <h2 className="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
               Opportunities & Clinical Network
-              {isManagerMode && (
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 font-bold border border-amber-300">
-                  Manager Mode
-                </span>
-              )}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Communities, verified appointments, research workspaces, and locum shifts.
@@ -695,13 +694,16 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
             ) : (
               filteredCommunities.map((c) => {
                 const isFull = c.membersCount >= 10000;
-                const isJoined = joinedCommunities[c.id];
+                const isCreator = c.creatorId === currentUser.id;
+                // If they are the creator, they are automatically joined permanently
+                const isJoined = isCreator || joinedCommunities[c.id];
                 const pct = Math.min(100, Math.round((c.membersCount / 10000) * 100));
 
                 return (
                   <div
                     key={c.id}
-                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:border-sky-300 dark:hover:border-sky-600 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3"
+                    onClick={() => setSelectedCommunity(c)}
+                    className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:border-sky-300 dark:hover:border-sky-600 transition flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 cursor-pointer"
                   >
                     <div className="flex items-start gap-3 flex-1 min-w-0">
                       <img
@@ -745,30 +747,29 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                       </div>
                     </div>
 
-                    {/* Actions: Join Button + Manager Delete */}
+                    {/* Actions: Join Button */}
                     <div className="flex items-center gap-2 self-end sm:self-center flex-shrink-0">
-                      {isManagerMode && (
-                        <button
-                          onClick={() => handleDeleteCommunity(c.id)}
-                          className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-rose-200 dark:border-rose-800 text-xs transition cursor-pointer"
-                          title="Delete Community (Manager)"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      )}
-
                       <button
-                        onClick={() => handleJoinCommunity(c)}
-                        disabled={isFull && !isJoined}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (isCreator) {
+                            alert("You cannot leave a community you created.");
+                            return;
+                          }
+                          handleJoinCommunity(c);
+                        }}
+                        disabled={isCreator || (isFull && !isJoined)}
                         className={`px-4 py-2 rounded-xl text-xs font-bold transition shadow-xs cursor-pointer ${
-                          isJoined
+                          isCreator
+                            ? 'bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-400 border border-sky-200 dark:border-sky-700/50 cursor-not-allowed'
+                            : isJoined
                             ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border border-emerald-300'
                             : isFull
                             ? 'bg-slate-200 dark:bg-slate-800 text-slate-400 cursor-not-allowed'
                             : 'bg-sky-600 hover:bg-sky-700 text-white'
                         }`}
                       >
-                        {isJoined ? 'Joined ✓' : isFull ? 'Full (10k Reached)' : 'Join Community'}
+                        {isCreator ? 'Creator (Joined)' : isJoined ? 'Joined ✓' : isFull ? 'Full (10k Reached)' : 'Join Community'}
                       </button>
                     </div>
                   </div>
@@ -901,22 +902,6 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   </div>
 
                   <div className="flex items-center gap-2 self-end sm:self-center">
-                    {isManagerMode && onDeleteJob && (
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (confirm(`Delete job vacancy "${job.title}"?`)) {
-                            onDeleteJob(job.id);
-                            showToast("Job vacancy deleted by Manager.");
-                          }
-                        }}
-                        className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-rose-200 dark:border-rose-800 text-xs transition"
-                        title="Delete Job (Manager)"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    )}
-
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
@@ -953,7 +938,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                 </p>
               </div>
               <button
-                onClick={() => alert("Post Event modal coming soon!")}
+                onClick={onOpenCreateEvent}
                 className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
               >
                 + Post Event
@@ -978,100 +963,43 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
           </div>
 
           {/* Events List */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {[
-              {
-                id: 'evt-1',
-                title: 'Global Cardiology Summit 2026',
-                date: 'Oct 15 - 17, 2026',
-                location: 'Dubai, UAE',
-                type: 'International',
-                format: 'Offline',
-                organizer: 'World Heart Federation',
-                image: 'https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=200&fit=crop',
-                price: '$250'
-              },
-              {
-                id: 'evt-2',
-                title: 'National AI in Medicine Workshop',
-                date: 'Nov 5, 2026',
-                location: 'Bangalore, India',
-                type: 'National',
-                format: 'Offline',
-                organizer: 'MedTech India',
-                image: 'https://images.unsplash.com/photo-1532094349884-543bc11b234d?w=400&h=200&fit=crop',
-                price: '₹5000'
-              },
-              {
-                id: 'evt-3',
-                title: 'Advanced Surgical Techniques Webinar',
-                date: 'Nov 20, 2026',
-                location: 'Online via Zoom',
-                type: 'Online',
-                format: 'Online',
-                organizer: 'American College of Surgeons',
-                image: 'https://images.unsplash.com/photo-1551076805-e1869033e561?w=400&h=200&fit=crop',
-                price: 'Free'
-              },
-              {
-                id: 'evt-4',
-                title: 'Local Pediatric Care Meetup',
-                date: 'Dec 1, 2026',
-                location: 'Mumbai, India',
-                type: 'Near You',
-                format: 'Offline',
-                organizer: 'Mumbai Pediatric Society',
-                image: 'https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=400&h=200&fit=crop',
-                price: '₹1000'
-              }
-            ].filter(evt => {
-              if (eventsFilter === 'Online') return evt.format === 'Online';
-              if (eventsFilter === 'Offline') return evt.format === 'Offline';
-              if (eventsFilter === 'National') return evt.type === 'National';
-              if (eventsFilter === 'International') return evt.type === 'International';
-              if (eventsFilter === 'Near You') return evt.type === 'Near You' || evt.location.includes('Bangalore') || evt.location.includes('Mumbai'); // simple logic for demo
-              return true;
-            }).map((evt) => (
-              <div key={evt.id} className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition">
-                <img src={evt.image} alt={evt.title} className="w-full h-32 object-cover" />
-                <div className="p-4 space-y-3">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300">
-                        {evt.type}
-                      </span>
-                      <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300">
-                        {evt.format}
-                      </span>
-                    </div>
-                    <h4 className="text-sm font-bold text-slate-900 dark:text-white line-clamp-1">{evt.title}</h4>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">By {evt.organizer}</p>
+          {events.filter(e => e.category === eventsFilter || eventsFilter === 'Near You').length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-12 bg-slate-50 dark:bg-slate-900/50 rounded-3xl border border-slate-200 dark:border-slate-800 text-center">
+              <Calendar className="w-12 h-12 text-slate-300 dark:text-slate-700 mb-3" />
+              <p className="text-sm font-semibold text-slate-800 dark:text-white">No upcoming events yet</p>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-[250px] mx-auto">Check back later for national and international medical conferences, workshops, and meetups.</p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {events.filter(e => e.category === eventsFilter || eventsFilter === 'Near You').map(e => (
+                <div key={e.id} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 transition">
+                  <div className="flex justify-between items-start mb-3">
+                    <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-lg border border-sky-100 dark:border-sky-900">
+                      {e.type}
+                    </span>
+                    <span className="text-xs font-bold text-slate-500">{e.attendees} attending</span>
                   </div>
+                  <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{e.title}</h4>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">{e.description}</p>
                   
-                  <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                      <Calendar className="w-3.5 h-3.5 text-slate-400" />
-                      <span>{evt.date}</span>
+                  <div className="space-y-2 mb-4">
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      <Calendar className="w-3.5 h-3.5 shrink-0" />
+                      {e.date}
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-slate-600 dark:text-slate-300">
-                      <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                      <span className="line-clamp-1">{evt.location}</span>
+                    <div className="flex items-center gap-2 text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                      <MapPin className="w-3.5 h-3.5 shrink-0" />
+                      {e.location}
                     </div>
                   </div>
                   
-                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-                    <span className="text-sm font-bold text-slate-900 dark:text-white">{evt.price}</span>
-                    <button
-                      onClick={() => alert(`Registered for ${evt.title}!`)}
-                      className="px-4 py-1.5 bg-slate-900 dark:bg-white text-white dark:text-slate-900 text-xs font-bold rounded-xl transition hover:bg-slate-800 dark:hover:bg-slate-100 cursor-pointer"
-                    >
-                      Register
-                    </button>
-                  </div>
+                  <button className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition">
+                    Register / Learn More
+                  </button>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -1347,7 +1275,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                     </div>
 
                     {/* Pending Approval Requests (If Manager or Lead) */}
-                    {(isManagerMode || proj.leadDoctorName === currentUser.fullName) && (proj.pendingJoinRequests || []).length > 0 && (
+                    {(proj.leadDoctorName === currentUser.fullName) && (proj.pendingJoinRequests || []).length > 0 && (
                       <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800 space-y-2">
                         <span className="text-[11px] font-bold text-amber-900 dark:text-amber-200 block">
                           Pending Investigator Join Requests:
@@ -2314,6 +2242,18 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
         onClose={() => setSelectedJob(null)}
         onApply={(jobId) => showToast(`Application for job #${jobId} submitted with verified credentials!`)}
       />
+
+      {/* Community View / Chat Modal - FULLY DYNAMIC */}
+      {selectedCommunity && (
+        <CommunityModal
+          community={selectedCommunity}
+          currentUser={currentUser}
+          isJoined={selectedCommunity.creatorId === currentUser.id || !!joinedCommunities[selectedCommunity.id]}
+          isCreator={selectedCommunity.creatorId === currentUser.id}
+          onClose={() => setSelectedCommunity(null)}
+          onJoin={() => handleJoinCommunity(selectedCommunity)}
+        />
+      )}
 
     </div>
   );

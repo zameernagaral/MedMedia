@@ -38,10 +38,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({
               }`}
             >
               {tab.useAvatar ? (
-                <div className={`w-6 h-6 rounded-full overflow-hidden transition-all ${
+                <div className={`w-6 h-6 rounded-full overflow-hidden transition-all flex items-center justify-center bg-slate-200 dark:bg-slate-800 ${
                   isActive ? 'ring-2 ring-sky-500 ring-offset-1 dark:ring-offset-slate-900' : 'opacity-80'
                 }`}>
-                  <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
+                  {userAvatar ? (
+                    <img src={userAvatar} alt="Profile" className="w-full h-full object-cover" />
+                  ) : (
+                    <User className="w-4 h-4 text-slate-500" />
+                  )}
                 </div>
               ) : (
                 <div className="relative">

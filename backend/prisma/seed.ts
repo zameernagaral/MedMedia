@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import { db } from '../src/data/persistentDb';
+declare var process: any;
 import bcrypt from 'bcryptjs';
 
 const prisma = new PrismaClient();
@@ -7,9 +7,10 @@ const prisma = new PrismaClient();
 async function main() {
   console.log('Seeding database from legacy JSON...');
 
-  const users = db.getUsers();
-  const posts = db.getPosts({});
-  const clips = db.getClips();
+  // Legacy data has been migrated. persistentDb is removed.
+  const users: any[] = [];
+  const posts: any[] = [];
+  const clips: any[] = [];
 
   // Seed Users
   for (const u of users) {

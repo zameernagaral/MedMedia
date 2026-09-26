@@ -41,15 +41,13 @@ export const SupportModal: React.FC<SupportModalProps> = ({
     setIsSubmitting(true);
     try {
       const res = await apiService.submitSupportTicket({
-        userId: currentUser?.id || 'user_guest',
-        userName: name || currentUser?.fullName || 'MedMedia User',
-        userEmail: email || currentUser?.email || 'user@medmedia.org',
-        category,
-        description: phone ? `[Phone: ${phone}]\n${description}` : description
+        subject: `Support Ticket from ${name || currentUser?.fullName || 'MedMedia User'}`,
+        message: phone ? `[Phone: ${phone}]\n${description}` : description,
+        category
       });
 
       setSubmittedMessage(
-        res.message ||
+        res?.message ||
         'Your query has been forwarded to MedMedia Support at medmedia1409@gmail.com. Our clinical engineering team will respond within 24-48 hours.'
       );
     } catch {

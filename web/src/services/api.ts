@@ -344,14 +344,35 @@ export const apiService = {
   async createClip(clipData: any): Promise<Medclip> {
     let savedClip: Medclip | null = null;
     try {
+      const payload = {
+        videoUrl: clipData.mediaUrl,
+        thumbnailUrl: clipData.mediaUrl,
+        caption: clipData.caption,
+        clipType: clipData.clinicalCategory || clipData.clipType || 'Clinical Update',
+        tags: clipData.clinicalTags || []
+      };
+      
       const res = await fetchWithAuth(`${API_BASE}/clips`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(clipData)
+        body: JSON.stringify(payload)
       });
       if (res.ok) {
         const data = await res.json();
-        savedClip = data.clip;
+        // The backend returns a Prisma object, let's map it back to the Medclip interface
+        savedClip = {
+          ...data.clip,
+          tags: typeof data.clip.tags === 'string' ? JSON.parse(data.clip.tags) : (data.clip.tags || []),
+          authorId: clipData.userId,
+          authorName: clipData.userName,
+          authorAvatar: clipData.userAvatar,
+          authorSpecialty: clipData.userSpecialty,
+          isVerified: true,
+          likesCount: 0,
+          commentsCount: 0,
+          savesCount: 0,
+          sharesCount: 0
+        };
       }
     } catch (e) {
       console.warn('[MedMedia API] Failed to post clip to backend:', e);
@@ -531,6 +552,28 @@ export const apiService = {
       return await res.json();
     } catch {
       return { success: false, message: 'Failed to join community.' };
+    }
+  },
+
+  async getCommunityMessages(communityId: string): Promise<{ success: boolean; messages: any[] }> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities/${communityId}/messages`);
+      return await res.json();
+    } catch {
+      return { success: false, messages: [] };
+    }
+  },
+
+  async sendCommunityMessage(communityId: string, text: string, imageUrl?: string, videoUrl?: string): Promise<{ success: boolean; message?: any }> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/communities/${communityId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text, imageUrl, videoUrl })
+      });
+      return await res.json();
+    } catch {
+      return { success: false };
     }
   },
 
@@ -765,31 +808,6 @@ export const apiService = {
   },
 
   // ==========================================
-  // HELP CENTER & SUPPORT (medmedia1409@gmail.com)
-  // ==========================================
-  async submitSupportTicket(ticket: {
-    userId: string;
-    userName: string;
-    userEmail: string;
-    category: string;
-    description: string;
-  }): Promise<{ success: boolean; message: string }> {
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/admin/support`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(ticket)
-      });
-      return await res.json();
-    } catch {
-      return {
-        success: true,
-        message: 'Your inquiry has been submitted and forwarded directly to MedMedia Support at medmedia1409@gmail.com. Our clinical engineering team will respond within 24-48 hours.'
-      };
-    }
-  },
-
-  // ==========================================
   // SEARCH
   // ==========================================
   async search(query: string, category: string = 'Accounts'): Promise<any> {
@@ -801,6 +819,33 @@ export const apiService = {
       }
     } catch {}
     return null;
+  },
+
+  // ==========================================
+  // EVENTS
+  // ==========================================
+  async getEvents(): Promise<any[]> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/events`);
+      const data = await res.json();
+      return data.success ? data.events : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async createEvent(eventData: any): Promise<any | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/events`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(eventData)
+      });
+      const data = await res.json();
+      return data.success ? data.event : null;
+    } catch {
+      return null;
+    }
   },
 
   // ==========================================
@@ -821,6 +866,85 @@ export const apiService = {
     
     const data = await res.json();
     return data.url;
+  },
+
+  // ==========================================
+  // SETTINGS
+  // ==========================================
+  async getSettings(): Promise<any | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings`);
+      const data = await res.json();
+      return data.success ? data.settings : null;
+    } catch { return null; }
+  },
+
+  async updatePrivacy(isPrivate: boolean): Promise<boolean> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/privacy`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isPrivate })
+      });
+      const data = await res.json();
+      return data.success;
+    } catch { return false; }
+  },
+
+  async updateNotifications(prefs: { notifPush?: boolean; notifEmail?: boolean }): Promise<boolean> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/notifications`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(prefs)
+      });
+      const data = await res.json();
+      return data.success;
+    } catch { return false; }
+  },
+
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/password`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ currentPassword, newPassword })
+      });
+      const data = await res.json();
+      return { success: data.success, message: data.message || '' };
+    } catch { return { success: false, message: 'Network error' }; }
+  },
+
+  async submitSupportTicket(ticket: { subject: string; message: string; category: string }): Promise<any | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/support`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ticket)
+      });
+      const data = await res.json();
+      return data.success ? data : null;
+    } catch { return null; }
+  },
+
+  async getSupportTickets(): Promise<any[]> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/support`);
+      const data = await res.json();
+      return data.success ? data.tickets : [];
+    } catch { return []; }
+  },
+
+  async deleteAccount(password: string): Promise<{ success: boolean; message: string }> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/account`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password })
+      });
+      const data = await res.json();
+      return { success: data.success, message: data.message || '' };
+    } catch { return { success: false, message: 'Network error' }; }
   }
 };
 

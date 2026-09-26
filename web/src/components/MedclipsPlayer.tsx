@@ -78,9 +78,10 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     return true;
   });
 
-  // Fallback to all clips if following list is empty
-  const activeClipList = filteredClips.length > 0 ? filteredClips : clips;
-  const currentClip = activeClipList[currentIndex] || clips[0];
+  // Fallback to all clips ONLY for the 'following' tab. 
+  // For 'social updates' or 'clinical updates', an empty list means NO clips.
+  const activeClipList = (filteredClips.length === 0 && activeCategory === 'following') ? clips : filteredClips;
+  const currentClip = activeClipList[currentIndex];
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -171,10 +172,45 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     showToast("Comment posted to clinical discussion");
   };
 
+  const renderTabs = () => (
+    <div className="absolute top-0 left-0 right-0 z-30 pt-3 pb-5 px-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex flex-col items-center gap-1.5">
+      <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md p-1 rounded-full border border-white/20">
+        <button
+          onClick={() => { setActiveCategory('following'); setCurrentIndex(0); }}
+          className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 cursor-pointer ${activeCategory === 'following' ? 'bg-sky-600 text-white shadow-md' : 'text-white/80 hover:text-white'}`}
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-500/50 animate-pulse shadow-sm shadow-emerald-400"></span>
+          <span>Following</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveCategory('clinical updates'); setCurrentIndex(0); }}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${activeCategory === 'clinical updates' ? 'bg-sky-600 text-white shadow-md' : 'text-white/80 hover:text-white'}`}
+        >
+          <span>Clinical Updates</span>
+        </button>
+
+        <button
+          onClick={() => { setActiveCategory('social updates'); setCurrentIndex(0); }}
+          className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${activeCategory === 'social updates' ? 'bg-sky-600 text-white shadow-md' : 'text-white/80 hover:text-white'}`}
+        >
+          <span>Social Updates</span>
+        </button>
+      </div>
+      
+      <div className="text-[10px] text-white/70 font-semibold tracking-wider">
+        {activeClipList.length > 0 ? `${currentIndex + 1} of ${activeClipList.length} • Swipe or scroll` : 'No clips found'}
+      </div>
+    </div>
+  );
+
   if (!currentClip) {
     return (
-      <div className="flex items-center justify-center h-96 bg-slate-900 rounded-3xl text-white">
-        No Medclips available in this stream.
+      <div className="relative max-w-sm mx-auto h-[calc(100vh-140px)] sm:h-[730px] bg-slate-900 rounded-3xl overflow-hidden shadow-2xl flex flex-col items-center justify-center border border-slate-800 select-none text-white">
+        {renderTabs()}
+        <div className="text-sm font-medium text-slate-400">
+          No Medclips available in this stream.
+        </div>
       </div>
     );
   }
@@ -191,62 +227,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     >
       
       {/* 1. Header: Following (with green dot), Clinical Updates, Social Updates */}
-      <div className="absolute top-0 left-0 right-0 z-30 pt-3 pb-5 px-3 bg-gradient-to-b from-black/85 via-black/40 to-transparent flex flex-col items-center gap-1.5">
-        <div className="flex items-center gap-1 bg-black/60 backdrop-blur-md p-1 rounded-full border border-white/20">
-          {/* Following with green dot */}
-          <button
-            onClick={() => {
-              setActiveCategory('following');
-              setCurrentIndex(0);
-            }}
-            className={`text-xs font-bold px-3.5 py-1.5 rounded-full transition flex items-center gap-1.5 cursor-pointer ${
-              activeCategory === 'following'
-                ? 'bg-sky-600 text-white shadow-md'
-                : 'text-white/80 hover:text-white'
-            }`}
-          >
-            <span className="w-2 h-2 rounded-full bg-emerald-400 ring-2 ring-emerald-500/50 animate-pulse shadow-sm shadow-emerald-400"></span>
-            <span>Following</span>
-          </button>
-
-          {/* Clinical Updates */}
-          <button
-            onClick={() => {
-              setActiveCategory('clinical updates');
-              setCurrentIndex(0);
-            }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${
-              activeCategory === 'clinical updates'
-                ? 'bg-sky-600 text-white shadow-md'
-                : 'text-white/80 hover:text-white'
-            }`}
-          >
-            <span>Clinical Updates</span>
-          </button>
-
-          {/* Social Updates */}
-          <button
-            onClick={() => {
-              setActiveCategory('social updates');
-              setCurrentIndex(0);
-            }}
-            className={`text-xs font-semibold px-3 py-1.5 rounded-full transition cursor-pointer ${
-              activeCategory === 'social updates'
-                ? 'bg-sky-600 text-white shadow-md'
-                : 'text-white/80 hover:text-white'
-            }`}
-          >
-            <span>Social Updates</span>
-          </button>
-        </div>
-
-        {/* Reel Counter */}
-        <div className="flex items-center gap-2 text-[10px] text-white/70 font-medium">
-          <span>{currentIndex + 1} of {activeClipList.length}</span>
-          <span>•</span>
-          <span>Swipe or scroll</span>
-        </div>
-      </div>
+      {renderTabs()}
 
       {/* 2. Seamless Slide Track */}
       <div className="absolute inset-0 w-full h-full overflow-hidden">
@@ -460,26 +441,28 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
             </div>
           </div>
 
-          <button
-            onClick={() => toggleFollow(currentClip.id)}
-            className={`ml-2 text-[11px] font-bold px-3 py-1 rounded-full transition flex items-center gap-1 cursor-pointer ${
-              followingMap[currentClip.id]
-                ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm'
-            }`}
-          >
-            {followingMap[currentClip.id] ? (
-              <>
-                <UserCheck className="w-3 h-3" />
-                Following
-              </>
-            ) : (
-              <>
-                <UserPlus className="w-3 h-3" />
-                Follow
-              </>
-            )}
-          </button>
+          {currentClip.authorId !== currentUser.id && (
+            <button
+              onClick={() => toggleFollow(currentClip.id)}
+              className={`ml-2 text-[11px] font-bold px-3 py-1 rounded-full transition flex items-center gap-1 cursor-pointer ${
+                followingMap[currentClip.id]
+                  ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
+                  : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm'
+              }`}
+            >
+              {followingMap[currentClip.id] ? (
+                <>
+                  <UserCheck className="w-3 h-3" />
+                  Following
+                </>
+              ) : (
+                <>
+                  <UserPlus className="w-3 h-3" />
+                  Follow
+                </>
+              )}
+            </button>
+          )}
         </div>
 
         {/* Caption */}
@@ -488,13 +471,15 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
         </p>
 
         {/* Tags */}
-        <div className="flex flex-wrap gap-1.5 mt-2">
-          {currentClip.tags.map((tag, i) => (
-            <span key={i} className="text-[10px] text-sky-300 font-semibold hover:underline cursor-pointer">
-              {tag}
-            </span>
-          ))}
-        </div>
+        {(Array.isArray(currentClip.tags) ? currentClip.tags : []).length > 0 && (
+          <div className="flex flex-wrap gap-1.5 mt-2">
+            {(Array.isArray(currentClip.tags) ? currentClip.tags : []).map((tag, i) => (
+              <span key={i} className="text-[10px] text-sky-300 font-semibold hover:underline cursor-pointer">
+                {tag}
+              </span>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Floating Toast Notification */}

@@ -41,6 +41,9 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [connectedMap, setConnectedMap] = useState<Record<string, boolean>>({});
 
+  // Do not show the current user in search results or mentor suggestions
+  const validUsers = useMemo(() => availableUsers.filter(u => u.id !== currentUser.id), [availableUsers, currentUser.id]);
+
   // Filter tabs with 'All Accounts' first
   const filterTabs = [
     'All Accounts',
@@ -52,15 +55,15 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
 
   // Algorithmic Personalized Professors & Mentors
   const algorithmicMentors = useMemo(
-    () => getPersonalizedMentorsAndProfessors(availableUsers, currentUser),
-    [availableUsers, currentUser]
+    () => getPersonalizedMentorsAndProfessors(validUsers, currentUser),
+    [validUsers, currentUser]
   );
 
   // Fast real-time search across all accounts
   const filteredAllAccounts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return availableUsers;
-    return availableUsers.filter((u) => {
+    if (!q) return validUsers;
+    return validUsers.filter((u) => {
       const matchName = u.fullName.toLowerCase().includes(q);
       const matchUsername = u.username.toLowerCase().includes(q);
       const matchBio = u.bio?.toLowerCase().includes(q);

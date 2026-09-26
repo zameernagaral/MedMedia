@@ -252,9 +252,13 @@ export function getPersonalizedMedclips(clips: Medclip[], viewer: UserProfile): 
     let scoreA = a.likesCount;
     let scoreB = b.likesCount;
 
+    // Boost newly uploaded clips (0 likes) to the top so authors can see them immediately
+    if (a.likesCount === 0) scoreA += 10000;
+    if (b.likesCount === 0) scoreB += 10000;
+
     if (isStudent) {
-      if (a.targetAudience === 'STUDENT_HIGH_YIELD') scoreA += 500;
-      if (b.targetAudience === 'STUDENT_HIGH_YIELD') scoreB += 500;
+      if ((a as any).targetAudience === 'STUDENT_HIGH_YIELD') scoreA += 500;
+      if ((b as any).targetAudience === 'STUDENT_HIGH_YIELD') scoreB += 500;
     } else {
       if (a.clinicalCategory === 'clinical updates') scoreA += 300;
       if (b.clinicalCategory === 'clinical updates') scoreB += 300;

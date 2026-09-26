@@ -29,6 +29,7 @@ import { UserProfile, Post, DeviceSession } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { PostCard } from './PostCard';
 import { apiService } from '../services/api';
+import { SettingsAndHelp } from './SettingsAndHelp';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -167,12 +168,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex items-center gap-2">
               {isSelf ? (
                 <>
-                  <button
-                    onClick={() => alert("Edit Profile modal coming soon!")}
-                    className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-400 border border-sky-100 dark:border-sky-900"
-                  >
-                    Edit Profile
-                  </button>
                   <button
                     onClick={() => setActiveTab('settings_help')}
                     className="px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700"
@@ -556,270 +551,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* 4. CONSOLIDATED SUBTAB: SETTINGS & HELP (Only on self profile) */}
       {isSelf && activeTab === 'settings_help' && (
-        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-6 shadow-xs space-y-6 transition-colors duration-200">
-          <div>
-            <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
-              <Settings className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-              Settings & Help Center
-            </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Manage clinical privacy, appearance, connected devices, and support queries.
-            </p>
-          </div>
-
-          {/* 1) Public / Private Account Privacy Toggle */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">
-              Account Privacy & Confidentiality
-            </h4>
-            <div className="p-4 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40 flex items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
-                <div className={`p-2 rounded-xl ${isPrivateAccount ? 'bg-amber-100 dark:bg-amber-950/60 text-amber-600' : 'bg-sky-100 dark:bg-sky-950/60 text-sky-600'}`}>
-                  {isPrivateAccount ? <Lock className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                </div>
-                <div>
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                    {isPrivateAccount ? 'Private Account Active' : 'Public Account Active'}
-                    <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
-                      isPrivateAccount
-                        ? 'bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-300'
-                        : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300'
-                    }`}>
-                      {isPrivateAccount ? 'Private' : 'Public'}
-                    </span>
-                  </h5>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    {isPrivateAccount
-                      ? 'Only followers you approve can see your clinical pearls, case studies, and posts.'
-                      : 'Anyone on MedMedia can view your published cases, clinical pearls, and portfolio.'}
-                  </p>
-                </div>
-              </div>
-
-              {/* Toggle switch */}
-              <button
-                type="button"
-                onClick={handleTogglePrivacy}
-                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                  isPrivateAccount ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
-                }`}
-              >
-                <span
-                  className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                    isPrivateAccount ? 'translate-x-5' : 'translate-x-0'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* 2) Appearance & Theme Mode */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-3">
-              Appearance & Theme Mode
-            </h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              {/* Light Mode Option */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (isDarkMode && onToggleDarkMode) onToggleDarkMode();
-                }}
-                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                  !isDarkMode
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 ring-2 ring-sky-500/20 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-600 flex items-center justify-center">
-                    <Sun className="w-5 h-5" />
-                  </div>
-                  {!isDarkMode && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-600 text-white">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Medical Daylight</h5>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    High clarity for daylight rounds, clean documentation, and daytime reading.
-                  </p>
-                </div>
-              </button>
-
-              {/* Dark Mode Option */}
-              <button
-                type="button"
-                onClick={() => {
-                  if (!isDarkMode && onToggleDarkMode) onToggleDarkMode();
-                }}
-                className={`p-4 rounded-2xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
-                  isDarkMode
-                    ? 'border-sky-500 bg-sky-50/70 dark:bg-sky-950/40 ring-2 ring-sky-500/20 shadow-xs'
-                    : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-slate-50/50 dark:bg-slate-800/40'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-950/60 text-indigo-400 flex items-center justify-center">
-                    <Moon className="w-5 h-5" />
-                  </div>
-                  {isDarkMode && (
-                    <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-sky-600 text-white">
-                      Active
-                    </span>
-                  )}
-                </div>
-                <div>
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white">Clinical Dark Mode</h5>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                    Reduced eye fatigue during night shifts, OT imaging review, and low-light wards.
-                  </p>
-                </div>
-              </button>
-            </div>
-          </div>
-
-          {/* 3) Device & Session Security */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  Device & Session Management
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  Active sessions logged into your verified MedMedia account.
-                </p>
-              </div>
-              <Smartphone className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            </div>
-
-            <div className="space-y-2.5">
-              {deviceSessions.map((sess) => (
-                <div
-                  key={sess.id}
-                  className="p-3.5 rounded-2xl border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800/50 flex items-center justify-between gap-4"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-400">
-                      <Smartphone className="w-4 h-4" />
-                    </div>
-                    <div>
-                      <h5 className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2">
-                        {sess.deviceName}
-                        {sess.isCurrentDevice && (
-                          <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300">
-                            Current Device
-                          </span>
-                        )}
-                      </h5>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">
-                        IP: {sess.ipAddress} • Last active: {sess.lastActive}
-                      </p>
-                    </div>
-                  </div>
-
-                  {!sess.isCurrentDevice && (
-                    <button
-                      onClick={() => onRevokeSession(sess.id)}
-                      className="p-1.5 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50 rounded-xl border border-rose-200 dark:border-rose-800 text-xs font-semibold transition flex items-center gap-1 cursor-pointer"
-                      title="Terminate Session"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline text-[11px]">Log Out</span>
-                    </button>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* 4) Help Center & Support Desk (medmedia1409@gmail.com) */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <div className="flex items-center justify-between">
-              <div>
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                  Help Center & Clinical Support Desk
-                </h4>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  All support inquiries are dispatched to <strong>medmedia1409@gmail.com</strong>.
-                </p>
-              </div>
-              <HelpCircle className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-            </div>
-
-            <div className="space-y-2">
-              {[
-                { q: "How are medical credentials verified?", a: "Medical council registration certificates and student IDs are inspected within 12-24 hours by MedMedia credentialing desk." },
-                { q: "What are patient privacy (HIPAA) rules on MedMedia?", a: "All clinical case images must redact patient names, hospital numbers, and visible facial identifiers." },
-                { q: "How do Locum duty stipends work?", a: "Posting facilities declare stipend ranges upon creation. Payouts are coordinated directly upon completion of duty." }
-              ].map((faq, i) => (
-                <div key={i} className="p-3 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-200/80 dark:border-slate-800">
-                  <h5 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                    <span className="text-sky-600 dark:text-sky-400 font-extrabold">Q:</span> {faq.q}
-                  </h5>
-                  <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1 pl-3.5 border-l-2 border-sky-400">
-                    {faq.a}
-                  </p>
-                </div>
-              ))}
-            </div>
-
-            <div className="p-4 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div>
-                <h5 className="text-xs font-bold text-teal-950 dark:text-teal-200 flex items-center gap-1.5">
-                  <LifeBuoy className="w-4 h-4 text-teal-600 dark:text-teal-400" />
-                  Have a question or account issue?
-                </h5>
-                <p className="text-[11px] text-teal-800 dark:text-teal-300 mt-0.5">
-                  Submit a query to our 24/7 support desk at <strong>medmedia1409@gmail.com</strong>.
-                </p>
-              </div>
-              <button
-                onClick={() => {
-                  if (onOpenSupportModal) {
-                    onOpenSupportModal();
-                  } else if (onOpenHelpCenter) {
-                    onOpenHelpCenter();
-                  }
-                }}
-                className="px-4 py-2 bg-teal-600 hover:bg-teal-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer flex-shrink-0"
-              >
-                Contact Support Desk
-              </button>
-            </div>
-          </div>
-
-          {/* Account Details */}
-          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-              Account Overview
-            </h4>
-            <div className="p-3.5 bg-slate-50 dark:bg-slate-800/50 rounded-2xl border border-slate-200/80 dark:border-slate-800 text-xs space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Full Name</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{user.fullName}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Handle / Username</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">@{user.username}</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">Professional Credential</span>
-                <span className="font-semibold text-sky-600 dark:text-sky-400 flex items-center gap-1">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  {user.badgeTitle}
-                </span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-slate-500 dark:text-slate-400">HIPAA & Clinical Consent</span>
-                <span className="font-semibold text-emerald-600 dark:text-emerald-400">Active & Verified</span>
-              </div>
-            </div>
-          </div>
-        </div>
+        <SettingsAndHelp
+          currentUser={currentUser}
+          deviceSessions={deviceSessions}
+          onRevokeSession={onRevokeSession}
+          isDarkMode={isDarkMode}
+          onToggleDarkMode={onToggleDarkMode}
+          onLogout={logout}
+        />
       )}
+
 
       {/* Banner Selection Modal */}
       {showBannerModal && (

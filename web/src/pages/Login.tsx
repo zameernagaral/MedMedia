@@ -14,7 +14,7 @@ export const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5001/api/auth/login', { email, password }, { withCredentials: true });
+      const res = await axios.post('http://localhost:5001/api/auth/login', { identifier: email, password }, { withCredentials: true });
       if (res.data.success) {
         login(res.data.token, res.data.user);
         navigate('/');

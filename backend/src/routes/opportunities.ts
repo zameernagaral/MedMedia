@@ -95,6 +95,48 @@ router.post('/communities', requireAuth, async (req: Request, res: Response) => 
   }
 });
 
+// COMMUNITY MESSAGES
+router.get('/communities/:id/messages', async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const messages = await prisma.communityMessage.findMany({
+      where: { communityId: id as string },
+      include: { sender: true },
+      orderBy: { createdAt: 'asc' }
+    });
+    res.json({ success: true, count: messages.length, messages });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+});
+
+router.post('/communities/:id/messages', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const { id } = req.params;
+    const senderId = (req as any).user.userId;
+    const { text, imageUrl, videoUrl } = req.body;
+    
+    if (!text && !imageUrl && !videoUrl) {
+      return res.status(400).json({ success: false, message: 'Message content is required' });
+    }
+
+    const message = await prisma.communityMessage.create({
+      data: {
+        text: text || (videoUrl ? '🎬 Sent a video' : '📷 Sent an image'),
+        imageUrl: imageUrl || null,
+        videoUrl: videoUrl || null,
+        communityId: id as string,
+        senderId
+      },
+      include: { sender: true }
+    });
+
+    res.status(201).json({ success: true, message });
+  } catch (error) {
+    res.status(500).json({ success: false });
+  }
+});
+
 // JOBS
 router.get('/jobs', async (req: Request, res: Response) => {
   try {

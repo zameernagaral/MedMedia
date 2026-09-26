@@ -29,7 +29,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const savedUser = localStorage.getItem('medmedia_current_user');
         if (savedUser) {
-          setUser(JSON.parse(savedUser));
+          const parsed = JSON.parse(savedUser);
+          const safeUser = {
+            ...parsed,
+            stats: parsed.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
+          };
+          setUser(safeUser);
+          localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
         }
       } catch (e) {
         console.error(e);
@@ -41,8 +47,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, []);
 
   const login = (token: string, userData: UserProfile) => {
-    setUser(userData);
-    localStorage.setItem('medmedia_current_user', JSON.stringify(userData));
+    // Ensure stats object always exists to prevent frontend crashes
+    const safeUser = {
+      ...userData,
+      stats: userData.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
+    };
+    setUser(safeUser);
+    localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
     // We don't store token in localStorage because it's in httpOnly cookie!
   };
 

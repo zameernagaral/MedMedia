@@ -24,12 +24,19 @@ model User {
 
   doctorProfile      DoctorProfile?
   studentProfile     StudentProfile?
+  
   sessions           DeviceSession[]
   posts              Post[]
   medclips           Medclip[]
   jobApplications    JobApplication[]
   stories            Story[]
   communitiesOwned   Community[]
+  communityMessages  CommunityMessage[]
+  supportTickets     SupportTicket[]
+  isPrivate          Boolean  @default(false)
+  notifPush          Boolean  @default(true)
+  notifEmail         Boolean  @default(true)
+  coverPhotoUrl      String?
 }
 
 model DoctorProfile {
@@ -148,6 +155,19 @@ model Community {
   isOfficial       Boolean  @default(false)
   announcementText String?
   createdAt        DateTime @default(now())
+  messages         CommunityMessage[]
+}
+
+model CommunityMessage {
+  id          String   @id @default(uuid())
+  text        String
+  imageUrl    String?
+  videoUrl    String?
+  communityId String
+  community   Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  senderId    String
+  sender      User      @relation(fields: [senderId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
 }
 
 model Story {
@@ -202,5 +222,32 @@ model Course {
   duration    String
   institution String
   description String
+  createdAt   DateTime @default(now())
+}
+
+model MedicalEvent {
+  id          String   @id @default(uuid())
+  title       String
+  date        String
+  location    String
+  category    String
+  type        String
+  description String
+  organizer   String?
+  imageUrl    String?
+  linkUrl     String?
+  attendees   Int      @default(0)
+  createdAt   DateTime @default(now())
+}
+
+
+model SupportTicket {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  subject     String
+  message     String
+  category    String   @default("general")
+  status      String   @default("open")
   createdAt   DateTime @default(now())
 }

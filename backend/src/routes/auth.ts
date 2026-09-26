@@ -20,7 +20,8 @@ if (!JWT_SECRET) throw new Error("FATAL: JWT_SECRET environment variable is miss
 // POST /api/auth/login
 router.post('/login', authLimiter, async (req: Request, res: Response) => {
   try {
-    const { identifier, password } = req.body;
+    let { identifier, password } = req.body;
+    if (identifier) identifier = identifier.toLowerCase();
 
     if (!identifier || !password) {
       return res.status(400).json({ success: false, message: "Identifier and password required" });
@@ -96,10 +97,12 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
-    const { 
+    let { 
       fullName, username, email, phoneNumber, password, role, 
       doctorDetails, studentDetails 
     } = req.body;
+    if (email) email = email.toLowerCase();
+    if (username) username = username.toLowerCase();
 
     if (!email) {
       return res.status(400).json({ success: false, message: "Email is required" });
@@ -124,9 +127,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
         passwordHash,
         phoneNumber,
         role: role || "DOCTOR",
-        avatarUrl: role === 'DOCTOR' 
-          ? "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop&crop=faces"
-          : "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=faces",
+        avatarUrl: null,
         verificationStatus,
         doctorProfile: role === 'DOCTOR' ? {
           create: {

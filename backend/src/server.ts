@@ -1,5 +1,8 @@
 import path from 'path';
 import fs from 'fs';
+import * as Sentry from '@sentry/node';
+import { nodeProfilingIntegration } from '@sentry/profiling-node';
+import pinoHttp from 'pino-http';
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
@@ -19,8 +22,18 @@ import adminRoutes from './routes/admin';
 import notificationsRoutes from './routes/notifications';
 import eventsRoutes from './routes/events';
 import resourcesRoutes from './routes/resources';
+import settingsRoutes from './routes/settings';
 
 dotenv.config();
+
+
+Sentry.init({
+  dsn: process.env.SENTRY_DSN || '',
+  integrations: [
+    nodeProfilingIntegration(),
+  ],
+  tracesSampleRate: 1.0,
+});
 
 const app = express();
 const PORT = env.PORT || 5001;
@@ -41,13 +54,17 @@ if (frontendDist) {
 import cookieParser from 'cookie-parser';
 
 // Middleware (support larger payloads for device image uploads)
-app.use(cors({ origin: 'http://localhost:5173', credentials: true }));
+app.use(cors({ origin: ['http://localhost:5173', 'http://localhost:3000'], credentials: true }));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ limit: '50mb', extended: true }));
 app.use(cookieParser());
 
+// Serve local uploads (Must be before Helmet to avoid Cross-Origin-Resource-Policy blocks)
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+
 // Security Middlewares
 app.use(helmet());
+app.use(pinoHttp({ transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined }));
 app.use(hpp());
 
 // Rate Limiting (Global)
@@ -84,9 +101,7 @@ app.use('/api/notifications', notificationsRoutes);
 app.use('/api/events', eventsRoutes);
 app.use('/api/resources', resourcesRoutes);
 app.use('/api/upload', uploadRoutes);
-
-// Serve local uploads if Cloudinary is not used
-app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+app.use('/api/settings', settingsRoutes);
 
 // Fallback to React index.html for SPA routes (if frontend dist exists)
 if (frontendDist) {
@@ -102,13 +117,17 @@ if (frontendDist) {
   });
 }
 
+Sentry.setupExpressErrorHandler(app);
+
 // 404 handler
 app.use((req, res) => {
   res.status(404).json({ error: 'Endpoint not found on MedMedia API' });
 });
 
-app.listen(PORT, () => {
-  console.log(`[MedMedia] Backend Server listening at http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'test') {
+  app.listen(PORT, () => {
+    console.log(`[MedMedia] Backend Server listening at http://localhost:${PORT}`);
+  });
+}
 
 export default app;

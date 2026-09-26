@@ -22,8 +22,6 @@ interface TopNavProps {
   onOpenAuth: () => void;
   isDarkMode?: boolean;
   onToggleDarkMode?: () => void;
-  isManagerMode?: boolean;
-  onToggleManagerMode?: () => void;
   onClearAllTestData?: () => void;
   unreadNotificationsCount?: number;
 }
@@ -38,8 +36,6 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenAuth,
   isDarkMode,
   onToggleDarkMode,
-  isManagerMode = false,
-  onToggleManagerMode,
   onClearAllTestData,
   unreadNotificationsCount = 0
 }) => {
@@ -87,14 +83,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Right Action Icons: Notification, Message only — Profile is in bottom nav */}
         <div className="flex items-center gap-1.5 sm:gap-3">
-          
-          {/* Manager / Admin Mode Indicator Badge */}
-          {isManagerMode && (
-            <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-amber-100 dark:bg-amber-950/80 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-[11px] font-bold animate-pulse">
-              <ShieldAlert className="w-3.5 h-3.5" />
-              <span>Manager Mode Active</span>
-            </div>
-          )}
 
           {/* Dark mode toggle */}
           {onToggleDarkMode && (

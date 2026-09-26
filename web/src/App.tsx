@@ -7,6 +7,8 @@ import { MedclipsPlayer } from './components/MedclipsPlayer';
 import { OpportunitiesHub } from './components/OpportunitiesHub';
 import { ProfileView } from './components/ProfileView';
 import { SearchAndNetworking } from './components/SearchAndNetworking';
+import { CreateEventModal } from './components/CreateEventModal';
+import { EditProfileModal } from './components/EditProfileModal';
 import { Routes, Route } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
@@ -29,7 +31,7 @@ import {
   INITIAL_SESSIONS,
   INITIAL_NOTIFICATIONS
 } from './data/mockData';
-import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication, NotificationItem } from './types';
+import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication, NotificationItem, MedicalEvent } from './types';
 import { 
   Smartphone, 
   Monitor, 
@@ -48,7 +50,8 @@ import {
   Bell,
   CheckCircle2,
   Plus,
-  ShieldAlert
+  ShieldAlert,
+  User
 } from 'lucide-react';
 
 const MainApp: React.FC = () => {
@@ -81,11 +84,18 @@ const MainApp: React.FC = () => {
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
   const [clips, setClips] = useState(INITIAL_CLIPS);
   const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+  const [events, setEvents] = useState<MedicalEvent[]>([]);
   const [opportunities] = useState(INITIAL_OPPORTUNITIES);
+  // Track IDs of users that the current user follows (persisted in localStorage)
+  const [followingIds, setFollowingIds] = useState<Set<string>>(() => {
+    try {
+      const stored = localStorage.getItem(`medmedia_following_${user?.id || 'guest'}`);
+      return stored ? new Set(JSON.parse(stored)) : new Set<string>();
+    } catch { return new Set<string>(); }
+  });
   const [sessions, setSessions] = useState(INITIAL_SESSIONS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
   const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
-  const [isManagerMode, setIsManagerMode] = useState<boolean>(false);
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
 
   // Load persistent data from laptop database on startup
@@ -106,7 +116,12 @@ const MainApp: React.FC = () => {
           try {
             const parsed = JSON.parse(saved);
             const found = loadedUsers.find(u => u.id === parsed.id || u.email === parsed.email);
-            if (found) setUser(found);
+            if (found) {
+              setUser({
+                ...found,
+                stats: found.stats || parsed.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
+              });
+            }
           } catch {}
         }
       }
@@ -116,6 +131,20 @@ const MainApp: React.FC = () => {
     apiService.getStories().then((loadedStories) => {
       if (loadedStories && loadedStories.length > 0) {
         setStories(loadedStories);
+      }
+    });
+
+    apiService.getClips().then((loadedClips) => {
+      if (loadedClips && loadedClips.length > 0) {
+        setClips(loadedClips);
+      } else {
+        setClips([]); // Override dummy clips if db is empty
+      }
+    });
+
+    apiService.getEvents().then((loadedEvents) => {
+      if (loadedEvents) {
+        setEvents(loadedEvents);
       }
     });
 
@@ -141,6 +170,8 @@ const MainApp: React.FC = () => {
 
   // Modals
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showCreateEventModal, setShowCreateEventModal] = useState(false);
+  const [showEditProfileModal, setShowEditProfileModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createModalMode, setCreateModalMode] = useState<'post' | 'story'>('post');
   const [showNotificationsDrawer, setShowNotificationsDrawer] = useState(false);
@@ -162,6 +193,21 @@ const MainApp: React.FC = () => {
     await apiService.deleteStory(storyId);
     setToastMessage("Story deleted successfully.");
     setTimeout(() => setToastMessage(null), 3000);
+  };
+
+  const handleToggleFollow = (targetUserId: string) => {
+    setFollowingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(targetUserId)) {
+        next.delete(targetUserId);
+      } else {
+        next.add(targetUserId);
+      }
+      localStorage.setItem(`medmedia_following_${currentUser.id}`, JSON.stringify([...next]));
+      return next;
+    });
+    // Stub for backend connect if implemented later
+    // fetch(`${API_BASE}/users/${targetUserId}/connect`, { method: 'POST' });
   };
 
   const handleDeleteJob = async (jobId: string) => {
@@ -345,15 +391,6 @@ const MainApp: React.FC = () => {
           availableUsers={users}
           isDarkMode={isDarkMode}
           onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
-          isManagerMode={isManagerMode}
-          onToggleManagerMode={() => {
-            setIsManagerMode(prev => {
-              const nextVal = !prev;
-              setToastMessage(nextVal ? "ðŸ›¡ï¸ Switched to Manager Mode (Admin & Moderation active)" : "Switched to Clinician User Mode");
-              setTimeout(() => setToastMessage(null), 3500);
-              return nextVal;
-            });
-          }}
           onSwitchUser={(u) => setUser(u)}
           onClearAllTestData={handleClearAllTestData}
           onCreatePost={() => {
@@ -376,11 +413,17 @@ const MainApp: React.FC = () => {
                 {/* Profile Card */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm text-center">
                   <div className="relative inline-block">
-                    <img
-                      src={currentUser.avatarUrl}
-                      alt=""
-                      className="w-20 h-20 rounded-full object-cover border-2 border-sky-500 mx-auto shadow-sm"
-                    />
+                    {currentUser.avatarUrl ? (
+                      <img
+                        src={currentUser.avatarUrl}
+                        alt=""
+                        className="w-20 h-20 rounded-full object-cover border-2 border-sky-500 mx-auto shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-full bg-slate-200 dark:bg-slate-800 border-2 border-sky-500 mx-auto shadow-sm flex items-center justify-center text-slate-500 dark:text-slate-400">
+                        <User className="w-8 h-8" />
+                      </div>
+                    )}
                     <div className={`absolute bottom-0 right-0 p-1 rounded-full text-white ${
                       currentUser.role === 'DOCTOR' ? 'bg-sky-600' : 'bg-emerald-600'
                     }`}>
@@ -408,7 +451,7 @@ const MainApp: React.FC = () => {
 
                   <div className="flex items-center gap-2 mt-3">
                     <button
-                      onClick={() => alert("Edit Profile modal opening soon...")}
+                      onClick={() => setShowEditProfileModal(true)}
                       className="flex-1 py-1.5 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 dark:hover:bg-sky-900 text-sky-700 dark:text-sky-400 text-xs font-bold rounded-xl border border-sky-100 dark:border-sky-900 transition cursor-pointer"
                     >
                       Edit Profile
@@ -449,58 +492,6 @@ const MainApp: React.FC = () => {
                   })}
                 </div>
 
-                {/* Manager / Admin Toggle */}
-                <div className="bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-3 shadow-sm space-y-2 mt-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-amber-600 dark:text-amber-500 font-bold text-xs">
-                      <ShieldAlert className="w-4 h-4" />
-                      Manager Mode
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => setIsManagerMode(!isManagerMode)}
-                      className={`relative inline-flex h-5 w-9 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none ${
-                        isManagerMode ? 'bg-amber-500' : 'bg-slate-300 dark:bg-slate-700'
-                      }`}
-                    >
-                      <span
-                        className={`pointer-events-none inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${
-                          isManagerMode ? 'translate-x-4' : 'translate-x-0'
-                        }`}
-                      />
-                    </button>
-                  </div>
-                  {isManagerMode && (
-                    <div className="pt-2 border-t border-slate-200 dark:border-slate-800 space-y-2">
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Admin Tools: Broadcast a notification to all users.</p>
-                      <button
-                        onClick={async () => {
-                          const title = prompt("Notification Title:", "System Update");
-                          if (!title) return;
-                          const desc = prompt("Notification Description:", "Scheduled maintenance in 1 hour.");
-                          if (!desc) return;
-                          
-                          const newNotif = {
-                            id: `notif-${Date.now()}`,
-                            userId: currentUser.id,
-                            type: 'CONFERENCE' as any,
-                            title,
-                            description: desc,
-                            timestamp: "Just now",
-                            isRead: false
-                          };
-                          await apiService.addNotification(newNotif);
-                          setNotifications(prev => [newNotif, ...prev]);
-                          setToastMessage("Broadcast notification sent!");
-                          setTimeout(() => setToastMessage(null), 3000);
-                        }}
-                        className="w-full py-1.5 bg-amber-100 hover:bg-amber-200 dark:bg-amber-900/40 dark:hover:bg-amber-900/60 text-amber-800 dark:text-amber-300 text-[10px] font-bold rounded-lg transition cursor-pointer"
-                      >
-                        Broadcast Notification
-                      </button>
-                    </div>
-                  )}
-                </div>
               </aside>
             )}
 
@@ -512,7 +503,7 @@ const MainApp: React.FC = () => {
                 <div>
                   {/* Stories Bar (Slide 5: Story update - with clickable author profile) */}
                   <StoriesBar
-                    stories={stories}
+                    stories={stories.filter(s => s.userId === currentUser.id || followingIds.has(s.userId))}
                     currentUser={currentUser}
                     onAddStorySuccess={(newStory) => setStories([newStory, ...stories])}
                     onSelectUser={handleSelectUser}
@@ -535,7 +526,7 @@ const MainApp: React.FC = () => {
                             : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        {tag === 'All' ? 'ðŸŽ¯ For You' : tag === '#Professors' ? 'ðŸ‘¨â€ðŸ« Professors & Faculty' : tag === '#Internships' ? 'ðŸ¥ Clinical Internships' : tag}
+                        {tag === 'All' ? '🎯 For You' : tag === '#Professors' ? '👨‍🏫 Professors & Faculty' : tag === '#Internships' ? '🏥 Clinical Internships' : tag}
                       </button>
                     ))}
                   </div>
@@ -615,11 +606,12 @@ const MainApp: React.FC = () => {
               {currentTab === 'opportunities' && (
                 <OpportunitiesHub
                   jobs={jobs}
+                  events={events}
                   opportunities={opportunities}
                   currentUser={currentUser}
-                  isManagerMode={isManagerMode}
                   onDeleteJob={handleDeleteJob}
                   onAddJob={handleAddJob}
+                  onOpenCreateEvent={() => setShowCreateEventModal(true)}
                 />
               )}
 
@@ -673,76 +665,38 @@ const MainApp: React.FC = () => {
             {!isMobileFrameMode && (
               <aside className="hidden lg:block lg:col-span-3 space-y-4">
                 
-                {/* Upcoming CME Events Widget (Slide 8) */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
-                      Upcoming CME Events
-                    </h4>
-                    <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold">Slide 8</span>
-                  </div>
-                  <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
-                    <p className="font-bold text-slate-800 dark:text-slate-200">77th Annual Medical Congress</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Nov 14-16 â€¢ 6 CME Credits</p>
-                    <button
-                      onClick={() => setCurrentTab('opportunities')}
-                      className="mt-2 text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer"
-                    >
-                      View Venue & RSVP â†’
-                    </button>
-                  </div>
-                </div>
-
-                {/* Alumni Suggestions Widget (Slide 10) */}
+                {/* Dynamic Networking Widget */}
                 <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm space-y-3">
                   <div className="flex items-center justify-between">
                     <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-                      Alumni Network
+                      Suggested Connections
                     </h4>
-                    <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold">Slide 10</span>
                   </div>
 
-                  <div className="flex items-center gap-2.5">
-                    <img
-                      src="https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=100&h=100&fit=crop"
-                      alt=""
-                      className="w-10 h-10 rounded-full object-cover"
-                    />
-                    <div className="flex-1">
-                      <p className="text-xs font-bold text-slate-900 dark:text-white">Dr. Sandeep Kulkarni</p>
-                      <p className="text-[10px] text-slate-500 dark:text-slate-400">Cardiothoracic Surgeon</p>
-                      <span className="text-[9px] text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 px-1.5 py-0.5 rounded font-semibold border border-sky-100 dark:border-sky-900">
-                        AIIMS Alumni
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => alert("Following Dr. Sandeep Kulkarni!")}
-                      className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900 cursor-pointer"
-                    >
-                      <UserPlus className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-
-                {/* Urgent Locum Shift Widget (Slide 8 & 9) */}
-                <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-4 shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <h4 className="text-xs font-bold text-slate-900 dark:text-white flex items-center gap-1.5">
-                      <Briefcase className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                      Urgent Locum Duty
-                    </h4>
-                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold">Open</span>
-                  </div>
-                  <p className="text-xs font-medium text-slate-700 dark:text-slate-300">Manipal Hospital Emergency Casualty</p>
-                  <p className="text-[10px] text-slate-500 dark:text-slate-400">Weekend 12h Trauma Coverage</p>
-                  <button
-                    onClick={() => setCurrentTab('opportunities')}
-                    className="mt-2 w-full py-1 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 text-xs font-bold rounded-lg border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100 dark:hover:bg-emerald-900 transition cursor-pointer"
-                  >
-                    Apply for Shift
-                  </button>
+                  {users.filter(u => u.id !== currentUser.id).slice(0, 3).length > 0 ? (
+                    users.filter(u => u.id !== currentUser.id).slice(0, 3).map(u => (
+                      <div key={u.id} className="flex items-center gap-2.5">
+                        <img
+                          src={u.avatarUrl || "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop"}
+                          alt=""
+                          className="w-10 h-10 rounded-full object-cover"
+                        />
+                        <div className="flex-1">
+                          <p className="text-xs font-bold text-slate-900 dark:text-white">{u.fullName}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">@{u.username}</p>
+                        </div>
+                        <button
+                          onClick={() => alert(`Following ${u.fullName}!`)}
+                          className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900 cursor-pointer"
+                        >
+                          <UserPlus className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[10px] text-slate-500 text-center py-2">No other users in the network yet.</p>
+                  )}
                 </div>
 
               </aside>
@@ -908,30 +862,32 @@ const MainApp: React.FC = () => {
       
 
       {/* Create Post & Story Creator Studio Modal (Slide 5: Top + button) */}
-      <CreatePostModal
-        key={createModalMode}
-        isOpen={showCreateModal}
-        currentUser={currentUser}
-        initialMode={createModalMode}
-        onClose={() => setShowCreateModal(false)}
-        onPostCreated={(newPost) => {
-          setPosts([newPost, ...posts]);
-          apiService.createPost(newPost);
-          setToastMessage("Clinical post published & saved to laptop database & MySQL!");
-          setTimeout(() => setToastMessage(null), 3500);
-        }}
-        onStoryCreated={(newStory) => {
-          setStories([newStory, ...stories]);
-          setToastMessage("24h Story published (30s limit) & saved to MySQL!");
-          setTimeout(() => setToastMessage(null), 3500);
-        }}
-        onClipCreated={(newClip) => {
-          setClips([newClip, ...clips]);
-          setToastMessage("MedClip published!");
-          setTimeout(() => setToastMessage(null), 3500);
-          setCurrentTab('medclips');
-        }}
-      />
+      {showCreateModal && (
+        <CreatePostModal
+          key={createModalMode}
+          isOpen={showCreateModal}
+          currentUser={currentUser}
+          initialMode={createModalMode}
+          onClose={() => setShowCreateModal(false)}
+          onPostCreated={(newPost) => {
+            setPosts([newPost, ...posts]);
+            apiService.createPost(newPost);
+            setToastMessage("Clinical post published & saved to laptop database & MySQL!");
+            setTimeout(() => setToastMessage(null), 3500);
+          }}
+          onStoryCreated={(newStory) => {
+            setStories([newStory, ...stories]);
+            setToastMessage("24h Story published (30s limit) & saved to MySQL!");
+            setTimeout(() => setToastMessage(null), 3500);
+          }}
+          onClipCreated={(newClip) => {
+            setClips([newClip, ...clips]);
+            setToastMessage("MedClip published!");
+            setTimeout(() => setToastMessage(null), 3500);
+            setCurrentTab('medclips');
+          }}
+        />
+      )}
 
       {/* Professor Mentorship Request Modal (LinkedIn-Style Mentorship Suite) */}
       <MentorshipModal
@@ -956,6 +912,34 @@ const MainApp: React.FC = () => {
           setTimeout(() => setToastMessage(null), 4000);
         }}
       />
+
+      {showCreateEventModal && (
+        <CreateEventModal
+          onClose={() => setShowCreateEventModal(false)}
+          onSubmit={async (eventData) => {
+            const newEvent = await apiService.createEvent(eventData);
+            if (newEvent) {
+              setEvents(prev => [newEvent, ...prev]);
+              setToastMessage("Event created successfully!");
+              setTimeout(() => setToastMessage(null), 3000);
+            }
+          }}
+        />
+      )}
+
+      {showEditProfileModal && (
+        <EditProfileModal
+          currentUser={currentUser}
+          onClose={() => setShowEditProfileModal(false)}
+          onSubmit={async (updates) => {
+            // Placeholder: await apiService.updateProfile(currentUser.id, updates);
+            // Updating local state for demo purposes:
+            setUser({ ...currentUser, ...updates } as any);
+            setToastMessage("Profile updated successfully!");
+            setTimeout(() => setToastMessage(null), 3000);
+          }}
+        />
+      )}
 
       {/* Global Interactive Feedback Toast */}
       {toastMessage && (
