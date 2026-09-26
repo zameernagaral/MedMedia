@@ -939,7 +939,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Sending OTP...');
                 try {
-                  const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                  const res = await fetch('http://localhost:5001/api/auth/forgot-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), channel: recoveryChannel })
@@ -1004,7 +1004,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Verifying OTP...');
                 try {
-                  const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+                  const res = await fetch('http://localhost:5001/api/auth/verify-otp', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), otp: otpCode.trim() })
@@ -1058,7 +1058,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Resetting password...');
                 try {
-                  const res = await fetch('http://localhost:5000/api/auth/reset-password', {
+                  const res = await fetch('http://localhost:5001/api/auth/reset-password', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), resetToken, newPassword })

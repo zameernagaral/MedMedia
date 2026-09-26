@@ -43,7 +43,8 @@ import {
   ArrowRight,
   Bell,
   CheckCircle2,
-  Plus
+  Plus,
+  ShieldAlert
 } from 'lucide-react';
 
 export const App: React.FC = () => {
@@ -451,6 +452,7 @@ export const App: React.FC = () => {
                         <span>{tab.label}</span>
                       </button>
                     );
+                  })}
                 </div>
 
                 {/* Manager / Admin Toggle */}

@@ -578,6 +578,7 @@ export const POSTS: Post[] = [
 export const MEDCLIPS: Medclip[] = [
   {
     id: "clip-1",
+    clipType: "Clinical Update",
     authorId: "doc-1",
     authorName: "Dr. Arvind Ramesh, MD, DM",
     authorSpecialty: "Interventional Cardiology",
@@ -599,6 +600,7 @@ export const MEDCLIPS: Medclip[] = [
   },
   {
     id: "clip-2",
+    clipType: "Clinical Update",
     authorId: "doc-2",
     authorName: "Dr. Priya Nair, MS, MCh",
     authorSpecialty: "Pediatric Neurosurgery",
@@ -620,6 +622,7 @@ export const MEDCLIPS: Medclip[] = [
   },
   {
     id: "clip-3",
+    clipType: "Social Update",
     authorId: "mgr-1",
     authorName: "MedMedia Administrator",
     authorSpecialty: "Clinical Governance",

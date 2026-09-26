@@ -224,9 +224,180 @@
       "createdAt": "3 days ago"
     }
   ],
-  "jobs": [],
-  "opportunities": [],
+  "jobs": [
+    {
+      "id": "job-1",
+      "title": "Senior Consultant Interventional Cardiologist",
+      "category": "Doctor jobs",
+      "type": "Full time",
+      "companyName": "Apollo Hospitals",
+      "place": "Bangalore, Karnataka",
+      "experience": "8+ Years Post DM / DNB",
+      "salary": "₹38 - 55 Lakhs P.A.",
+      "description": "Seeking an experienced consultant to lead the structural heart disease program, TAVR clinical pathway, and advanced cardiac catheterization suite. High-volume center with state-of-the-art biplane cath labs.",
+      "preferenceEducation": "MBBS, MD Internal Medicine, DM/DNB Cardiology, FSCAI preferred",
+      "skills": [
+        "TAVR",
+        "CTO Angioplasty",
+        "IVUS",
+        "Rotablation",
+        "IABP"
+      ],
+      "hospitalLogoUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=120&h=120&fit=crop",
+      "postedAt": "1 day ago"
+    },
+    {
+      "id": "job-2",
+      "title": "Assistant Professor & Clinical Fellow - Pediatric Neurosurgery",
+      "category": "academic jobs",
+      "type": "Full time",
+      "companyName": "Manipal Hospital Academic Medical Center",
+      "place": "Bangalore, Karnataka",
+      "experience": "3-5 Years Post MCh / DNB",
+      "salary": "₹24 - 32 Lakhs P.A.",
+      "description": "Academic faculty position involving resident teaching, micro-neurosurgical pediatric theater cases, and clinical research trial management.",
+      "preferenceEducation": "MBBS, MS General Surgery, MCh / DNB Neurosurgery",
+      "skills": [
+        "Pediatric Brain Tumors",
+        "Endoscopy",
+        "Craniosynostosis",
+        "Medical Teaching"
+      ],
+      "hospitalLogoUrl": "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=120&h=120&fit=crop",
+      "postedAt": "3 days ago"
+    },
+    {
+      "id": "job-3",
+      "title": "Junior Clinical Resident & Ward Registrar",
+      "category": "Internship",
+      "type": "Full time",
+      "companyName": "Fortis Memorial Healthcare Institute",
+      "place": "New Delhi / Gurgaon",
+      "experience": "Fresh MBBS Graduates / 0-2 Years",
+      "salary": "₹85,000 - 1,10,000 / month",
+      "description": "Comprehensive in-patient care, triage stabilization, daily ward rounds with senior faculty, and preparation for PG medical entrance.",
+      "preferenceEducation": "MBBS (NMC / State Council Registered)",
+      "skills": [
+        "Emergency Triaging",
+        "ACLS / BLS",
+        "Arterial Line Insertion",
+        "Patient Management"
+      ],
+      "hospitalLogoUrl": "https://images.unsplash.com/photo-1505751172876-fa1923c5c528?w=120&h=120&fit=crop",
+      "postedAt": "5 days ago"
+    },
+    {
+      "id": "job-4",
+      "title": "Post-Doctoral Fellow in Clinical Oncology Research",
+      "category": "fellowship",
+      "type": "Full time",
+      "companyName": "Tata Memorial Medical Centre",
+      "place": "Mumbai, Maharashtra",
+      "experience": "1-3 Years",
+      "salary": "₹18 - 24 Lakhs P.A. + Grant",
+      "description": "Dedicated fellowship in molecular oncology, genomic targeted therapies, and Phase II/III immuno-oncology clinical trials.",
+      "preferenceEducation": "MD / DNB / DM Oncology or Pharmacology",
+      "skills": [
+        "Genomic Profiling",
+        "Immunotherapy Protocols",
+        "Biostatistics",
+        "IRB Documentation"
+      ],
+      "hospitalLogoUrl": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=120&h=120&fit=crop",
+      "postedAt": "1 week ago"
+    }
+  ],
+  "opportunities": [
+    {
+      "id": "opp-1",
+      "type": "EVENT",
+      "title": "77th Annual All India Medical & Surgical Congress",
+      "subtitle": "Indian Medical Association National Forum",
+      "description": "Premier academic assembly bringing 2,500+ surgeons, physicians, and medical students together. Keynotes by international AIIMS and Harvard faculty.",
+      "tags": [
+        "#MedicalConference",
+        "#CME",
+        "#Surgery",
+        "#InternalMedicine"
+      ],
+      "organizerOrAffiliation": "Indian Medical Association (IMA)",
+      "locationOrVenue": "Bangalore International Exhibition Centre (BIEC)",
+      "dateTime": "Nov 14-16, 2026 • 09:00 AM IST",
+      "contactEmail": "congress2026@ima-india.org",
+      "actionLabel": "Register for CME",
+      "cmeCredits": 6
+    },
+    {
+      "id": "opp-2",
+      "type": "EVENT",
+      "title": "Hands-on Workshop: Critical Care Hemodynamic Ultrasound (POCUS)",
+      "subtitle": "Apollo Institute of Critical Care Simulation",
+      "description": "Intensive 2-day simulation workshop covering cardiac echo windows, lung sliding signs for pneumothorax, and IVC collapsibility assessment.",
+      "tags": [
+        "#POCUS",
+        "#Ultrasound",
+        "#CriticalCare",
+        "#EmergencyMedicine"
+      ],
+      "organizerOrAffiliation": "Apollo Simulation Center",
+      "locationOrVenue": "Apollo Hospitals Simulation Lab, 5th Floor, Bangalore",
+      "dateTime": "Oct 22-23, 2026 • 08:30 AM IST",
+      "contactEmail": "simulation.pocus@apollohospitals.org",
+      "actionLabel": "Book Workshop Seat",
+      "cmeCredits": 4
+    }
+  ],
   "communities": [
+    {
+      "id": "comm-anatomy",
+      "name": "Anatomic Community",
+      "iconUrl": "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=150&h=150&fit=crop",
+      "avatarUrl": "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=150&h=150&fit=crop",
+      "description": "Official Anatomic & Surgical Dissection Community. Hub for anatomical cross-sections, cadaveric studies, and surgical anatomy pearls.",
+      "category": "Specialty",
+      "membersCount": 4121,
+      "maxCapacity": 10000,
+      "creatorId": "doc-1",
+      "creatorName": "Dr. Arvind Ramesh",
+      "isOfficial": true,
+      "announcementText": "Welcome to the Anatomic Community! Weekly cadaveric prosection review every Thursday at 7:00 PM. Access all sub-channels below.",
+      "channels": [
+        {
+          "id": "chan-announcements",
+          "name": "Announcements & CME Notices",
+          "description": "Official broadcast channel for dissecting lab protocols, conferences, and surgical anatomy workshops.",
+          "isAnnouncement": true,
+          "messagesCount": 18,
+          "lastMessageSnippet": "New cadaveric workshop registration link posted for upcoming weekend.",
+          "lastMessageTime": "Today, 11:30 AM"
+        },
+        {
+          "id": "chan-gross-anatomy",
+          "name": "Gross Anatomy & Dissections",
+          "description": "Case discussions on muscular variants, arterial branching anomalies, and peripheral nerves.",
+          "messagesCount": 94,
+          "lastMessageSnippet": "Check out the anomalous branching of the coeliac trunk in today's cadaveric dissection.",
+          "lastMessageTime": "Yesterday"
+        },
+        {
+          "id": "chan-neuroanatomy",
+          "name": "Neuroanatomy & Brain Correlates",
+          "description": "Brainstem tracts, cranial nerve pathways, and 3D ventricular system reconstructions.",
+          "messagesCount": 62,
+          "lastMessageSnippet": "Coronal MRI vs 3D anatomical reconstruction comparison posted.",
+          "lastMessageTime": "2 days ago"
+        },
+        {
+          "id": "chan-surgical-anatomy",
+          "name": "Applied Surgical Anatomy",
+          "description": "Anatomical landmarks for laparoscopy, robotic access, and hepatobiliary triangles.",
+          "messagesCount": 120,
+          "lastMessageSnippet": "Safe dissection planes during retroperitoneal exposure and vascular control.",
+          "lastMessageTime": "3 days ago"
+        }
+      ],
+      "createdAt": "2026-01-01"
+    },
     {
       "id": "comm-1790414865793",
       "name": "cxv",
@@ -254,12 +425,558 @@
       "createdAt": "2026-09-26T09:27:30.041Z"
     }
   ],
-  "researchProjects": [],
-  "locumGigs": [],
+  "researchProjects": [
+    {
+      "id": "res-1",
+      "projectName": "Multi-Center AI-ECG Early Arrhythmia Detection Trial",
+      "instituteName": "Apollo Hospitals & AIIMS Consortium",
+      "departmentName": "Department of Cardiology & Health Informatics",
+      "place": "Bangalore, India",
+      "description": "Investigating deep learning model sensitivity in detecting subtle paroxysmal atrial fibrillation and subclinical QT prolongation on standard 12-lead ECGs prior to cardiac arrest events. #Cardiology #MachineLearning #Arrhythmia #ClinicalTrial",
+      "tags": [
+        "#Cardiology",
+        "#AI",
+        "#ClinicalTrial",
+        "#ECG"
+      ],
+      "photosOrLink": "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=900&h=500&fit=crop",
+      "creatorId": "doc-1",
+      "creatorName": "Dr. Arvind Ramesh, MD, DM",
+      "creatorAvatar": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
+      "memberIds": [
+        "doc-1",
+        "stu-1"
+      ],
+      "pendingJoinRequestIds": [],
+      "notes": [
+        {
+          "id": "note-1",
+          "title": "Cohort Inclusion Criteria Protocol v2.1",
+          "content": "Patients aged 18-75 presenting with intermittent palpitation episodes and baseline normal Sinus Rhythm. Exclude patients with implanted permanent pacemakers or severe valvular stenosis.",
+          "authorId": "doc-1",
+          "authorName": "Dr. Arvind Ramesh",
+          "updatedAt": "2 days ago"
+        },
+        {
+          "id": "note-2",
+          "title": "Interim De-identified Dataset Snapshot",
+          "content": "240 anonymized recordings collected from Apollo Cath Unit 2. Validation ROC AUC currently at 0.942 on external validation set.",
+          "authorId": "stu-1",
+          "authorName": "Rohan Verma",
+          "updatedAt": "Yesterday"
+        }
+      ],
+      "messages": [
+        {
+          "id": "rm-1",
+          "senderId": "doc-1",
+          "senderName": "Dr. Arvind Ramesh",
+          "senderAvatar": "https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop",
+          "text": "Team, the IRB ethical clearance renewal has been formally approved. We can expand cohort intake to 500 patients.",
+          "timestamp": "10:30 AM"
+        },
+        {
+          "id": "rm-2",
+          "senderId": "stu-1",
+          "senderName": "Rohan Verma",
+          "senderAvatar": "https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop",
+          "text": "Excellent news Dr. Ramesh! I will finalize the anonymization log for the incoming patient records today.",
+          "timestamp": "10:45 AM"
+        }
+      ],
+      "createdAt": "2026-02-10"
+    },
+    {
+      "id": "res-2",
+      "projectName": "Pediatric Neuroendoscopy Hydrocephalus Outcome Registry",
+      "instituteName": "Manipal Hospital & NIMHANS",
+      "departmentName": "Department of Pediatric Neurosurgery",
+      "place": "Bangalore, India",
+      "description": "Prospective registry analyzing 24-month shunt-free survival in infants undergoing ETV with choroid plexus cauterization (ETV+CPC). #Neurosurgery #Pediatrics #Hydrocephalus",
+      "tags": [
+        "#Neurosurgery",
+        "#Pediatrics",
+        "#Hydrocephalus"
+      ],
+      "photosOrLink": "https://images.unsplash.com/photo-1551076805-e1869033e561?w=900&h=500&fit=crop",
+      "creatorId": "doc-2",
+      "creatorName": "Dr. Priya Nair, MS, MCh",
+      "creatorAvatar": "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
+      "memberIds": [
+        "doc-2"
+      ],
+      "pendingJoinRequestIds": [
+        "stu-1"
+      ],
+      "notes": [
+        {
+          "id": "note-3",
+          "title": "ETV Success Score (ETVSS) Stratification Table",
+          "content": "Age < 1 month (score 0), 1-6 months (score 10), etiology post-infectious vs congenital stenosis, previous shunt history.",
+          "authorId": "doc-2",
+          "authorName": "Dr. Priya Nair",
+          "updatedAt": "3 days ago"
+        }
+      ],
+      "messages": [
+        {
+          "id": "rm-3",
+          "senderId": "doc-2",
+          "senderName": "Dr. Priya Nair",
+          "senderAvatar": "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=150&h=150&fit=crop",
+          "text": "Welcoming candidate co-investigators for the 2026 surgical cohort follow-up audit.",
+          "timestamp": "Yesterday"
+        }
+      ],
+      "createdAt": "2026-02-18"
+    }
+  ],
+  "locumGigs": [
+    {
+      "id": "locum-1",
+      "instituteName": "Apollo Emergency Center",
+      "place": "Bannerghatta Road, Bangalore",
+      "duration": "2 Weeks (Covering Oct 15 - Oct 30, Weekend Duty)",
+      "gigName": "Consultant Interventional Cardiologist On-Call Locum",
+      "stipend": "₹45,000 / Weekend Shift + Travel Covered",
+      "documentsUrl": "https://example.com/locum-guidelines.pdf",
+      "email": "cardio.locum@apollohospitals.org",
+      "phone": "+91 98450 11223",
+      "otherLink": "https://apollohospitals.org/careers",
+      "creatorId": "doc-1",
+      "creatorName": "Dr. Arvind Ramesh",
+      "createdAt": "2026-09-10"
+    },
+    {
+      "id": "locum-2",
+      "instituteName": "Fortis Super Specialty Hospital",
+      "place": "Cunningham Road, Bangalore",
+      "duration": "1 Month (Night Shift ICU Cover)",
+      "gigName": "Critical Care / ICU Registrar Night Locum",
+      "stipend": "₹3,500 / 12-Hour Night Shift",
+      "email": "hr.bangalore@fortishealthcare.com",
+      "phone": "+91 80 4199 4444",
+      "otherLink": "https://fortishealthcare.com",
+      "creatorId": "mgr-1",
+      "creatorName": "MedMedia Administration",
+      "createdAt": "2026-09-12"
+    },
+    {
+      "id": "locum-3",
+      "instituteName": "St. John's Community Outreach Hospital",
+      "place": "Rural Karnataka Health Outpost",
+      "duration": "3 Days (Tribal Health & Clinical Screening Camp)",
+      "gigName": "Community Pediatric Screening Volunteer Clinician",
+      "stipend": "Experience only (Official Institutional Certificate & All Boarding Covered)",
+      "email": "outreach@stjohns.in",
+      "phone": "+91 80 2206 5000",
+      "creatorId": "doc-2",
+      "creatorName": "Dr. Priya Nair",
+      "createdAt": "2026-09-15"
+    }
+  ],
   "locumApplications": [],
-  "scholarships": [],
-  "courses": [],
-  "notifications": [],
+  "scholarships": [
+    {
+      "id": "sch-icmr",
+      "name": "ICMR Short Term Studentship (STS) 2026",
+      "organization": "Indian Council of Medical Research",
+      "logoUrl": "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=150&h=150&fit=crop",
+      "fundingAmount": "₹50,000 Stipend + ICMR Certificate",
+      "description": "Prestigious national research grant for undergraduate MBBS/BDS students to conduct 2 months of mentored clinical or laboratory research.",
+      "deadline": "October 30, 2026",
+      "applyLink": "https://icmr.gov.in"
+    },
+    {
+      "id": "sch-wellcome",
+      "name": "Wellcome Trust International Clinical Fellowship",
+      "organization": "Wellcome Trust Foundation",
+      "logoUrl": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=150&h=150&fit=crop",
+      "fundingAmount": "£180,000 / 3-Year Grant",
+      "description": "Enables early-career clinical specialists to conduct groundbreaking global health and translational epidemiology studies with UK host institutions.",
+      "deadline": "November 15, 2026",
+      "applyLink": "https://wellcome.org"
+    },
+    {
+      "id": "sch-rhodes",
+      "name": "Rhodes Medical Sciences Scholarship (Oxford)",
+      "organization": "Oxford University Rhodes Trust",
+      "logoUrl": "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150&h=150&fit=crop",
+      "fundingAmount": "100% Tuition + £19,000 / year stipend",
+      "description": "Postgraduate medical scholars scholarship covering MSc or DPhil in Clinical Neurosciences, Oncology, or Global Health at University of Oxford.",
+      "deadline": "December 01, 2026",
+      "applyLink": "https://www.rhodeshouse.ox.ac.uk"
+    },
+    {
+      "id": "sch-harvard",
+      "name": "Harvard Global Health Travel & Research Fellowship",
+      "organization": "Harvard Global Health Institute",
+      "logoUrl": "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=150&h=150&fit=crop",
+      "fundingAmount": "$12,000 Project Sponsorship",
+      "description": "Provides travel, laboratory logistics, and publication sponsorship for collaborative health equity and low-resource clinical trials.",
+      "deadline": "January 10, 2027",
+      "applyLink": "https://globalhealth.harvard.edu"
+    }
+  ],
+  "courses": [
+    {
+      "id": "crs-who",
+      "name": "WHO Academy: Clinical Infection Prevention & Outbreak Control",
+      "provider": "WHO Academy",
+      "logoUrl": "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=150&h=150&fit=crop",
+      "description": "Official World Health Organization training module on standard precautions, PPE sequencing, hospital disinfection, and IPC audit execution.",
+      "link": "https://academy.who.int",
+      "isFree": true,
+      "cmeCredits": 4
+    },
+    {
+      "id": "crs-stanford",
+      "name": "Stanford Medicine: Antimicrobial Stewardship & Critical Care",
+      "provider": "Stanford University",
+      "logoUrl": "https://images.unsplash.com/photo-1527613426441-4da17471b66d?w=150&h=150&fit=crop",
+      "description": "Advanced antimicrobial decision pathways, empirical vs targeted antibiotic de-escalation, and reducing MDR organism emergence in tertiary care.",
+      "link": "https://online.stanford.edu",
+      "isFree": true,
+      "cmeCredits": 6
+    },
+    {
+      "id": "crs-nih",
+      "name": "NIH: Principles & Practice of Clinical Research (IPPCR)",
+      "provider": "National Institutes of Health",
+      "logoUrl": "https://images.unsplash.com/photo-1507679799987-c73779587ccf?w=150&h=150&fit=crop",
+      "description": "Comprehensive curriculum from the NIH Clinical Center covering clinical study design, biostatistics, FDA IND/IDE regulations, and medical ethics.",
+      "link": "https://ocr.od.nih.gov",
+      "isFree": true,
+      "cmeCredits": 8
+    },
+    {
+      "id": "crs-harvard",
+      "name": "Harvard Medical School: Mechanical Ventilation in Critical Illness",
+      "provider": "Harvard University",
+      "logoUrl": "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=150&h=150&fit=crop",
+      "description": "Practical ICU physiology, ventilator waveform interpretation, lung-protective ventilation in ARDS, and patient-ventilator dyssynchrony troubleshooting.",
+      "link": "https://pll.harvard.edu",
+      "isFree": true,
+      "cmeCredits": 5
+    },
+    {
+      "id": "crs-research",
+      "name": "Cochrane Clinical Trials Review & Systematic Literature Synthesis",
+      "provider": "Research Courses",
+      "logoUrl": "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=150&h=150&fit=crop",
+      "description": "Methodology of systematic reviews, PRISMA flowcharts, risk-of-bias assessment tools, and meta-analytic forest plot interpretation for clinician investigators.",
+      "link": "https://www.authoraid.info",
+      "isFree": true,
+      "cmeCredits": 4
+    },
+    {
+      "id": "crs-ai",
+      "name": "AI & Deep Learning Applications in Diagnostic Radiology",
+      "provider": "AI Courses",
+      "logoUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?w=150&h=150&fit=crop",
+      "description": "Demystifying computer vision convolutional networks for CXR, brain CT hemorrhage triage, and integrating CAD algorithms into hospital PACS workflows.",
+      "link": "https://coursera.org",
+      "isFree": true,
+      "cmeCredits": 6
+    },
+    {
+      "id": "crs-unicef",
+      "name": "UNICEF Agora: Integrated Management of Neonatal & Child Illness",
+      "provider": "UNICEF Agora",
+      "logoUrl": "https://images.unsplash.com/photo-1502086223501-7ea6ecd79368?w=150&h=150&fit=crop",
+      "description": "Emergency triage, assessment, and treatment (ETAT) guidelines for infants, pediatric dehydration management, and severe acute malnutrition protocols.",
+      "link": "https://agora.unicef.org",
+      "isFree": true,
+      "cmeCredits": 3
+    },
+    {
+      "id": "crs-openwho",
+      "name": "OpenWHO: Public Health Emergency Operations & Mass Casualty Triage",
+      "provider": "OpenWHO",
+      "logoUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=150&h=150&fit=crop",
+      "description": "Fast-track international emergency health guidelines, incident management frameworks, and chemical/biological disaster triage algorithms.",
+      "link": "https://openwho.org",
+      "isFree": true,
+      "cmeCredits": 4
+    }
+  ],
+  "events": [
+    {
+      "id": "evt-1",
+      "name": "Karnataka State Medical Council Annual Clinical Conclave 2026",
+      "description": "Multi-specialty state symposium covering emerging infection protocols, medicolegal compliance, and clinical governance.",
+      "date": "Oct 18-20, 2026",
+      "time": "09:00 AM - 05:00 PM IST",
+      "location": "Bangalore Medical College Auditorium, Bangalore",
+      "isOnline": false,
+      "filterType": "Near You",
+      "organizer": "Karnataka Medical Council (KMC) & BMCRI",
+      "registrationLink": "https://kmc.karnataka.gov.in/events/conclave2026",
+      "cmeCredits": 4,
+      "tags": [
+        "#ClinicalMedicine",
+        "#CME",
+        "#NearYou",
+        "#Karnataka"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&h=400&fit=crop",
+      "contactEmail": "events@kmc.org.in",
+      "createdAt": "2026-09-20"
+    },
+    {
+      "id": "evt-2",
+      "name": "Hands-on Emergency Airway & Trauma Resuscitation Masterclass",
+      "description": "Simulated scenario masterclass for rapid sequence intubation, surgical cricothyroidotomy, and chest tube placement.",
+      "date": "Nov 05, 2026",
+      "time": "10:00 AM - 04:00 PM IST",
+      "location": "Apollo Hospitals Simulation Training Center, Bannerghatta Road, Bangalore",
+      "isOnline": false,
+      "filterType": "Near You",
+      "organizer": "Apollo Department of Emergency Medicine",
+      "registrationLink": "https://apollohospitals.com/education/trauma-cme",
+      "cmeCredits": 3,
+      "tags": [
+        "#EmergencyMedicine",
+        "#Trauma",
+        "#NearYou",
+        "#HandsOn"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&h=400&fit=crop",
+      "contactEmail": "simcenter@apollohospitals.org",
+      "createdAt": "2026-09-22"
+    },
+    {
+      "id": "evt-3",
+      "name": "World Congress of Cardiology & Cardiovascular Health (WCC 2026)",
+      "description": "The global flagship gathering for interventional cardiologists, electrophysiologists, and cardiovascular epidemiologists.",
+      "date": "Dec 02-05, 2026",
+      "time": "All Day",
+      "location": "Paris Expo Porte de Versailles, Paris, France",
+      "isOnline": false,
+      "filterType": "International",
+      "organizer": "World Heart Federation (WHF)",
+      "registrationLink": "https://worldheart.org/wcc-2026",
+      "cmeCredits": 18,
+      "tags": [
+        "#Cardiology",
+        "#International",
+        "#GlobalHealth",
+        "#WCC"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&h=400&fit=crop",
+      "contactEmail": "info@worldheart.org",
+      "createdAt": "2026-09-18"
+    },
+    {
+      "id": "evt-4",
+      "name": "Harvard Global Internal Medicine & Clinical Diagnostics Summit",
+      "description": "International symposium exploring high-yield diagnostic dilemmas, biomarker innovations, and clinical AI implementation.",
+      "date": "Jan 14-16, 2027",
+      "time": "08:30 AM EST",
+      "location": "Harvard Medical School, Boston, MA, USA",
+      "isOnline": false,
+      "filterType": "International",
+      "organizer": "Harvard Medical School Executive Education",
+      "registrationLink": "https://postgraduateeducation.hms.harvard.edu",
+      "cmeCredits": 20,
+      "tags": [
+        "#InternalMedicine",
+        "#International",
+        "#Diagnostics",
+        "#Harvard"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&h=400&fit=crop",
+      "contactEmail": "cme@hms.harvard.edu",
+      "createdAt": "2026-09-15"
+    },
+    {
+      "id": "evt-5",
+      "name": "All India Medical & Surgical Conference (AIMCON 2026)",
+      "description": "National annual gathering of physicians and surgeons featuring plenary lectures from AIIMS, PGI, and CMC faculties.",
+      "date": "Nov 22-25, 2026",
+      "time": "09:00 AM - 06:00 PM IST",
+      "location": "Vigyan Bhawan, New Delhi",
+      "isOnline": false,
+      "filterType": "National",
+      "organizer": "All India Institute of Medical Sciences & IMA",
+      "registrationLink": "https://aimcon2026.med.in",
+      "cmeCredits": 8,
+      "tags": [
+        "#National",
+        "#Surgery",
+        "#Medicine",
+        "#AIMCON"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&h=400&fit=crop",
+      "contactEmail": "secretariat@aimcon2026.med.in",
+      "createdAt": "2026-09-10"
+    },
+    {
+      "id": "evt-6",
+      "name": "National Pediatric Intensive Care & Neonatal Assembly",
+      "description": "Consensus guidelines on high-frequency oscillatory ventilation and neonatal sepsis management protocols.",
+      "date": "Dec 10-12, 2026",
+      "time": "10:00 AM - 05:00 PM IST",
+      "location": "PGI Chandigarh Auditorium, Chandigarh",
+      "isOnline": false,
+      "filterType": "National",
+      "organizer": "Indian Academy of Pediatrics (IAP)",
+      "registrationLink": "https://iapindia.org/events/national2026",
+      "cmeCredits": 6,
+      "tags": [
+        "#National",
+        "#Pediatrics",
+        "#NICU",
+        "#PGI"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&h=400&fit=crop",
+      "contactEmail": "pediatrics@iapindia.org",
+      "createdAt": "2026-09-12"
+    },
+    {
+      "id": "evt-7",
+      "name": "Global Webinar on Clinical AI & Deep Learning in Radiology",
+      "description": "Interactive virtual workshop detailing chest CT lesion segmentation, stroke detection algorithms, and FDA AI approvals.",
+      "date": "Oct 28, 2026",
+      "time": "06:00 PM - 08:30 PM IST",
+      "location": "Live Virtual Stream (Zoom & MedMedia Auditorium)",
+      "isOnline": true,
+      "filterType": "Online",
+      "organizer": "MedMedia Digital Imaging Council & RSNA Fellows",
+      "registrationLink": "https://medmedia.health/events/ai-radiology-live",
+      "cmeCredits": 2,
+      "tags": [
+        "#Online",
+        "#Radiology",
+        "#AI",
+        "#Webinar"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&h=400&fit=crop",
+      "contactEmail": "webinars@medmedia.health",
+      "createdAt": "2026-09-24"
+    },
+    {
+      "id": "evt-8",
+      "name": "Cadaveric Pelvic & Acetabular Surgical Approach Masterclass",
+      "description": "Intensive 2-day cadaveric dissection workshop demonstrating modified Stoppa and ilioinguinal approaches.",
+      "date": "Nov 28-29, 2026",
+      "time": "08:30 AM - 05:30 PM IST",
+      "location": "Anatomy Dissection Hall, Ramaiah Advanced Learning Centre, Bangalore",
+      "isOnline": false,
+      "filterType": "Offline",
+      "organizer": "Department of Anatomy & Orthopedic Trauma Society",
+      "registrationLink": "https://msralc.org/surgical-courses/acetabular-2026",
+      "cmeCredits": 6,
+      "tags": [
+        "#Offline",
+        "#Anatomy",
+        "#Orthopedics",
+        "#Cadaveric"
+      ],
+      "bannerUrl": "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&h=400&fit=crop",
+      "contactEmail": "courses@msralc.org",
+      "createdAt": "2026-09-21"
+    }
+  ],
+  "libraryItems": [
+    {
+      "id": "lib-1",
+      "name": "Gray's Anatomy for Students (5th Edition)",
+      "author": "Richard Drake, A. Wayne Vogl, Adam W. M. Mitchell",
+      "description": "The gold standard anatomical reference for conceptual understanding, surface anatomy, and clinical pearls.",
+      "link": "https://www.clinicalkey.com/#!/browse/book/3-s2.0-C20180029337",
+      "category": "Anatomy & Embryology",
+      "edition": "5th Edition (2024)",
+      "coverUrl": "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=400&h=600&fit=crop",
+      "createdAt": "2026-01-01"
+    },
+    {
+      "id": "lib-2",
+      "name": "Harrison's Principles of Internal Medicine (21st Edition)",
+      "author": "Joseph Loscalzo, Anthony Fauci, Dennis Kasper, Stephen Hauser",
+      "description": "The definitive landmark textbook for pathophysiology, clinical manifestations, and evidence-based therapeutics.",
+      "link": "https://accessmedicine.mhmedical.com/book.aspx?bookid=3095",
+      "category": "Internal Medicine",
+      "edition": "21st Edition",
+      "coverUrl": "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=600&fit=crop",
+      "createdAt": "2026-01-01"
+    },
+    {
+      "id": "lib-3",
+      "name": "Robbins & Cotran Pathologic Basis of Disease (10th Edition)",
+      "author": "Vinay Kumar, Abul K. Abbas, Jon C. Aster",
+      "description": "Readable and authoritative coverage of cellular injury, molecular pathogenesis, and morphologic changes.",
+      "link": "https://www.elsevier.com/books/robbins-and-cotran-pathologic-basis-of-disease/kumar/978-0-323-53113-9",
+      "category": "Pathology & Microbiology",
+      "edition": "10th Edition",
+      "coverUrl": "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=600&fit=crop",
+      "createdAt": "2026-01-01"
+    },
+    {
+      "id": "lib-4",
+      "name": "Guyton and Hall Textbook of Medical Physiology (14th Edition)",
+      "author": "John E. Hall, Michael E. Hall",
+      "description": "Clear and comprehensive presentation of how organ systems interact to maintain bodily homeostasis.",
+      "link": "https://www.elsevier.com/books/guyton-and-hall-textbook-of-medical-physiology/hall/978-0-323-59712-8",
+      "category": "Physiology",
+      "edition": "14th Edition",
+      "coverUrl": "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400&h=600&fit=crop",
+      "createdAt": "2026-01-01"
+    },
+    {
+      "id": "lib-5",
+      "name": "Schwartz's Principles of Surgery (11th Edition)",
+      "author": "F. Charles Brunicardi, Dana K. Andersen, Timothy R. Billiar",
+      "description": "Foundational surgical text detailing trauma management, critical care, and advanced operative procedures.",
+      "link": "https://accesssurgery.mhmedical.com/book.aspx?bookid=2576",
+      "category": "Surgery",
+      "edition": "11th Edition",
+      "coverUrl": "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=600&fit=crop",
+      "createdAt": "2026-01-01"
+    }
+  ],
+  "notifications": [
+    {
+      "id": "notif-1",
+      "userId": "doc-1",
+      "type": "CONFERENCE",
+      "title": "Conference Call: 77th Annual Medical Congress Registration Open",
+      "description": "Early bird registration and abstract submission for the National Medical Congress is now open. 6 CME credits granted.",
+      "timestamp": "10 mins ago",
+      "isRead": false,
+      "actionUrl": "opportunities?tab=events"
+    },
+    {
+      "id": "notif-2",
+      "userId": "doc-1",
+      "type": "JOB_APPLICATION",
+      "title": "Job Application Update: Apollo Interventional Fellow Position",
+      "description": "Dr. Sandeep Kulkarni has shortlisted your profile for the Senior Consultant review panel.",
+      "timestamp": "1 hour ago",
+      "isRead": false,
+      "actionUrl": "opportunities?tab=jobs"
+    },
+    {
+      "id": "notif-3",
+      "userId": "doc-1",
+      "type": "JOB_UPDATE",
+      "title": "New Job Alert: Academic Faculty Opening in Pediatric Neurosurgery",
+      "description": "Manipal Hospital posted a new position matching your clinical network interests.",
+      "timestamp": "3 hours ago",
+      "isRead": true,
+      "actionUrl": "opportunities?tab=jobs"
+    },
+    {
+      "id": "notif-4",
+      "userId": "doc-1",
+      "type": "FOLLOW_ACCEPTED",
+      "title": "Dr. Sandeep Kulkarni accepted your follow request",
+      "description": "You are now connected with Dr. Sandeep Kulkarni (CTVS Surgeon @ AIIMS).",
+      "timestamp": "Yesterday",
+      "isRead": true,
+      "actionUrl": "users/doc-3"
+    }
+  ],
   "supportTickets": [],
   "sessions": [
     {
@@ -281,5 +998,7 @@
       "isCurrentDevice": true
     }
   ],
-  "lastUpdated": "2026-09-26T09:27:45.793Z"
+  "otps": {},
+  "userFollowers": {},
+  "lastUpdated": "2026-09-26T17:23:17.884Z"
 }

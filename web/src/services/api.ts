@@ -1,4 +1,4 @@
-﻿import { 
+import { 
   Post, 
   Medclip, 
   Job, 
@@ -32,7 +32,7 @@ import {
 } from '../data/mockData';
 
 const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:5000/api'
+  ? 'http://localhost:5001/api'
   : '/api';
 
 export const apiService = {
@@ -354,6 +354,7 @@ export const apiService = {
     if (!savedClip) {
       savedClip = {
         id: `clip-${Date.now()}`,
+        clipType: clipData.clipType || 'Clinical Update',
         authorId: clipData.userId,
         authorName: clipData.userName,
         authorSpecialty: clipData.userSpecialty || '',
@@ -372,17 +373,17 @@ export const apiService = {
         isSaved: false,
         isFollowing: false,
         createdAt: 'Just now'
-      };
+      } as Medclip;
     }
 
     try {
       const existingRaw = localStorage.getItem('medmedia_clips_cache');
       const list: Medclip[] = existingRaw ? JSON.parse(existingRaw) : [...INITIAL_CLIPS];
-      list.unshift(savedClip);
+      list.unshift(savedClip!);
       localStorage.setItem('medmedia_clips_cache', JSON.stringify(list));
     } catch {}
 
-    return savedClip;
+    return savedClip!;
   },
 
   // 8. CREATE STORY

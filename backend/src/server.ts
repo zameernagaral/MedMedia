@@ -19,7 +19,7 @@ import { mysqlDb } from './data/mysqlDb';
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 5000;
+const PORT = process.env.PORT || 5001;
 
 // Resolve candidate dist paths for web frontend
 const candidateDistPaths = [

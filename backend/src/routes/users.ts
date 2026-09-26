@@ -73,9 +73,10 @@ router.post('/:id/connect', (req: Request, res: Response) => {
     db.addUser(user);
     return res.json({ success: true, message: `Now following ${user.fullName}`, followersCount: user.stats.followersCount });
   } else {
-    user.stats.connectionsCount = (user.stats.connectionsCount || 0) + 1;
+    // connect action (fallback to followers/following model)
+    user.stats.followersCount = (user.stats.followersCount || 0) + 1;
     db.addUser(user);
-    return res.json({ success: true, message: `Connection request sent to ${user.fullName}`, connectionsCount: user.stats.connectionsCount });
+    return res.json({ success: true, message: `Connection request sent to ${user.fullName}`, followersCount: user.stats.followersCount });
   }
 });
 
