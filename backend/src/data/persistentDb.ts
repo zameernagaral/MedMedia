@@ -17,6 +17,9 @@ import {
   CourseItem,
   NotificationItem,
   SupportTicket,
+  EventItem,
+  LibraryItem,
+  MedclipComment,
   USERS, 
   POSTS, 
   STORIES, 
@@ -30,7 +33,9 @@ import {
   SCHOLARSHIPS,
   COURSES,
   NOTIFICATIONS,
-  SUPPORT_TICKETS
+  SUPPORT_TICKETS,
+  EVENTS,
+  LIBRARY_ITEMS
 } from "./mockDb";
 import { mysqlDb } from "./mysqlDb";
 
@@ -42,6 +47,15 @@ export interface DeviceSession {
   ipAddress: string;
   lastActive: string;
   isCurrentDevice: boolean;
+}
+
+export interface OtpRecord {
+  destination: string;
+  channel: 'email' | 'mobile';
+  otp: string;
+  expiresAt: number;
+  verified: boolean;
+  resetToken?: string;
 }
 
 export interface LocalDatabaseSchema {
@@ -57,9 +71,13 @@ export interface LocalDatabaseSchema {
   locumApplications: LocumApplication[];
   scholarships: ScholarshipItem[];
   courses: CourseItem[];
+  events: EventItem[];
+  libraryItems: LibraryItem[];
   notifications: NotificationItem[];
   supportTickets: SupportTicket[];
   sessions: DeviceSession[];
+  otps?: Record<string, OtpRecord>;
+  userFollowers?: Record<string, string[]>; // targetUserId -> followerUserIds
   lastUpdated: string;
 }
 
@@ -104,22 +122,33 @@ class PersistentDatabase {
         const raw = fs.readFileSync(DB_FILE, "utf-8");
         const parsed = JSON.parse(raw);
         console.log(`[MedMedia DB] Loaded persistent database from ${DB_FILE} (${parsed.users?.length || 0} users, ${parsed.posts?.length || 0} posts)`);
+        
+        let loadedCommunities = Array.isArray(parsed.communities) && parsed.communities.length > 0 ? parsed.communities : [...COMMUNITIES];
+        if (!loadedCommunities.some((c: any) => c.id === 'comm-anatomy')) {
+          const anatomyComm = COMMUNITIES.find(c => c.id === 'comm-anatomy');
+          if (anatomyComm) loadedCommunities.unshift(anatomyComm);
+        }
+
         return {
           users: Array.isArray(parsed.users) && parsed.users.length > 0 ? parsed.users : [...USERS],
           posts: Array.isArray(parsed.posts) ? parsed.posts : [],
           stories: Array.isArray(parsed.stories) ? parsed.stories : [],
           clips: Array.isArray(parsed.clips) && parsed.clips.length > 0 ? parsed.clips : [...MEDCLIPS],
-          jobs: Array.isArray(parsed.jobs) ? parsed.jobs : [],
-          opportunities: Array.isArray(parsed.opportunities) ? parsed.opportunities : [],
-          communities: Array.isArray(parsed.communities) ? parsed.communities : [],
-          researchProjects: Array.isArray(parsed.researchProjects) ? parsed.researchProjects : [],
-          locumGigs: Array.isArray(parsed.locumGigs) ? parsed.locumGigs : [],
+          jobs: Array.isArray(parsed.jobs) && parsed.jobs.length > 0 ? parsed.jobs : [...JOBS],
+          opportunities: Array.isArray(parsed.opportunities) && parsed.opportunities.length > 0 ? parsed.opportunities : [...OPPORTUNITIES],
+          communities: loadedCommunities,
+          researchProjects: Array.isArray(parsed.researchProjects) && parsed.researchProjects.length > 0 ? parsed.researchProjects : [...RESEARCH_PROJECTS],
+          locumGigs: Array.isArray(parsed.locumGigs) && parsed.locumGigs.length > 0 ? parsed.locumGigs : [...LOCUM_GIGS],
           locumApplications: Array.isArray(parsed.locumApplications) ? parsed.locumApplications : [],
-          scholarships: Array.isArray(parsed.scholarships) ? parsed.scholarships : [],
-          courses: Array.isArray(parsed.courses) ? parsed.courses : [],
-          notifications: Array.isArray(parsed.notifications) ? parsed.notifications : [],
+          scholarships: Array.isArray(parsed.scholarships) && parsed.scholarships.length > 0 ? parsed.scholarships : [...SCHOLARSHIPS],
+          courses: Array.isArray(parsed.courses) && parsed.courses.length > 0 ? parsed.courses : [...COURSES],
+          events: Array.isArray(parsed.events) && parsed.events.length > 0 ? parsed.events : [...EVENTS],
+          libraryItems: Array.isArray(parsed.libraryItems) && parsed.libraryItems.length > 0 ? parsed.libraryItems : [...LIBRARY_ITEMS],
+          notifications: Array.isArray(parsed.notifications) && parsed.notifications.length > 0 ? parsed.notifications : [...NOTIFICATIONS],
           supportTickets: Array.isArray(parsed.supportTickets) ? parsed.supportTickets : [],
           sessions: Array.isArray(parsed.sessions) && parsed.sessions.length > 0 ? parsed.sessions : [...INITIAL_SESSIONS],
+          otps: parsed.otps || {},
+          userFollowers: parsed.userFollowers || {},
           lastUpdated: parsed.lastUpdated || new Date().toISOString()
         };
       }
@@ -140,9 +169,13 @@ class PersistentDatabase {
       locumApplications: [...LOCUM_APPLICATIONS],
       scholarships: [...SCHOLARSHIPS],
       courses: [...COURSES],
+      events: [...EVENTS],
+      libraryItems: [...LIBRARY_ITEMS],
       notifications: [...NOTIFICATIONS],
       supportTickets: [...SUPPORT_TICKETS],
       sessions: [...INITIAL_SESSIONS],
+      otps: {},
+      userFollowers: {},
       lastUpdated: new Date().toISOString()
     };
     this.saveToDisk(initial);
@@ -301,6 +334,15 @@ class PersistentDatabase {
   public addClip(clip: Medclip): Medclip {
     this.data.clips.unshift(clip);
     this.saveToDisk();
+    return clip;
+  }
+
+  public updateClip(clip: Medclip): Medclip {
+    const idx = this.data.clips.findIndex(c => c.id === clip.id);
+    if (idx !== -1) {
+      this.data.clips[idx] = clip;
+      this.saveToDisk();
+    }
     return clip;
   }
 
@@ -481,6 +523,65 @@ class PersistentDatabase {
   public getCourses(): CourseItem[] {
     return [...this.data.courses];
   }
+
+  // --- Events ---
+  public getEvents(filter?: string): EventItem[] {
+    if (!filter || filter === 'All') return [...(this.data.events || [])];
+    return (this.data.events || []).filter(e =>
+      e.filterType?.toLowerCase() === filter.toLowerCase() ||
+      (filter === 'Online' && e.isOnline) ||
+      (filter === 'Offline' && !e.isOnline)
+    );
+  }
+
+  public addEvent(event: EventItem): EventItem {
+    if (!this.data.events) this.data.events = [];
+    this.data.events.unshift(event);
+    this.saveToDisk();
+    return event;
+  }
+
+  // --- Library Items ---
+  public getLibraryItems(category?: string): LibraryItem[] {
+    const items = this.data.libraryItems || [];
+    if (!category || category === 'All') return [...items];
+    return items.filter(i => i.category?.toLowerCase() === category.toLowerCase());
+  }
+
+  public addLibraryItem(item: LibraryItem): LibraryItem {
+    if (!this.data.libraryItems) this.data.libraryItems = [];
+    this.data.libraryItems.unshift(item);
+    this.saveToDisk();
+    return item;
+  }
+
+  // --- OTP / Password Reset ---
+  public saveOtp(record: OtpRecord): void {
+    if (!this.data.otps) this.data.otps = {};
+    this.data.otps[record.destination] = record;
+    this.saveToDisk();
+  }
+
+  public getOtp(destination: string): OtpRecord | null {
+    return this.data.otps?.[destination] || null;
+  }
+
+  public clearOtp(destination: string): void {
+    if (this.data.otps) {
+      delete this.data.otps[destination];
+      this.saveToDisk();
+    }
+  }
+
+  // --- User Profile Update ---
+  public updateUserProfile(userId: string, updates: Partial<UserProfile>): UserProfile | null {
+    const idx = this.data.users.findIndex(u => u.id === userId);
+    if (idx === -1) return null;
+    this.data.users[idx] = { ...this.data.users[idx], ...updates };
+    this.saveToDisk();
+    return this.data.users[idx];
+  }
+
 
   // --- Notifications (Only Conferences, Job Updates, Job Applications, Follow Requests & Accepted) ---
   public getNotifications(userId?: string): NotificationItem[] {

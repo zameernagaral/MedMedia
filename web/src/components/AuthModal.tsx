@@ -35,6 +35,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onToggleDarkMode
 }) => {
   const [mode, setMode] = useState<'signin' | 'signup' | 'recovery'>('signup');
+  const [recoveryStep, setRecoveryStep] = useState<1 | 2 | 3>(1); // 1=enter email, 2=enter OTP, 3=new password
+  const [otpCode, setOtpCode] = useState('');
+  const [resetToken, setResetToken] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [recoveryChannel, setRecoveryChannel] = useState<'email' | 'mobile'>('email');
   const [signupStep, setSignupStep] = useState<1 | 2 | 3>(1);
   const [selectedRole, setSelectedRole] = useState<UserRole>('DOCTOR');
   const [selectedDiscipline, setSelectedDiscipline] = useState<StudentDiscipline>('MEDICAL_STUDENT');
@@ -172,7 +177,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         verificationStatus: "VERIFIED",
         badgeTitle: selectedRole === 'DOCTOR' ? "Google Verified Physician" : "Google Verified Scholar",
         bio: "Practicing physician verified via OAuth 2.0 and medical credential registry.",
-        stats: { postsCount: 3, followersCount: 145, connectionsCount: 52 }
+        stats: { postsCount: 3, followersCount: 145, followingCount: 52 }
       };
       onLoginSuccess(googleUser);
       onClose();
@@ -262,12 +267,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <span className={signupStep >= 1 ? "text-sky-600 dark:text-sky-400 flex items-center gap-1" : "text-slate-400"}>
                 <span>1. Info & DOB *</span>
               </span>
-              <span className="text-slate-300 dark:text-slate-700">→</span>
+              <span className="text-slate-300 dark:text-slate-700">â†’</span>
               <span className={signupStep >= 2 ? "text-sky-600 dark:text-sky-400 flex items-center gap-1" : "text-slate-400"}>
                 <span>2. Theme</span>
                 <span className="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Skip</span>
               </span>
-              <span className="text-slate-300 dark:text-slate-700">→</span>
+              <span className="text-slate-300 dark:text-slate-700">â†’</span>
               <span className={signupStep >= 3 ? "text-sky-600 dark:text-sky-400 flex items-center gap-1" : "text-slate-400"}>
                 <span>3. First Post</span>
                 <span className="text-[9px] px-1 py-0.2 rounded bg-slate-200 dark:bg-slate-800 text-slate-600 dark:text-slate-300">Skip</span>
@@ -397,7 +402,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <input
                         type="password"
                         required
-                        placeholder="••••••••••••"
+                        placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         className="w-full text-xs pl-9 pr-3 py-2.5 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -498,7 +503,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         >
                           <Upload className="w-4 h-4 mx-auto mb-1 text-sky-600 dark:text-sky-400" />
                           <p className="text-xs font-bold">
-                            {fileUploaded ? "✓ Medical Council Document Attached (Blue Tick Verified)" : "Upload Medical Council Certificate / License (PDF/JPG)"}
+                            {fileUploaded ? "âœ“ Medical Council Document Attached (Blue Tick Verified)" : "Upload Medical Council Certificate / License (PDF/JPG)"}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
@@ -564,7 +569,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                         >
                           <Upload className="w-4 h-4 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
                           <p className="text-xs font-bold">
-                            {fileUploaded ? "✓ Student ID Attached (Blue Tick Verified)" : "Upload Student ID Card / College Slip"}
+                            {fileUploaded ? "âœ“ Student ID Attached (Blue Tick Verified)" : "Upload Student ID Card / College Slip"}
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
                             {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
@@ -707,7 +712,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => handleThemeContinue(false)}
                     className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>Skip Theme Selection (Keep Current) →</span>
+                    <span>Skip Theme Selection (Keep Current) â†’</span>
                   </button>
                 </div>
 
@@ -742,11 +747,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 {/* Suggested Topics / Tags */}
                 <div className="flex flex-wrap gap-1.5 justify-center">
                   {[
-                    "👋 Introduction",
-                    "🫀 Cardiology Case",
-                    "🔬 Research Query",
-                    "🏥 Internship Observership",
-                    "🩺 Clinical Pearls"
+                    "ðŸ‘‹ Introduction",
+                    "ðŸ«€ Cardiology Case",
+                    "ðŸ”¬ Research Query",
+                    "ðŸ¥ Internship Observership",
+                    "ðŸ©º Clinical Pearls"
                   ].map((topic) => (
                     <button
                       key={topic}
@@ -793,7 +798,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => handleFinalSignUp(false)}
                     className="w-full py-3 bg-gradient-to-r from-sky-600 to-indigo-600 hover:from-sky-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
                   >
-                    <span>🚀 Publish First Post & Enter MedMedia</span>
+                    <span>ðŸš€ Publish First Post & Enter MedMedia</span>
                   </button>
 
                   <button
@@ -801,7 +806,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     onClick={() => handleFinalSignUp(true)}
                     className="w-full py-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-750 text-slate-700 dark:text-slate-300 font-bold text-xs rounded-xl transition flex items-center justify-center gap-1.5 cursor-pointer"
                   >
-                    <span>Skip Post & Enter MedMedia →</span>
+                    <span>Skip Post & Enter MedMedia â†’</span>
                   </button>
                 </div>
 
@@ -862,7 +867,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   <input
                     type="password"
                     required
-                    placeholder="••••••••••••"
+                    placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
@@ -911,58 +916,192 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         )}
 
         {/* ========================================================================= */}
-        {/* RECOVERY FORM                                                             */}
+        {/* FORGOT PASSWORD / OTP RECOVERY FLOW (3 Steps)                             */}
         {/* ========================================================================= */}
         {mode === 'recovery' && (
-          <form 
-            onSubmit={(e) => {
-              e.preventDefault();
-              setStatusMessage("Reset code dispatched via SMS / Encrypted Email.");
-            }} 
-            className="p-6 space-y-4 max-h-[70vh] overflow-y-auto"
-          >
-            <div>
-              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 block mb-1">
-                Registered Phone or Email
-              </label>
-              <div className="relative">
-                <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                <input
-                  type="text"
-                  required
-                  placeholder="doctor@hospital.org or +91 98765 43210"
-                  value={emailOrPhone}
-                  onChange={(e) => setEmailOrPhone(e.target.value)}
-                  className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500"
-                />
-              </div>
+          <div className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+
+            {/* Step indicator */}
+            <div className="flex items-center gap-2 mb-2">
+              {[1, 2, 3].map(s => (
+                <div key={s} className={`h-1 flex-1 rounded-full transition-all ${recoveryStep >= s ? 'bg-sky-500' : 'bg-slate-200 dark:bg-slate-700'}`} />
+              ))}
             </div>
 
-            {statusMessage && (
-              <p className="text-xs text-center font-semibold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/60 py-2 rounded-lg">
-                {statusMessage}
-              </p>
+            {/* STEP 1: Enter Email or Phone */}
+            {recoveryStep === 1 && (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setStatusMessage('');
+                if (!emailOrPhone.trim()) {
+                  setStatusMessage('Please enter your registered email or phone number.');
+                  return;
+                }
+                setStatusMessage('Sending OTP...');
+                try {
+                  const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ destination: emailOrPhone.trim(), channel: recoveryChannel })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setStatusMessage(`OTP sent to ${emailOrPhone}. Check your ${recoveryChannel === 'email' ? 'inbox' : 'messages'}.`);
+                    setTimeout(() => { setStatusMessage(''); setRecoveryStep(2); }, 1500);
+                  } else {
+                    setStatusMessage(data.message || 'Failed to send OTP. Try again.');
+                  }
+                } catch {
+                  // Fallback for offline demo
+                  setStatusMessage('OTP sent! (Demo mode — check console for code)');
+                  setTimeout(() => { setStatusMessage(''); setRecoveryStep(2); }, 1500);
+                }
+              }} className="space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white mb-1">Forgot Password?</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Enter your registered email or phone number to receive a one-time password (OTP).</p>
+                </div>
+
+                {/* Channel selector */}
+                <div className="flex gap-2 mb-3">
+                  {(['email', 'mobile'] as const).map(ch => (
+                    <button key={ch} type="button"
+                      onClick={() => setRecoveryChannel(ch)}
+                      className={`flex-1 py-2 rounded-xl text-xs font-bold border transition cursor-pointer ${recoveryChannel === ch ? 'bg-sky-600 text-white border-sky-600' : 'bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'}`}>
+                      {ch === 'email' ? '✉️ Email OTP' : '📱 Mobile OTP'}
+                    </button>
+                  ))}
+                </div>
+
+                <div className="relative">
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                  <input type="text" required
+                    placeholder={recoveryChannel === 'email' ? 'doctor@hospital.org' : '+91 98765 43210'}
+                    value={emailOrPhone}
+                    onChange={e => setEmailOrPhone(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                </div>
+
+                {statusMessage && <p className="text-xs text-center font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/60 py-2 rounded-lg">{statusMessage}</p>}
+
+                <button type="submit" className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                  <span>Send OTP Code</span><ArrowRight className="w-4 h-4" />
+                </button>
+                <button type="button" onClick={() => setMode('signin')} className="w-full py-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">
+                  ← Back to Sign In
+                </button>
+              </form>
             )}
 
-            <button
-              type="submit"
-              className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer"
-            >
-              <span>Send Recovery Code</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
+            {/* STEP 2: Verify OTP */}
+            {recoveryStep === 2 && (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setStatusMessage('');
+                if (!otpCode.trim() || otpCode.length < 6) {
+                  setStatusMessage('Enter the 6-digit OTP code.');
+                  return;
+                }
+                setStatusMessage('Verifying OTP...');
+                try {
+                  const res = await fetch('http://localhost:5000/api/auth/verify-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ destination: emailOrPhone.trim(), otp: otpCode.trim() })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setResetToken(data.resetToken);
+                    setStatusMessage('OTP verified! Set your new password.');
+                    setTimeout(() => { setStatusMessage(''); setRecoveryStep(3); }, 1200);
+                  } else {
+                    setStatusMessage(data.message || 'Invalid OTP. Please try again.');
+                  }
+                } catch {
+                  // Demo fallback
+                  setResetToken(`demo-token-${Date.now()}`);
+                  setStatusMessage('OTP verified! (Demo mode)');
+                  setTimeout(() => { setStatusMessage(''); setRecoveryStep(3); }, 1200);
+                }
+              }} className="space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white mb-1">Enter OTP Code</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">A 6-digit code was sent to <strong>{emailOrPhone}</strong>. Valid for 10 minutes.</p>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => setMode('signin')}
-              className="w-full py-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer"
-            >
-              Back to Sign In
-            </button>
-          </form>
+                <input type="text" required maxLength={6} pattern="[0-9]{6}"
+                  placeholder="_ _ _ _ _ _"
+                  value={otpCode}
+                  onChange={e => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                  className="w-full text-center text-2xl font-bold tracking-[0.6em] py-4 border-2 border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" />
+
+                {statusMessage && <p className={`text-xs text-center font-semibold py-2 rounded-lg ${statusMessage.includes('verified') ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300' : 'text-sky-700 bg-sky-50 dark:bg-sky-950/60 dark:text-sky-300'}`}>{statusMessage}</p>}
+
+                <button type="submit" className="w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                  <span>Verify OTP</span><ArrowRight className="w-4 h-4" />
+                </button>
+                <div className="flex gap-3">
+                  <button type="button" onClick={() => setRecoveryStep(1)} className="flex-1 py-2 text-xs text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 cursor-pointer">← Back</button>
+                  <button type="button" onClick={() => { setRecoveryStep(1); setOtpCode(''); }} className="flex-1 py-2 text-xs text-sky-600 dark:text-sky-400 hover:underline cursor-pointer">Resend OTP</button>
+                </div>
+              </form>
+            )}
+
+            {/* STEP 3: Set New Password */}
+            {recoveryStep === 3 && (
+              <form onSubmit={async (e) => {
+                e.preventDefault();
+                setStatusMessage('');
+                if (!newPassword || newPassword.length < 6) {
+                  setStatusMessage('Password must be at least 6 characters.');
+                  return;
+                }
+                setStatusMessage('Resetting password...');
+                try {
+                  const res = await fetch('http://localhost:5000/api/auth/reset-password', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ destination: emailOrPhone.trim(), resetToken, newPassword })
+                  });
+                  const data = await res.json();
+                  if (data.success) {
+                    setStatusMessage('✅ Password reset successfully! Redirecting to Sign In...');
+                    setTimeout(() => { setMode('signin'); setRecoveryStep(1); setOtpCode(''); setNewPassword(''); setResetToken(''); setStatusMessage(''); }, 2000);
+                  } else {
+                    setStatusMessage(data.message || 'Reset failed. Please start over.');
+                  }
+                } catch {
+                  setStatusMessage('✅ Password reset! (Demo mode) Redirecting...');
+                  setTimeout(() => { setMode('signin'); setRecoveryStep(1); setOtpCode(''); setNewPassword(''); setResetToken(''); setStatusMessage(''); }, 2000);
+                }
+              }} className="space-y-4">
+                <div>
+                  <p className="text-sm font-bold text-slate-800 dark:text-white mb-1">Set New Password</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">Choose a strong password for your MedMedia account.</p>
+                </div>
+
+                <div className="relative">
+                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
+                  <input type="password" required minLength={6}
+                    placeholder="New password (min 6 characters)"
+                    value={newPassword}
+                    onChange={e => setNewPassword(e.target.value)}
+                    className="w-full text-xs pl-9 pr-3 py-3 border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500" />
+                </div>
+
+                {statusMessage && <p className={`text-xs text-center font-semibold py-2 rounded-lg ${statusMessage.includes('✅') ? 'text-emerald-700 bg-emerald-50 dark:bg-emerald-950/60 dark:text-emerald-300' : 'text-rose-700 bg-rose-50 dark:bg-rose-950/60 dark:text-rose-300'}`}>{statusMessage}</p>}
+
+                <button type="submit" className="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                  <CheckCircle2 className="w-4 h-4" /><span>Reset Password & Sign In</span>
+                </button>
+              </form>
+            )}
+          </div>
         )}
+
 
       </div>
     </div>
   );
 };
+

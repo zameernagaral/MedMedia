@@ -78,16 +78,18 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* Slide 5 Top Header Bar: Create +, Medmedia, Notifications, Messages */}
+      {/* Slide 5 Top Header Bar: Logo, Notifications, Messages */}
       <View style={styles.header}>
         <View style={styles.headerLeft}>
           <TouchableOpacity style={styles.createBtn} onPress={onOpenCreate}>
             <Text style={styles.createBtnText}>+</Text>
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Medmedia</Text>
-          <View style={styles.verifiedBadge}>
-            <Text style={styles.verifiedText}>PRO</Text>
-          </View>
+          {/* MedMedia Official Logo */}
+          <Image
+            source={require('../../assets/medmedia-logo.png')}
+            style={{ width: 110, height: 36, resizeMode: 'contain' }}
+            defaultSource={require('../../assets/medmedia-logo.png')}
+          />
         </View>
 
         <View style={styles.headerRight}>

@@ -55,7 +55,8 @@ export interface UserProfile {
   stats: {
     postsCount: number;
     followersCount: number;
-    connectionsCount: number;
+    followingCount: number;
+    // Connections removed - platform uses followers/following model only
   };
 }
 
@@ -83,7 +84,7 @@ export interface Post {
   authorIsProfessor?: boolean;
   authorAcademicTitle?: string;
   isVerified: boolean;
-  postType: 'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION' | 'ARTICLE_LINK';
+  postType: 'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION' | 'ARTICLE_LINK' | 'CLINICAL_POST';
   content: string;
   mediaUrls?: string[];
   linkUrl?: string;
@@ -111,6 +112,15 @@ export interface Post {
   createdAt: string;
 }
 
+export interface MedclipComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Medclip {
   id: string;
   authorId: string;
@@ -122,17 +132,29 @@ export interface Medclip {
   videoUrl: string;
   thumbnailUrl: string;
   caption: string;
-  clinicalCategory: 'clinical updates' | 'social update' | 'social updates' | 'following' | string;
+  clipType: 'Clinical Update' | 'Social Update'; // Required: user must select before posting
+  clinicalCategory: 'clinical updates' | 'social update' | 'social updates' | 'following' | 'Clinical Update' | 'Social Update' | string;
   tags: string[];
   likesCount: number;
   commentsCount: number;
   savesCount: number;
   sharesCount: number;
+  comments?: MedclipComment[];
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
   targetAudience?: 'DOCTOR' | 'STUDENT' | 'ALL' | 'STUDENT_HIGH_YIELD' | 'PROFESSOR_ACADEMIC' | string;
   createdAt: string;
+}
+
+export interface CommunityChannel {
+  id: string;
+  name: string;
+  description: string;
+  isAnnouncement?: boolean;
+  messagesCount?: number;
+  lastMessageSnippet?: string;
+  lastMessageTime?: string;
 }
 
 export interface Community {
@@ -148,6 +170,8 @@ export interface Community {
   creatorId: string;
   creatorName: string;
   isOfficial?: boolean;
+  announcementText?: string;
+  channels?: CommunityChannel[];
   createdAt: string;
 }
 
@@ -199,7 +223,7 @@ export interface ResearchProject {
   leadDoctorName?: string;
   creatorAvatar?: string;
   leadDoctorAvatar?: string;
-  targetSampleSize?: number | string;
+  // targetSampleSize REMOVED per requirements
   collaboratorCount?: number;
   memberIds?: string[];
   pendingJoinRequestIds?: string[];
@@ -315,6 +339,36 @@ export interface CourseItem {
   cmeCredits?: number;
 }
 
+export interface LibraryItem {
+  id: string;
+  name: string;
+  author: string;
+  description: string;
+  link?: string;
+  category: string;
+  coverUrl?: string;
+  edition?: string;
+  createdAt: string;
+}
+
+export interface EventItem {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  time?: string;
+  location: string;
+  isOnline: boolean;
+  filterType: 'Near You' | 'International' | 'National' | 'Online' | 'Offline';
+  organizer: string;
+  registrationLink: string;
+  cmeCredits?: number;
+  tags?: string[];
+  bannerUrl?: string;
+  contactEmail?: string;
+  createdAt: string;
+}
+
 export interface SupportTicket {
   id: string;
   userId: string;
@@ -343,6 +397,7 @@ export interface Job {
   stipend?: string;
   duration?: string;
   isClinicalInternship?: boolean;
+  // targetSampleSize REMOVED per requirements
   postedAt: string;
 }
 
@@ -364,13 +419,15 @@ export interface OpportunityItem {
 
 export interface NotificationItem {
   id: string;
-  userId: string;
-  type: 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED';
+  userId?: string;
+  type: 'EVENT' | 'EXAM' | 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED' | 'ADMIN_BROADCAST';
   title: string;
   description: string;
   timestamp: string;
   isRead: boolean;
   actionUrl?: string;
+  targetAudience?: 'DOCTOR' | 'STUDENT' | 'ALL';
+  referenceId?: string;
 }
 
 export interface DeviceSession {
@@ -381,4 +438,14 @@ export interface DeviceSession {
   ipAddress: string;
   lastActive: string;
   isCurrentDevice: boolean;
+}
+
+export interface OtpRequest {
+  destination: string; // email or phone
+  channel: 'email' | 'mobile';
+}
+
+export interface PasswordResetRequest {
+  resetToken: string;
+  newPassword: string;
 }

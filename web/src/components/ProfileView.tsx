@@ -172,34 +172,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                   <span>Settings & Help</span>
                 </button>
               ) : (
-                <>
-                  <button
-                    onClick={() => setIsFollowing(!isFollowing)}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
-                      isFollowing
-                        ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
-                        : 'bg-sky-600 hover:bg-sky-700 text-white shadow-xs'
-                    }`}
-                  >
-                    {isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
-                    <span>{isFollowing ? 'Following' : 'Follow'}</span>
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      setIsConnected(!isConnected);
-                      onConnectUser(user.id);
-                    }}
-                    className={`px-4 py-2 rounded-xl text-xs font-bold transition border flex items-center gap-1.5 cursor-pointer ${
-                      isConnected
-                        ? 'bg-emerald-50 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300 border-emerald-300 dark:border-emerald-800'
-                        : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700'
-                    }`}
-                  >
-                    {isConnected ? <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" /> : <Sparkles className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />}
-                    <span>{isConnected ? 'Connected' : 'Connect'}</span>
-                  </button>
-                </>
+                {/* Follow only — Connections removed, platform uses Followers/Following model */}
+                <button
+                  onClick={() => {
+                    setIsFollowing(!isFollowing);
+                    onConnectUser(user.id); // reuses endpoint for follow action
+                  }}
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
+                    isFollowing
+                      ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
+                      : 'bg-sky-600 hover:bg-sky-700 text-white shadow-xs'
+                  }`}
+                >
+                  {isFollowing ? <UserCheck className="w-3.5 h-3.5" /> : <UserPlus className="w-3.5 h-3.5" />}
+                  <span>{isFollowing ? 'Following' : 'Follow'}</span>
+                </button>
               )}
 
               <button
@@ -296,9 +283,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <span className="font-bold text-slate-900 dark:text-white text-sm">
-                {user.stats.connectionsCount + (isConnected ? 1 : 0)}
+                {user.stats.followingCount ?? 0}
               </span>
-              <span className="text-slate-500 dark:text-slate-400 ml-1">Connections</span>
+              <span className="text-slate-500 dark:text-slate-400 ml-1">Following</span>
             </div>
           </div>
         </div>

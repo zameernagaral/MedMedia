@@ -1,4 +1,4 @@
-import { UserProfile, Story, Post, Medclip, Job, OpportunityItem, DeviceSession } from '../types';
+﻿import { UserProfile, Story, Post, Medclip, Job, OpportunityItem, DeviceSession } from '../types';
 
 export const INITIAL_USERS: UserProfile[] = [
   {
@@ -27,7 +27,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 8920,
-      connectionsCount: 1420
+      followingCount: 1420
     }
   },
   {
@@ -55,7 +55,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 6410,
-      connectionsCount: 980
+      followingCount: 980
     }
   },
   {
@@ -91,7 +91,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 14200,
-      connectionsCount: 3100
+      followingCount: 3100
     }
   },
   {
@@ -126,7 +126,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 9800,
-      connectionsCount: 2200
+      followingCount: 2200
     }
   },
   {
@@ -154,7 +154,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 1840,
-      connectionsCount: 620
+      followingCount: 620
     }
   },
   {
@@ -181,7 +181,7 @@ export const INITIAL_USERS: UserProfile[] = [
     stats: {
       postsCount: 0,
       followersCount: 920,
-      connectionsCount: 340
+      followingCount: 340
     }
   }
 ];
@@ -200,7 +200,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     isVerified: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1576091160399-112ba8d25d1d?w=600&h=1000&fit=crop",
-    caption: "Auscultation masterclass: How to instantly distinguish Aortic Stenosis (ejection systolic murmur radiating to carotids) from Mitral Regurgitation (holosystolic radiating to axilla) using handgrip maneuvers. 🎧🩺",
+    caption: "Auscultation masterclass: How to instantly distinguish Aortic Stenosis (ejection systolic murmur radiating to carotids) from Mitral Regurgitation (holosystolic radiating to axilla) using handgrip maneuvers. ðŸŽ§ðŸ©º",
     clinicalCategory: "clinical updates",
     tags: ["#Cardiology", "#ClinicalSkills", "#Auscultation", "#MedEd"],
     likesCount: 1420,
@@ -221,7 +221,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     isVerified: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=600&h=1000&fit=crop",
-    caption: "Surgical Knot Tying: The 1-Handed Square Knot technique essential for OR residents. Watch finger placement carefully to prevent slipping. ✂️",
+    caption: "Surgical Knot Tying: The 1-Handed Square Knot technique essential for OR residents. Watch finger placement carefully to prevent slipping. âœ‚ï¸",
     clinicalCategory: "following",
     tags: ["#Surgery", "#SurgicalKnot", "#ORResident", "#SurgicalPearls"],
     likesCount: 2980,
@@ -264,7 +264,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     authorIsProfessor: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=600&h=1000&fit=crop",
-    caption: "ECG Pearl: Identifying Wellens Syndrome Type A (biphasic T-waves in V2-V3) vs Type B (deeply inverted symmetrical T-waves). Imminent anterior wall infarction warning! 🫀",
+    caption: "ECG Pearl: Identifying Wellens Syndrome Type A (biphasic T-waves in V2-V3) vs Type B (deeply inverted symmetrical T-waves). Imminent anterior wall infarction warning! ðŸ«€",
     clinicalCategory: "clinical updates",
     tags: ["#Cardiology", "#WellensSyndrome", "#ECGPearls", "#ProfSharma"],
     likesCount: 3820,
@@ -286,7 +286,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     authorIsProfessor: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=600&h=1000&fit=crop",
-    caption: "Laparoscopic Port Ergonomics: The Golden Triangle principle between camera port and working instruments to prevent surgeon wrist strain and tremor amplification during cholecystectomy. 🩺⚡",
+    caption: "Laparoscopic Port Ergonomics: The Golden Triangle principle between camera port and working instruments to prevent surgeon wrist strain and tremor amplification during cholecystectomy. ðŸ©ºâš¡",
     clinicalCategory: "following",
     tags: ["#Surgery", "#Laparoscopy", "#SurgicalMentorship", "#ProfSundaram"],
     likesCount: 2190,
@@ -307,7 +307,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     isVerified: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1587854692152-cbe660dbde88?w=600&h=1000&fit=crop",
-    caption: "Antimicrobial stewardship alert: Renal dosage adjustment algorithms for Vancomycin and Piperacillin-Tazobactam. Watch for synergistic acute kidney injury! 💊",
+    caption: "Antimicrobial stewardship alert: Renal dosage adjustment algorithms for Vancomycin and Piperacillin-Tazobactam. Watch for synergistic acute kidney injury! ðŸ’Š",
     clinicalCategory: "social update",
     tags: ["#Pharmacology", "#AntimicrobialStewardship", "#MedEd", "#Pharmacy"],
     likesCount: 960,
@@ -328,7 +328,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     isVerified: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=600&h=1000&fit=crop",
-    caption: "Transradial cath lab case: Distal radial access (Snuffbox approach) benefits for patient post-op comfort and early discharge within 3 hours. 🏥",
+    caption: "Transradial cath lab case: Distal radial access (Snuffbox approach) benefits for patient post-op comfort and early discharge within 3 hours. ðŸ¥",
     clinicalCategory: "following",
     tags: ["#CathLab", "#InterventionalCardiology", "#RadialAccess"],
     likesCount: 1750,
@@ -350,7 +350,7 @@ export const INITIAL_CLIPS: Medclip[] = [
     authorIsProfessor: true,
     videoUrl: "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
     thumbnailUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=600&h=1000&fit=crop",
-    caption: "Bedside POCUS Echocardiography in Cardiogenic Shock: Rapidly evaluating LV contractility, IVC collapsibility, and ruling out cardiac tamponade in under 90 seconds. ⚡",
+    caption: "Bedside POCUS Echocardiography in Cardiogenic Shock: Rapidly evaluating LV contractility, IVC collapsibility, and ruling out cardiac tamponade in under 90 seconds. âš¡",
     clinicalCategory: "clinical updates",
     tags: ["#POCUS", "#EmergencyMedicine", "#Echocardiography", "#ProfSharma"],
     likesCount: 4510,
@@ -400,3 +400,4 @@ export const INITIAL_RESEARCH_PROJECTS: any[] = [];
 export const INITIAL_LOCUM_GIGS: any[] = [];
 
 export const INITIAL_NOTIFICATIONS: any[] = [];
+

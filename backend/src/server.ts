@@ -12,6 +12,8 @@ import searchRoutes from './routes/search';
 import storiesRoutes from './routes/stories';
 import adminRoutes from './routes/admin';
 import notificationsRoutes from './routes/notifications';
+import eventsRoutes from './routes/events';
+import resourcesRoutes from './routes/resources';
 import { mysqlDb } from './data/mysqlDb';
 
 dotenv.config();
@@ -58,6 +60,8 @@ app.use('/api/users', usersRoutes);
 app.use('/api/search', searchRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/notifications', notificationsRoutes);
+app.use('/api/events', eventsRoutes);
+app.use('/api/resources', resourcesRoutes);
 
 // Fallback to React index.html for SPA routes (if frontend dist exists)
 if (frontendDist) {

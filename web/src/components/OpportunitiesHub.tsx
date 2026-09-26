@@ -267,7 +267,6 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       institution: currentUser.doctorDetails?.hospitalAffiliation || currentUser.studentDetails?.collegeName || 'National Medical Center',
       description: newResearchDesc.trim(),
       hashtags: tagsArray,
-      targetSampleSize: newResearchSample,
       requiredSkills: newResearchSkills.split(',').map(s => s.trim())
     });
 
@@ -1121,9 +1120,6 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                         </div>
                       </div>
 
-                      <span className="text-[11px] font-semibold text-emerald-600 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-xl border border-emerald-200 flex-shrink-0">
-                        Sample: {proj.targetSampleSize}
-                      </span>
                     </div>
 
                     <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{proj.description}</p>

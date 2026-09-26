@@ -36,7 +36,8 @@ export interface UserProfile {
   stats: {
     postsCount: number;
     followersCount: number;
-    connectionsCount: number;
+    followingCount: number;
+    // connectionsCount removed - only followers/following model
   };
 }
 
@@ -88,6 +89,15 @@ export interface Post {
   createdAt: string;
 }
 
+export interface MedclipComment {
+  id: string;
+  userId: string;
+  userName: string;
+  userAvatar: string;
+  text: string;
+  createdAt: string;
+}
+
 export interface Medclip {
   id: string;
   authorId: string;
@@ -98,16 +108,28 @@ export interface Medclip {
   videoUrl: string;
   thumbnailUrl: string;
   caption: string;
-  clinicalCategory: 'clinical updates' | 'social update' | 'following';
+  clipType: 'Clinical Update' | 'Social Update'; // Required selection before posting
+  clinicalCategory: 'Clinical Update' | 'Social Update' | 'clinical updates' | 'social update' | 'following' | string;
   tags: string[];
   likesCount: number;
   commentsCount: number;
   savesCount: number;
   sharesCount: number;
+  comments?: MedclipComment[];
   isLiked?: boolean;
   isSaved?: boolean;
   isFollowing?: boolean;
   createdAt: string;
+}
+
+export interface CommunityChannel {
+  id: string;
+  name: string;
+  description: string;
+  isAnnouncement?: boolean;
+  messagesCount?: number;
+  lastMessageSnippet?: string;
+  lastMessageTime?: string;
 }
 
 export interface Community {
@@ -123,6 +145,8 @@ export interface Community {
   creatorId: string;
   creatorName: string;
   isOfficial?: boolean;
+  announcementText?: string;
+  channels?: CommunityChannel[];
   createdAt: string;
 }
 
@@ -260,15 +284,47 @@ export interface OpportunityItem {
   cmeCredits?: number;
 }
 
+export interface EventItem {
+  id: string;
+  name: string;
+  description: string;
+  date: string;
+  location: string;
+  isOnline: boolean;
+  filterType: 'Near You' | 'International' | 'National' | 'Online' | 'Offline';
+  organizer: string;
+  registrationLink: string;
+  cmeCredits?: number;
+  tags?: string[];
+  bannerUrl?: string;
+  time?: string;
+  contactEmail?: string;
+  createdAt: string;
+}
+
+export interface LibraryItem {
+  id: string;
+  name: string;
+  author: string;
+  description: string;
+  link: string;
+  category: string;
+  coverUrl?: string;
+  edition?: string;
+  createdAt: string;
+}
+
 export interface NotificationItem {
   id: string;
-  userId: string;
-  type: 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED';
+  userId?: string;
+  type: 'EVENT' | 'EXAM' | 'CONFERENCE' | 'JOB_UPDATE' | 'JOB_APPLICATION' | 'FOLLOW_REQUEST' | 'FOLLOW_ACCEPTED' | 'ADMIN_BROADCAST';
   title: string;
   description: string;
   timestamp: string;
   isRead: boolean;
   actionUrl?: string;
+  targetAudience?: 'DOCTOR' | 'STUDENT' | 'ALL';
+  referenceId?: string;
 }
 
 // ==========================================
@@ -306,7 +362,7 @@ export const USERS: UserProfile[] = [
     stats: {
       postsCount: 2,
       followersCount: 8920,
-      connectionsCount: 1420
+      followingCount: 340
     }
   },
   {
@@ -338,7 +394,7 @@ export const USERS: UserProfile[] = [
     stats: {
       postsCount: 1,
       followersCount: 6410,
-      connectionsCount: 980
+      followingCount: 280
     }
   },
   {
@@ -366,7 +422,7 @@ export const USERS: UserProfile[] = [
     stats: {
       postsCount: 1,
       followersCount: 1840,
-      connectionsCount: 420
+      followingCount: 190
     }
   },
   {
@@ -396,7 +452,7 @@ export const USERS: UserProfile[] = [
     stats: {
       postsCount: 1,
       followersCount: 15400,
-      connectionsCount: 3200
+      followingCount: 450
     }
   }
 ];
@@ -586,6 +642,57 @@ export const MEDCLIPS: Medclip[] = [
 ];
 
 export const COMMUNITIES: Community[] = [
+  // 0. Flagship WhatsApp-Style Community: Anatomic Community
+  {
+    id: "comm-anatomy",
+    name: "Anatomic Community",
+    iconUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=150&h=150&fit=crop",
+    avatarUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=150&h=150&fit=crop",
+    description: "Official Anatomic & Surgical Dissection Community. Hub for anatomical cross-sections, cadaveric studies, and surgical anatomy pearls.",
+    category: "Specialty",
+    membersCount: 4120,
+    maxCapacity: 10000,
+    creatorId: "doc-1",
+    creatorName: "Dr. Arvind Ramesh",
+    isOfficial: true,
+    announcementText: "Welcome to the Anatomic Community! Weekly cadaveric prosection review every Thursday at 7:00 PM. Access all sub-channels below.",
+    channels: [
+      {
+        id: "chan-announcements",
+        name: "Announcements & CME Notices",
+        description: "Official broadcast channel for dissecting lab protocols, conferences, and surgical anatomy workshops.",
+        isAnnouncement: true,
+        messagesCount: 18,
+        lastMessageSnippet: "New cadaveric workshop registration link posted for upcoming weekend.",
+        lastMessageTime: "Today, 11:30 AM"
+      },
+      {
+        id: "chan-gross-anatomy",
+        name: "Gross Anatomy & Dissections",
+        description: "Case discussions on muscular variants, arterial branching anomalies, and peripheral nerves.",
+        messagesCount: 94,
+        lastMessageSnippet: "Check out the anomalous branching of the coeliac trunk in today's cadaveric dissection.",
+        lastMessageTime: "Yesterday"
+      },
+      {
+        id: "chan-neuroanatomy",
+        name: "Neuroanatomy & Brain Correlates",
+        description: "Brainstem tracts, cranial nerve pathways, and 3D ventricular system reconstructions.",
+        messagesCount: 62,
+        lastMessageSnippet: "Coronal MRI vs 3D anatomical reconstruction comparison posted.",
+        lastMessageTime: "2 days ago"
+      },
+      {
+        id: "chan-surgical-anatomy",
+        name: "Applied Surgical Anatomy",
+        description: "Anatomical landmarks for laparoscopy, robotic access, and hepatobiliary triangles.",
+        messagesCount: 120,
+        lastMessageSnippet: "Safe dissection planes during retroperitoneal exposure and vascular control.",
+        lastMessageTime: "3 days ago"
+      }
+    ],
+    createdAt: "2026-01-01"
+  },
   // 1. Specialty Communities
   {
     id: "comm-cardio",
@@ -1162,3 +1269,201 @@ export const SUPPORT_TICKETS: SupportTicket[] = [
     createdAt: "2026-09-15"
   }
 ];
+
+export const EVENTS: EventItem[] = [
+  {
+    id: "evt-1",
+    name: "Karnataka State Medical Council Annual Clinical Conclave 2026",
+    description: "Multi-specialty state symposium covering emerging infection protocols, medicolegal compliance, and clinical governance.",
+    date: "Oct 18-20, 2026",
+    time: "09:00 AM - 05:00 PM IST",
+    location: "Bangalore Medical College Auditorium, Bangalore",
+    isOnline: false,
+    filterType: "Near You",
+    organizer: "Karnataka Medical Council (KMC) & BMCRI",
+    registrationLink: "https://kmc.karnataka.gov.in/events/conclave2026",
+    cmeCredits: 4,
+    tags: ["#ClinicalMedicine", "#CME", "#NearYou", "#Karnataka"],
+    bannerUrl: "https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?w=800&h=400&fit=crop",
+    contactEmail: "events@kmc.org.in",
+    createdAt: "2026-09-20"
+  },
+  {
+    id: "evt-2",
+    name: "Hands-on Emergency Airway & Trauma Resuscitation Masterclass",
+    description: "Simulated scenario masterclass for rapid sequence intubation, surgical cricothyroidotomy, and chest tube placement.",
+    date: "Nov 05, 2026",
+    time: "10:00 AM - 04:00 PM IST",
+    location: "Apollo Hospitals Simulation Training Center, Bannerghatta Road, Bangalore",
+    isOnline: false,
+    filterType: "Near You",
+    organizer: "Apollo Department of Emergency Medicine",
+    registrationLink: "https://apollohospitals.com/education/trauma-cme",
+    cmeCredits: 3,
+    tags: ["#EmergencyMedicine", "#Trauma", "#NearYou", "#HandsOn"],
+    bannerUrl: "https://images.unsplash.com/photo-1516549655169-df83a0774514?w=800&h=400&fit=crop",
+    contactEmail: "simcenter@apollohospitals.org",
+    createdAt: "2026-09-22"
+  },
+  {
+    id: "evt-3",
+    name: "World Congress of Cardiology & Cardiovascular Health (WCC 2026)",
+    description: "The global flagship gathering for interventional cardiologists, electrophysiologists, and cardiovascular epidemiologists.",
+    date: "Dec 02-05, 2026",
+    time: "All Day",
+    location: "Paris Expo Porte de Versailles, Paris, France",
+    isOnline: false,
+    filterType: "International",
+    organizer: "World Heart Federation (WHF)",
+    registrationLink: "https://worldheart.org/wcc-2026",
+    cmeCredits: 18,
+    tags: ["#Cardiology", "#International", "#GlobalHealth", "#WCC"],
+    bannerUrl: "https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&h=400&fit=crop",
+    contactEmail: "info@worldheart.org",
+    createdAt: "2026-09-18"
+  },
+  {
+    id: "evt-4",
+    name: "Harvard Global Internal Medicine & Clinical Diagnostics Summit",
+    description: "International symposium exploring high-yield diagnostic dilemmas, biomarker innovations, and clinical AI implementation.",
+    date: "Jan 14-16, 2027",
+    time: "08:30 AM EST",
+    location: "Harvard Medical School, Boston, MA, USA",
+    isOnline: false,
+    filterType: "International",
+    organizer: "Harvard Medical School Executive Education",
+    registrationLink: "https://postgraduateeducation.hms.harvard.edu",
+    cmeCredits: 20,
+    tags: ["#InternalMedicine", "#International", "#Diagnostics", "#Harvard"],
+    bannerUrl: "https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?w=800&h=400&fit=crop",
+    contactEmail: "cme@hms.harvard.edu",
+    createdAt: "2026-09-15"
+  },
+  {
+    id: "evt-5",
+    name: "All India Medical & Surgical Conference (AIMCON 2026)",
+    description: "National annual gathering of physicians and surgeons featuring plenary lectures from AIIMS, PGI, and CMC faculties.",
+    date: "Nov 22-25, 2026",
+    time: "09:00 AM - 06:00 PM IST",
+    location: "Vigyan Bhawan, New Delhi",
+    isOnline: false,
+    filterType: "National",
+    organizer: "All India Institute of Medical Sciences & IMA",
+    registrationLink: "https://aimcon2026.med.in",
+    cmeCredits: 8,
+    tags: ["#National", "#Surgery", "#Medicine", "#AIMCON"],
+    bannerUrl: "https://images.unsplash.com/photo-1588776814546-1ffcf47267a5?w=800&h=400&fit=crop",
+    contactEmail: "secretariat@aimcon2026.med.in",
+    createdAt: "2026-09-10"
+  },
+  {
+    id: "evt-6",
+    name: "National Pediatric Intensive Care & Neonatal Assembly",
+    description: "Consensus guidelines on high-frequency oscillatory ventilation and neonatal sepsis management protocols.",
+    date: "Dec 10-12, 2026",
+    time: "10:00 AM - 05:00 PM IST",
+    location: "PGI Chandigarh Auditorium, Chandigarh",
+    isOnline: false,
+    filterType: "National",
+    organizer: "Indian Academy of Pediatrics (IAP)",
+    registrationLink: "https://iapindia.org/events/national2026",
+    cmeCredits: 6,
+    tags: ["#National", "#Pediatrics", "#NICU", "#PGI"],
+    bannerUrl: "https://images.unsplash.com/photo-1584515979956-d9f6e5d09982?w=800&h=400&fit=crop",
+    contactEmail: "pediatrics@iapindia.org",
+    createdAt: "2026-09-12"
+  },
+  {
+    id: "evt-7",
+    name: "Global Webinar on Clinical AI & Deep Learning in Radiology",
+    description: "Interactive virtual workshop detailing chest CT lesion segmentation, stroke detection algorithms, and FDA AI approvals.",
+    date: "Oct 28, 2026",
+    time: "06:00 PM - 08:30 PM IST",
+    location: "Live Virtual Stream (Zoom & MedMedia Auditorium)",
+    isOnline: true,
+    filterType: "Online",
+    organizer: "MedMedia Digital Imaging Council & RSNA Fellows",
+    registrationLink: "https://medmedia.health/events/ai-radiology-live",
+    cmeCredits: 2,
+    tags: ["#Online", "#Radiology", "#AI", "#Webinar"],
+    bannerUrl: "https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&h=400&fit=crop",
+    contactEmail: "webinars@medmedia.health",
+    createdAt: "2026-09-24"
+  },
+  {
+    id: "evt-8",
+    name: "Cadaveric Pelvic & Acetabular Surgical Approach Masterclass",
+    description: "Intensive 2-day cadaveric dissection workshop demonstrating modified Stoppa and ilioinguinal approaches.",
+    date: "Nov 28-29, 2026",
+    time: "08:30 AM - 05:30 PM IST",
+    location: "Anatomy Dissection Hall, Ramaiah Advanced Learning Centre, Bangalore",
+    isOnline: false,
+    filterType: "Offline",
+    organizer: "Department of Anatomy & Orthopedic Trauma Society",
+    registrationLink: "https://msralc.org/surgical-courses/acetabular-2026",
+    cmeCredits: 6,
+    tags: ["#Offline", "#Anatomy", "#Orthopedics", "#Cadaveric"],
+    bannerUrl: "https://images.unsplash.com/photo-1551076805-e1869033e561?w=800&h=400&fit=crop",
+    contactEmail: "courses@msralc.org",
+    createdAt: "2026-09-21"
+  }
+];
+
+export const LIBRARY_ITEMS: LibraryItem[] = [
+  {
+    id: "lib-1",
+    name: "Gray's Anatomy for Students (5th Edition)",
+    author: "Richard Drake, A. Wayne Vogl, Adam W. M. Mitchell",
+    description: "The gold standard anatomical reference for conceptual understanding, surface anatomy, and clinical pearls.",
+    link: "https://www.clinicalkey.com/#!/browse/book/3-s2.0-C20180029337",
+    category: "Anatomy & Embryology",
+    edition: "5th Edition (2024)",
+    coverUrl: "https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=400&h=600&fit=crop",
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "lib-2",
+    name: "Harrison's Principles of Internal Medicine (21st Edition)",
+    author: "Joseph Loscalzo, Anthony Fauci, Dennis Kasper, Stephen Hauser",
+    description: "The definitive landmark textbook for pathophysiology, clinical manifestations, and evidence-based therapeutics.",
+    link: "https://accessmedicine.mhmedical.com/book.aspx?bookid=3095",
+    category: "Internal Medicine",
+    edition: "21st Edition",
+    coverUrl: "https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=400&h=600&fit=crop",
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "lib-3",
+    name: "Robbins & Cotran Pathologic Basis of Disease (10th Edition)",
+    author: "Vinay Kumar, Abul K. Abbas, Jon C. Aster",
+    description: "Readable and authoritative coverage of cellular injury, molecular pathogenesis, and morphologic changes.",
+    link: "https://www.elsevier.com/books/robbins-and-cotran-pathologic-basis-of-disease/kumar/978-0-323-53113-9",
+    category: "Pathology & Microbiology",
+    edition: "10th Edition",
+    coverUrl: "https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&h=600&fit=crop",
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "lib-4",
+    name: "Guyton and Hall Textbook of Medical Physiology (14th Edition)",
+    author: "John E. Hall, Michael E. Hall",
+    description: "Clear and comprehensive presentation of how organ systems interact to maintain bodily homeostasis.",
+    link: "https://www.elsevier.com/books/guyton-and-hall-textbook-of-medical-physiology/hall/978-0-323-59712-8",
+    category: "Physiology",
+    edition: "14th Edition",
+    coverUrl: "https://images.unsplash.com/photo-1589829085413-56de8ae18c73?w=400&h=600&fit=crop",
+    createdAt: "2026-01-01"
+  },
+  {
+    id: "lib-5",
+    name: "Schwartz's Principles of Surgery (11th Edition)",
+    author: "F. Charles Brunicardi, Dana K. Andersen, Timothy R. Billiar",
+    description: "Foundational surgical text detailing trauma management, critical care, and advanced operative procedures.",
+    link: "https://accesssurgery.mhmedical.com/book.aspx?bookid=2576",
+    category: "Surgery",
+    edition: "11th Edition",
+    coverUrl: "https://images.unsplash.com/photo-1532187863486-abf9dbad1b69?w=400&h=600&fit=crop",
+    createdAt: "2026-01-01"
+  }
+];
+
