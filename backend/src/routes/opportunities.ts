@@ -85,13 +85,56 @@ router.post('/communities', requireAuth, async (req: Request, res: Response) => 
         category: data.category || 'Specialty',
         iconUrl: data.iconUrl || data.avatarUrl || '',
         creatorId,
-        maxCapacity: 10000
+        maxCapacity: 10000,
+        memberships: { create: { userId: creatorId } }
       }
     });
     res.status(201).json({ success: true, community: newComm });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: (error as any).errors });
     res.status(500).json({ success: false });
+  }
+});
+
+router.post('/communities/:id/join', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const communityId = req.params.id as string;
+    const userId = (req as any).user.userId as string;
+    const community = await prisma.community.findUnique({ where: { id: communityId } });
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
+
+    const existing = await prisma.communityMember.findUnique({ where: { communityId_userId: { communityId, userId } } });
+    if (existing) {
+      if (community.creatorId === userId) return res.status(400).json({ success: false, message: 'Community creators cannot leave their own community' });
+      await prisma.$transaction([
+        prisma.communityMember.delete({ where: { id: existing.id } }),
+        prisma.community.update({ where: { id: communityId }, data: { membersCount: { decrement: 1 } } })
+      ]);
+      return res.json({ success: true, joined: false, message: 'Left community', membersCount: Math.max(0, community.membersCount - 1) });
+    }
+
+    if (community.membersCount >= community.maxCapacity) return res.status(409).json({ success: false, message: 'Community has reached its capacity' });
+    await prisma.$transaction([
+      prisma.communityMember.create({ data: { communityId, userId } }),
+      prisma.community.update({ where: { id: communityId }, data: { membersCount: { increment: 1 } } })
+    ]);
+    res.status(201).json({ success: true, joined: true, message: 'Joined community', membersCount: community.membersCount + 1 });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to update community membership' });
+  }
+});
+
+router.delete('/communities/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const communityId = req.params.id as string;
+    const user = (req as any).user;
+    const community = await prisma.community.findUnique({ where: { id: communityId } });
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
+    if (community.creatorId !== user.userId && user.role !== 'ADMIN') return res.status(403).json({ success: false, message: 'Only the creator can delete this community' });
+    await prisma.community.delete({ where: { id: communityId } });
+    res.json({ success: true, communityId });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Failed to delete community' });
   }
 });
 

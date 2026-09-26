@@ -331,20 +331,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             Portfolio
           </button>
 
-          {/* Settings & Help is only visible on own profile */}
-          {isSelf && (
-            <button
-              onClick={() => setActiveTab('settings_help')}
-              className={`flex-1 min-w-[120px] py-3 text-center transition cursor-pointer flex items-center justify-center gap-1.5 ${
-                activeTab === 'settings_help'
-                  ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
-                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
-              }`}
-            >
-              <Settings className="w-3.5 h-3.5" />
-              <span>Settings & Help</span>
-            </button>
-          )}
         </div>
       </div>
 

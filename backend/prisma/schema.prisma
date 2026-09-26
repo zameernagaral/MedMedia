@@ -22,28 +22,29 @@ model User {
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
 
-  doctorProfile     DoctorProfile?
-  studentProfile    StudentProfile?
-  sessions          DeviceSession[]
-  posts             Post[]
-  medclips          Medclip[]
-  jobApplications   JobApplication[]
-  stories           Story[]
-  communitiesOwned  Community[]
-  communityMessages CommunityMessage[]
-  supportTickets    SupportTicket[]
-  comments          Comment[]                 @relation("CommentAuthor")
-  isPrivate         Boolean                   @default(false)
-  notifPush         Boolean                   @default(true)
-  notifEmail        Boolean                   @default(true)
-  coverPhotoUrl     String?
-  following         Follow[]                  @relation("Following")
-  followers         Follow[]                  @relation("Followers")
-  bookmarks         Bookmark[]
-  notifications     Notification[]            @relation("NotificationRecipient")
-  sentNotifications Notification[]            @relation("NotificationActor")
-  conversations     ConversationParticipant[]
-  sentMessages      Message[]
+  doctorProfile        DoctorProfile?
+  studentProfile       StudentProfile?
+  sessions             DeviceSession[]
+  posts                Post[]
+  medclips             Medclip[]
+  jobApplications      JobApplication[]
+  stories              Story[]
+  communitiesOwned     Community[]
+  communityMemberships CommunityMember[]
+  communityMessages    CommunityMessage[]
+  supportTickets       SupportTicket[]
+  comments             Comment[]                 @relation("CommentAuthor")
+  isPrivate            Boolean                   @default(false)
+  notifPush            Boolean                   @default(true)
+  notifEmail           Boolean                   @default(true)
+  coverPhotoUrl        String?
+  following            Follow[]                  @relation("Following")
+  followers            Follow[]                  @relation("Followers")
+  bookmarks            Bookmark[]
+  notifications        Notification[]            @relation("NotificationRecipient")
+  sentNotifications    Notification[]            @relation("NotificationActor")
+  conversations        ConversationParticipant[]
+  sentMessages         Message[]
 }
 
 model DoctorProfile {
@@ -262,6 +263,20 @@ model Community {
   announcementText String?
   createdAt        DateTime           @default(now())
   messages         CommunityMessage[]
+  memberships      CommunityMember[]
+}
+
+model CommunityMember {
+  id          String   @id @default(uuid())
+  communityId String
+  userId      String
+  joinedAt    DateTime @default(now())
+
+  community Community @relation(fields: [communityId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([communityId, userId])
+  @@index([userId])
 }
 
 model CommunityMessage {
