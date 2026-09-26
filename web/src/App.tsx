@@ -354,7 +354,7 @@ export const App: React.FC = () => {
           onToggleManagerMode={() => {
             setIsManagerMode(prev => {
               const nextVal = !prev;
-              setToastMessage(nextVal ? "🛡️ Switched to Manager Mode (Admin & Moderation active)" : "Switched to Clinician User Mode");
+              setToastMessage(nextVal ? "ðŸ›¡ï¸ Switched to Manager Mode (Admin & Moderation active)" : "Switched to Clinician User Mode");
               setTimeout(() => setToastMessage(null), 3500);
               return nextVal;
             });
@@ -368,6 +368,7 @@ export const App: React.FC = () => {
           onOpenNotifications={() => setShowNotificationsDrawer(true)}
           onOpenMessages={() => setShowMessagesDrawer(true)}
           onOpenAuth={() => setShowAuthModal(true)}
+          unreadNotificationsCount={notifications.filter(n => !n.isRead).length}
         />
 
         {/* Content Area Routed by Bottom Navigation Tab */}
@@ -405,7 +406,7 @@ export const App: React.FC = () => {
                       <span className="block text-[10px] text-slate-400 dark:text-slate-500">Followers</span>
                     </div>
                     <div>
-                      <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.stats.followersCount + 50}</span>
+                      <span className="font-bold text-slate-800 dark:text-slate-200">{currentUser.stats.followingCount ?? 0}</span>
                       <span className="block text-[10px] text-slate-400 dark:text-slate-500">Following</span>
                     </div>
                   </div>
@@ -538,7 +539,7 @@ export const App: React.FC = () => {
                             : 'bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
                         }`}
                       >
-                        {tag === 'All' ? '🎯 For You' : tag === '#Professors' ? '👨‍🏫 Professors & Faculty' : tag === '#Internships' ? '🏥 Clinical Internships' : tag}
+                        {tag === 'All' ? 'ðŸŽ¯ For You' : tag === '#Professors' ? 'ðŸ‘¨â€ðŸ« Professors & Faculty' : tag === '#Internships' ? 'ðŸ¥ Clinical Internships' : tag}
                       </button>
                     ))}
                   </div>
@@ -551,7 +552,7 @@ export const App: React.FC = () => {
                           <Sparkles className="w-7 h-7" />
                         </div>
                         <h3 className="text-base font-bold text-slate-900 dark:text-white mb-1.5">
-                          Clean Slate • Ready for Testing
+                          Clean Slate â€¢ Ready for Testing
                         </h3>
                         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto mb-5 leading-relaxed">
                           All demo posts have been removed. You can now test sharing clinical cases, bedside discussions, or medical pearls.
@@ -638,7 +639,7 @@ export const App: React.FC = () => {
                         onClick={() => setSelectedProfileUser(null)}
                         className="font-bold text-sky-700 dark:text-sky-400 hover:underline cursor-pointer"
                       >
-                        Return to My Profile →
+                        Return to My Profile â†’
                       </button>
                     </div>
                   )}
@@ -687,12 +688,12 @@ export const App: React.FC = () => {
                   </div>
                   <div className="p-2.5 bg-slate-50 dark:bg-slate-800/60 rounded-xl border border-slate-100 dark:border-slate-800 text-xs">
                     <p className="font-bold text-slate-800 dark:text-slate-200">77th Annual Medical Congress</p>
-                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Nov 14-16 • 6 CME Credits</p>
+                    <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">Nov 14-16 â€¢ 6 CME Credits</p>
                     <button
                       onClick={() => setCurrentTab('opportunities')}
                       className="mt-2 text-[10px] text-sky-600 dark:text-sky-400 font-bold hover:underline cursor-pointer"
                     >
-                      View Venue & RSVP →
+                      View Venue & RSVP â†’
                     </button>
                   </div>
                 </div>
@@ -1018,3 +1019,4 @@ export const App: React.FC = () => {
 };
 
 export default App;
+

@@ -37,7 +37,11 @@
         "postsCount": 0,
         "followersCount": 8920,
         "connectionsCount": 1420
-      }
+      },
+      "joinedCommunityIds": [
+        "comm-1790414850041",
+        "comm-1790414865793"
+      ]
     },
     {
       "id": "doc-2",
@@ -222,7 +226,34 @@
   ],
   "jobs": [],
   "opportunities": [],
-  "communities": [],
+  "communities": [
+    {
+      "id": "comm-1790414865793",
+      "name": "cxv",
+      "iconUrl": "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=160&h=160&fit=crop",
+      "avatarUrl": "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=160&h=160&fit=crop",
+      "description": "xcv",
+      "category": "Neurology",
+      "membersCount": 1,
+      "maxCapacity": 10000,
+      "creatorId": "doc-1",
+      "creatorName": "Dr. Arvind Ramesh",
+      "createdAt": "2026-09-26T09:27:45.793Z"
+    },
+    {
+      "id": "comm-1790414850041",
+      "name": "cvvb",
+      "iconUrl": "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=160&h=160&fit=crop",
+      "avatarUrl": "https://images.unsplash.com/photo-1628348068343-c6a848d2b6dd?w=160&h=160&fit=crop",
+      "description": "cbvc",
+      "category": "Neurology",
+      "membersCount": 3,
+      "maxCapacity": 10000,
+      "creatorId": "doc-1",
+      "creatorName": "Dr. Arvind Ramesh",
+      "createdAt": "2026-09-26T09:27:30.041Z"
+    }
+  ],
   "researchProjects": [],
   "locumGigs": [],
   "locumApplications": [],
@@ -250,5 +281,5 @@
       "isCurrentDevice": true
     }
   ],
-  "lastUpdated": "2026-09-22T18:38:59.579Z"
+  "lastUpdated": "2026-09-26T09:27:45.793Z"
 }

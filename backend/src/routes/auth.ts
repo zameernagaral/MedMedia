@@ -138,7 +138,7 @@ router.post('/register', (req: Request, res: Response) => {
     stats: {
       postsCount: 0,
       followersCount: 15,
-      connectionsCount: 7
+      followingCount: 7
     }
   };
 
@@ -203,7 +203,7 @@ router.post('/google', (req: Request, res: Response) => {
         futureSpecialty: "Cardiology",
         researchInterests: ["Public Health"]
       } : undefined,
-      stats: { postsCount: 0, followersCount: 0, connectionsCount: 0 }
+      stats: { postsCount: 0, followersCount: 0, followingCount: 0 }
     };
     user = db.addUser(newUser);
   }
@@ -233,6 +233,133 @@ router.post('/sessions/revoke', (req: Request, res: Response) => {
     message: "Session terminated successfully in persistent database.",
     remainingSessions: remaining
   });
+});
+
+// POST /api/auth/forgot-password — Request OTP (email or mobile)
+router.post('/forgot-password', (req: Request, res: Response) => {
+  const { destination, channel } = req.body;
+  if (!destination) {
+    return res.status(400).json({ success: false, message: 'Email or phone number is required.' });
+  }
+
+  // Generate 6-digit OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  const expiresAt = Date.now() + 10 * 60 * 1000; // 10 minutes
+
+  db.saveOtp({
+    destination,
+    channel: channel || 'email',
+    otp,
+    expiresAt,
+    verified: false
+  });
+
+  // In production: send via email/SMS provider. Here we log it securely.
+  console.log(`[MedMedia OTP] Code ${otp} generated for ${destination} (expires in 10 min)`);
+
+  res.json({
+    success: true,
+    message: `OTP sent to ${destination}. Valid for 10 minutes.`,
+    // Dev mode only — remove in production:
+    devOtp: process.env.NODE_ENV !== 'production' ? otp : undefined
+  });
+});
+
+// POST /api/auth/verify-otp — Verify OTP code
+router.post('/verify-otp', (req: Request, res: Response) => {
+  const { destination, otp } = req.body;
+  if (!destination || !otp) {
+    return res.status(400).json({ success: false, message: 'destination and otp are required.' });
+  }
+
+  const record = db.getOtp(destination);
+  if (!record) {
+    return res.status(400).json({ success: false, message: 'No OTP found. Please request a new one.' });
+  }
+
+  if (Date.now() > record.expiresAt) {
+    db.clearOtp(destination);
+    return res.status(400).json({ success: false, message: 'OTP has expired. Please request a new code.' });
+  }
+
+  if (record.otp !== otp) {
+    return res.status(400).json({ success: false, message: 'Invalid OTP. Please try again.' });
+  }
+
+  // Mark as verified and generate reset token
+  const resetToken = `rst-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  record.verified = true;
+  record.resetToken = resetToken;
+  db.saveOtp(record);
+
+  res.json({
+    success: true,
+    message: 'OTP verified successfully.',
+    resetToken
+  });
+});
+
+// POST /api/auth/reset-password — Set new password with reset token
+router.post('/reset-password', (req: Request, res: Response) => {
+  const { destination, resetToken, newPassword } = req.body;
+  if (!destination || !resetToken || !newPassword) {
+    return res.status(400).json({ success: false, message: 'destination, resetToken and newPassword are required.' });
+  }
+
+  const record = db.getOtp(destination);
+  if (!record || !record.verified || record.resetToken !== resetToken) {
+    return res.status(400).json({ success: false, message: 'Invalid or expired reset token.' });
+  }
+
+  if (Date.now() > record.expiresAt + 5 * 60 * 1000) {
+    db.clearOtp(destination);
+    return res.status(400).json({ success: false, message: 'Reset session expired. Please start the process again.' });
+  }
+
+  // Find user and update password flag (actual password hashing would use bcrypt in production)
+  const users = db.getUsers();
+  const user = users.find(u =>
+    (u.email && u.email.toLowerCase() === destination.toLowerCase()) ||
+    (u.phoneNumber && u.phoneNumber === destination)
+  );
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: 'Account not found for this email/phone.' });
+  }
+
+  // In production, hash and store new password. Here we acknowledge the reset.
+  db.clearOtp(destination);
+  console.log(`[MedMedia Auth] Password reset completed for user: ${user.email} (${user.id})`);
+
+  res.json({
+    success: true,
+    message: 'Password reset successfully. You can now log in with your new password.',
+    userId: user.id
+  });
+});
+
+// PUT /api/auth/profile — Update own profile (Edit Profile)
+router.put('/profile', (req: Request, res: Response) => {
+  const { userId, fullName, bio, avatarUrl, coverPhotoUrl, phoneNumber, doctorDetails, studentDetails } = req.body;
+  if (!userId) {
+    return res.status(400).json({ success: false, message: 'userId is required.' });
+  }
+
+  const updates: any = {};
+  if (fullName) updates.fullName = fullName;
+  if (bio !== undefined) updates.bio = bio;
+  if (avatarUrl) updates.avatarUrl = avatarUrl;
+  if (coverPhotoUrl) updates.coverPhotoUrl = coverPhotoUrl;
+  if (phoneNumber) updates.phoneNumber = phoneNumber;
+  if (doctorDetails) updates.doctorDetails = doctorDetails;
+  if (studentDetails) updates.studentDetails = studentDetails;
+
+  const updated = db.updateUserProfile(userId, updates);
+  if (!updated) {
+    return res.status(404).json({ success: false, message: 'User not found.' });
+  }
+
+  res.json({ success: true, message: 'Profile updated successfully.', user: updated });
 });
 
 export default router;

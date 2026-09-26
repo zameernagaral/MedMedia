@@ -1,4 +1,4 @@
-import { 
+﻿import { 
   Post, 
   Medclip, 
   Job, 
@@ -167,7 +167,7 @@ export const apiService = {
         isPrivate: Boolean(userData.isPrivate),
         doctorDetails: userData.doctorDetails,
         studentDetails: userData.studentDetails,
-        stats: { postsCount: 0, followersCount: 15, connectionsCount: 8 }
+        stats: { postsCount: 0, followersCount: 15, followingCount: 8 }
       };
     }
 
@@ -796,3 +796,4 @@ export const apiService = {
     return null;
   }
 };
+
