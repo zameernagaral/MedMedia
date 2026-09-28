@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { 
   Plus, 
   Bell, 
@@ -24,6 +24,7 @@ interface TopNavProps {
   onToggleDarkMode?: () => void;
   onClearAllTestData?: () => void;
   unreadNotificationsCount?: number;
+  unreadMessagesCount?: number;
 }
 
 export const TopNav: React.FC<TopNavProps> = ({
@@ -37,9 +38,9 @@ export const TopNav: React.FC<TopNavProps> = ({
   isDarkMode,
   onToggleDarkMode,
   onClearAllTestData,
-  unreadNotificationsCount = 0
+  unreadNotificationsCount = 0,
+  unreadMessagesCount = 0
 }) => {
-  const [unreadMessages, setUnreadMessages] = useState(2);
 
   return (
     <header className="sticky top-0 z-40 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md border-b border-slate-200 dark:border-slate-800 shadow-xs transition-colors duration-200">
@@ -112,16 +113,15 @@ export const TopNav: React.FC<TopNavProps> = ({
           {/* Messages Button */}
           <button
             onClick={() => {
-              setUnreadMessages(0);
               onOpenMessages();
             }}
             className="relative p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
             title="Messages"
           >
             <MessageSquare className="w-5 h-5" />
-            {unreadMessages > 0 && (
+            {unreadMessagesCount > 0 && (
               <span className="absolute top-1.5 right-1.5 w-4 h-4 bg-sky-600 text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                {unreadMessages}
+                {unreadMessagesCount}
               </span>
             )}
           </button>

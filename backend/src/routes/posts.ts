@@ -227,4 +227,31 @@ router.delete('/:id/bookmark', requireAuth, async (req: Request, res: Response) 
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to remove bookmark' }); }
 });
 
+// POST /api/posts/:id/share — increment share count and return shareable URL
+router.post('/:id/share', async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const updated = await prisma.post.update({ where: { id }, data: { sharesCount: { increment: 1 } } });
+    res.json({ success: true, sharesCount: updated.sharesCount, shareUrl: `/posts/${id}` });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to track share' }); }
+});
+
+// DELETE /api/posts/:id
+router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const id = req.params.id as string;
+    const userId = (req as any).user.userId as string;
+    const userRole = (req as any).user.role as string;
+    const post = await prisma.post.findUnique({ where: { id } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (post.userId !== userId && userRole !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    await prisma.post.delete({ where: { id } });
+    res.json({ success: true, postId: id });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to delete post' }); }
+});
+
 export default router;

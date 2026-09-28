@@ -20,8 +20,7 @@ import {
   INITIAL_POSTS, 
   INITIAL_CLIPS, 
   INITIAL_JOBS, 
-  INITIAL_OPPORTUNITIES, 
-  INITIAL_USERS,
+  INITIAL_OPPORTUNITIES,
   INITIAL_STORIES,
   INITIAL_COMMUNITIES,
   INITIAL_RESEARCH_PROJECTS,
@@ -115,7 +114,7 @@ export const apiService = {
     return savedPost;
   },
 
-  // 3. GET USERS (Persistent laptop database)
+  // 3. GET USERS (from real DB, no mock fallback)
   async getUsers(): Promise<UserProfile[]> {
     try {
       const res = await fetchWithAuth(`${API_BASE}/users`);
@@ -135,7 +134,7 @@ export const apiService = {
         return JSON.parse(cached);
       } catch {}
     }
-    return INITIAL_USERS;
+    return []; // no mock fallback — real users only
   },
 
   // 4. REGISTER NEW USER
@@ -941,6 +940,73 @@ export const apiService = {
       const data = await res.json();
       return { success: data.success, message: data.message || '' };
     } catch { return { success: false, message: 'Network error' }; }
+  },
+
+  // ==========================================
+  // SUGGESTED CONNECTIONS
+  // ==========================================
+  async getSuggestedConnections(): Promise<UserProfile[]> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/users/me/suggested`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.suggestions || [];
+      }
+    } catch {}
+    return [];
+  },
+
+  // ==========================================
+  // UNREAD MESSAGES COUNT
+  // ==========================================
+  async getUnreadMessagesCount(): Promise<number> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/users/me/unread-messages`);
+      if (res.ok) {
+        const data = await res.json();
+        return data.count || 0;
+      }
+    } catch {}
+    return 0;
+  },
+
+  // ==========================================
+  // SHARE POST
+  // ==========================================
+  async sharePost(postId: string): Promise<{ sharesCount: number; shareUrl: string } | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/share`, { method: 'POST' });
+      if (res.ok) {
+        const data = await res.json();
+        return { sharesCount: data.sharesCount, shareUrl: data.shareUrl };
+      }
+    } catch {}
+    return null;
+  },
+
+  // ==========================================
+  // MARK ALL NOTIFICATIONS READ
+  // ==========================================
+  async markAllNotificationsRead(): Promise<boolean> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/notifications/read-all`, { method: 'PATCH' });
+      return res.ok;
+    } catch { return false; }
+  },
+
+  // ==========================================
+  // UPDATE PROFILE (settings route)
+  // ==========================================
+  async updateProfile(updates: { fullName?: string; bio?: string; avatarUrl?: string; coverPhotoUrl?: string }): Promise<any | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/settings/profile`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updates)
+      });
+      const data = await res.json();
+      return data.success ? data.user : null;
+    } catch { return null; }
   }
 };
 

@@ -33,4 +33,12 @@ router.patch('/:id/read', requireAuth, async (req: Request, res: Response) => {
 	} catch (error) { res.status(500).json({ success: false, message: 'Failed to mark notification as read' }); }
 });
 
+router.patch('/read-all', requireAuth, async (req: Request, res: Response) => {
+	try {
+		const userId = (req as any).user.userId as string;
+		await prisma.notification.updateMany({ where: { recipientId: userId, isRead: false }, data: { isRead: true } });
+		res.json({ success: true, message: 'All notifications marked as read' });
+	} catch (error) { res.status(500).json({ success: false, message: 'Failed to mark all as read' }); }
+});
+
 export default router;

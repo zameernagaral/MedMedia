@@ -22,12 +22,11 @@ import { SupportModal } from './components/SupportModal';
 import { getPersonalizedFeed, getPersonalizedMedclips } from './utils/algorithmEngine';
 import { apiService } from './services/api';
 import { 
-  INITIAL_USERS, 
-  INITIAL_STORIES, 
   INITIAL_POSTS, 
   INITIAL_CLIPS, 
   INITIAL_JOBS, 
   INITIAL_OPPORTUNITIES, 
+  INITIAL_STORIES,
   INITIAL_SESSIONS,
   INITIAL_NOTIFICATIONS
 } from './data/mockData';
@@ -77,8 +76,9 @@ const MainApp: React.FC = () => {
 
   // Application State
   const { user, setUser, logout } = useAuth();
-  const [users, setUsers] = useState<UserProfile[]>(INITIAL_USERS);
-  const currentUser = user || INITIAL_USERS[2];
+  const [users, setUsers] = useState<UserProfile[]>([]);
+  const currentUser = user!; // guaranteed by ProtectedRoute
+  const [suggestedConnections, setSuggestedConnections] = useState<UserProfile[]>([]);
   const [selectedProfileUser, setSelectedProfileUser] = useState<UserProfile | null>(null);
   const [stories, setStories] = useState(INITIAL_STORIES);
   const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
@@ -95,39 +95,30 @@ const MainApp: React.FC = () => {
   });
   const [sessions, setSessions] = useState(INITIAL_SESSIONS);
   const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [unreadNotifCount, setUnreadNotifCount] = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
 
-  // Load persistent data from laptop database on startup
+  // Load persistent data from backend on startup
   useEffect(() => {
-    // 1. Fetch posts from persistent laptop database
+    if (!user) return; // Wait until auth is resolved
+
+    // 1. Fetch posts from backend DB
     apiService.getPosts().then((loadedPosts) => {
       if (loadedPosts && loadedPosts.length > 0) {
         setPosts(loadedPosts);
       }
     });
 
-    // 2. Fetch users from persistent laptop database
+    // 2. Fetch users from backend DB
     apiService.getUsers().then((loadedUsers) => {
       if (loadedUsers && loadedUsers.length > 0) {
         setUsers(loadedUsers);
-        const saved = localStorage.getItem('medmedia_current_user');
-        if (saved) {
-          try {
-            const parsed = JSON.parse(saved);
-            const found = loadedUsers.find(u => u.id === parsed.id || u.email === parsed.email);
-            if (found) {
-              setUser({
-                ...found,
-                stats: found.stats || parsed.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
-              });
-            }
-          } catch {}
-        }
       }
     });
 
-    // 3. Fetch stories from persistent database & MySQL
+    // 3. Fetch stories from backend DB
     apiService.getStories().then((loadedStories) => {
       if (loadedStories && loadedStories.length > 0) {
         setStories(loadedStories);
@@ -135,35 +126,36 @@ const MainApp: React.FC = () => {
     });
 
     apiService.getClips().then((loadedClips) => {
-      if (loadedClips && loadedClips.length > 0) {
-        setClips(loadedClips);
-      } else {
-        setClips([]); // Override dummy clips if db is empty
-      }
+      setClips(loadedClips && loadedClips.length > 0 ? loadedClips : []);
     });
 
     apiService.getEvents().then((loadedEvents) => {
-      if (loadedEvents) {
-        setEvents(loadedEvents);
-      }
+      if (loadedEvents) setEvents(loadedEvents);
     });
 
-    // 4. Fetch notifications (strictly filtered: conferences, jobs, follows - NO likes or comments)
-    apiService.getNotifications(currentUser.id).then((loadedNotifs) => {
+    // 4. Fetch notifications — all real types from DB
+    apiService.getNotifications().then((loadedNotifs) => {
       if (loadedNotifs && loadedNotifs.length > 0) {
-        const allowedTypes = ['CONFERENCE', 'JOB_UPDATE', 'JOB_APPLICATION', 'FOLLOW_REQUEST', 'FOLLOW_ACCEPTED'];
-        const cleanNotifs = loadedNotifs.filter(n => allowedTypes.includes(n.type));
-        setNotifications(cleanNotifs);
+        setNotifications(loadedNotifs);
+        setUnreadNotifCount(loadedNotifs.filter((n: any) => !n.isRead).length);
       }
     });
 
     // 5. Fetch jobs from backend
     apiService.getJobs().then((loadedJobs) => {
-      if (loadedJobs && loadedJobs.length > 0) {
-        setJobs(loadedJobs);
-      }
+      if (loadedJobs && loadedJobs.length > 0) setJobs(loadedJobs);
     });
-  }, []);
+
+    // 6. Fetch suggested connections from backend
+    apiService.getSuggestedConnections().then((suggestions) => {
+      setSuggestedConnections(suggestions || []);
+    });
+
+    // 7. Fetch unread messages count
+    apiService.getUnreadMessagesCount().then((count) => {
+      setUnreadMsgCount(count);
+    });
+  }, [user?.id]);
 
   // Active Navigation Tab (Slide 5: Home, Medclips, Search, Opportunities, Profile)
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -195,19 +187,21 @@ const MainApp: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleToggleFollow = (targetUserId: string) => {
-    setFollowingIds(prev => {
-      const next = new Set(prev);
-      if (next.has(targetUserId)) {
-        next.delete(targetUserId);
+  const handleToggleFollow = async (targetUserId: string, isCurrentlyFollowing: boolean) => {
+    try {
+      if (isCurrentlyFollowing) {
+        await apiService.unfollowUser(targetUserId);
+        setFollowingIds(prev => { const next = new Set(prev); next.delete(targetUserId); return next; });
       } else {
-        next.add(targetUserId);
+        await apiService.followUser(targetUserId);
+        setFollowingIds(prev => { const next = new Set(prev); next.add(targetUserId); return next; });
       }
-      localStorage.setItem(`medmedia_following_${currentUser.id}`, JSON.stringify([...next]));
-      return next;
-    });
-    // Stub for backend connect if implemented later
-    // fetch(`${API_BASE}/users/${targetUserId}/connect`, { method: 'POST' });
+      localStorage.setItem(`medmedia_following_${currentUser.id}`, JSON.stringify([...followingIds]));
+      // Refresh suggestions after follow action
+      apiService.getSuggestedConnections().then(s => setSuggestedConnections(s || []));
+    } catch (error) {
+      console.error('[MedMedia] Follow toggle failed:', error);
+    }
   };
 
   const handleDeleteJob = async (jobId: string) => {
@@ -242,11 +236,7 @@ const MainApp: React.FC = () => {
     setPosts(posts.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
-        return {
-          ...p,
-          isLiked,
-          likesCount: p.likesCount + (isLiked ? 1 : -1)
-        };
+        return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
       }
       return p;
     }));
@@ -257,11 +247,7 @@ const MainApp: React.FC = () => {
     setPosts(posts.map(p => {
       if (p.id === postId) {
         const isSaved = !p.isSaved;
-        return {
-          ...p,
-          isSaved,
-          savesCount: p.savesCount + (isSaved ? 1 : -1)
-        };
+        return { ...p, isSaved, savesCount: p.savesCount + (isSaved ? 1 : -1) };
       }
       return p;
     }));
@@ -398,9 +384,13 @@ const MainApp: React.FC = () => {
             setShowCreateModal(true);
           }}
           onOpenNotifications={() => setShowNotificationsDrawer(true)}
-          onOpenMessages={() => setShowMessagesDrawer(true)}
+          onOpenMessages={() => {
+            setShowMessagesDrawer(true);
+            setUnreadMsgCount(0); // Mark as seen locally
+          }}
           onOpenAuth={() => setShowAuthModal(true)}
-          unreadNotificationsCount={notifications.filter(n => !n.isRead).length}
+          unreadNotificationsCount={unreadNotifCount}
+          unreadMessagesCount={unreadMsgCount}
         />
 
         {/* Content Area Routed by Bottom Navigation Tab */}
@@ -642,9 +632,15 @@ const MainApp: React.FC = () => {
                     onSavePost={handleSavePost}
                     onConnectUser={async (id, isFollowing) => {
                       try {
-                        if (isFollowing) await apiService.followUser(id);
-                        else await apiService.unfollowUser(id);
+                        if (isFollowing) {
+                          await apiService.followUser(id);
+                          setFollowingIds(prev => { const next = new Set(prev); next.add(id); return next; });
+                        } else {
+                          await apiService.unfollowUser(id);
+                          setFollowingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
+                        }
                         setToastMessage(isFollowing ? 'Following user.' : 'Unfollowed user.');
+                        apiService.getSuggestedConnections().then(s => setSuggestedConnections(s || []));
                       } catch (error) {
                         setToastMessage(error instanceof Error ? error.message : 'Could not update follow status.');
                       }
@@ -680,28 +676,32 @@ const MainApp: React.FC = () => {
                     </h4>
                   </div>
 
-                  {users.filter(u => u.id !== currentUser.id).slice(0, 3).length > 0 ? (
-                    users.filter(u => u.id !== currentUser.id).slice(0, 3).map(u => (
+                  {suggestedConnections.filter(u => u.id !== currentUser.id).slice(0, 3).length > 0 ? (
+                    suggestedConnections.filter(u => u.id !== currentUser.id).slice(0, 3).map(u => (
                       <div key={u.id} className="flex items-center gap-2.5">
                         <img
-                          src={u.avatarUrl || "https://images.unsplash.com/photo-1594824813581-2292f725350c?w=100&h=100&fit=crop"}
+                          src={u.avatarUrl || `https://ui-avatars.com/api/?name=${encodeURIComponent(u.fullName)}&background=0284c7&color=fff`}
                           alt=""
                           className="w-10 h-10 rounded-full object-cover"
                         />
                         <div className="flex-1">
                           <p className="text-xs font-bold text-slate-900 dark:text-white">{u.fullName}</p>
-                          <p className="text-[10px] text-slate-500 dark:text-slate-400">@{u.username}</p>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400">{u.doctorDetails?.specialization || u.studentDetails?.discipline || u.role}</p>
                         </div>
                         <button
-                          onClick={() => alert(`Following ${u.fullName}!`)}
-                          className="p-1.5 rounded-lg bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900 cursor-pointer"
+                          onClick={() => handleToggleFollow(u.id, followingIds.has(u.id))}
+                          className={`p-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
+                            followingIds.has(u.id)
+                              ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                              : 'bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 hover:bg-sky-100 dark:hover:bg-sky-900'
+                          }`}
                         >
                           <UserPlus className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     ))
                   ) : (
-                    <p className="text-[10px] text-slate-500 text-center py-2">No other users in the network yet.</p>
+                    <p className="text-[10px] text-slate-500 text-center py-2">No suggestions yet. Follow more users!</p>
                   )}
                 </div>
 
@@ -835,8 +835,10 @@ const MainApp: React.FC = () => {
             {notifications.length > 0 && (
               <div className="pt-3 border-t border-slate-200 dark:border-slate-800">
                 <button
-                  onClick={() => {
+                  onClick={async () => {
                     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                    setUnreadNotifCount(0);
+                    await apiService.markAllNotificationsRead();
                     setToastMessage("All alerts marked as read.");
                     setTimeout(() => setToastMessage(null), 2500);
                   }}
@@ -938,10 +940,15 @@ const MainApp: React.FC = () => {
           currentUser={currentUser}
           onClose={() => setShowEditProfileModal(false)}
           onSubmit={async (updates) => {
-            // Placeholder: await apiService.updateProfile(currentUser.id, updates);
-            // Updating local state for demo purposes:
-            setUser({ ...currentUser, ...updates } as any);
-            setToastMessage("Profile updated successfully!");
+            const updated = await apiService.updateProfile({ fullName: updates.fullName, bio: updates.bio as string });
+            if (updated) {
+              setUser({ ...currentUser, ...updated });
+              setToastMessage("Profile updated successfully!");
+            } else {
+              // Optimistic local update as fallback
+              setUser({ ...currentUser, ...updates } as any);
+              setToastMessage("Profile updated (offline mode).");
+            }
             setTimeout(() => setToastMessage(null), 3000);
           }}
         />

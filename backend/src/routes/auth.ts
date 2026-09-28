@@ -204,7 +204,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
 
 // POST /api/auth/google
 router.post('/google', async (req: Request, res: Response) => {
-  res.json({ success: true, message: 'Google Auth logic not yet migrated to Prisma' });
+  res.status(501).json({ success: false, message: 'Google Auth not yet implemented on this deployment' });
 });
 
 // POST /api/auth/logout
@@ -213,19 +213,74 @@ router.post('/logout', (req: Request, res: Response) => {
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
+// GET /api/auth/me — validate token and return current user
+router.get('/me', async (req: Request, res: Response) => {
+  try {
+    let token = req.cookies?.token;
+    if (!token && req.headers.authorization?.startsWith('Bearer ')) {
+      token = req.headers.authorization.split(' ')[1];
+    }
+    if (!token) return res.status(401).json({ success: false, message: 'No token' });
+
+    const decoded: any = require('jsonwebtoken').verify(token, JWT_SECRET);
+    const user = await prisma.user.findUnique({
+      where: { id: decoded.userId },
+      include: { doctorProfile: true, studentProfile: true }
+    });
+    if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+
+    res.json({
+      success: true,
+      user: {
+        id: user.id,
+        fullName: user.fullName,
+        username: user.username,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        role: user.role,
+        isPrivate: user.isPrivate,
+        verificationStatus: user.verificationStatus,
+        bio: user.bio,
+        coverPhotoUrl: user.coverPhotoUrl,
+        badgeTitle: user.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
+        doctorDetails: user.doctorProfile ? {
+          specialization: user.doctorProfile.specialization,
+          hospitalAffiliation: user.doctorProfile.hospitalAffiliation,
+          yearsExperience: user.doctorProfile.yearsExperience,
+          medicalCouncilRegNumber: user.doctorProfile.medicalCouncilRegNumber,
+          qualifications: (() => { try { return JSON.parse(user.doctorProfile!.qualifications); } catch { return []; } })()
+        } : undefined,
+        studentDetails: user.studentProfile ? {
+          discipline: user.studentProfile.discipline,
+          collegeName: user.studentProfile.collegeName,
+          academicYear: user.studentProfile.academicYear,
+          futureSpecialty: user.studentProfile.futureSpecialty
+        } : undefined,
+        stats: {
+          postsCount: await prisma.post.count({ where: { userId: user.id } }),
+          followersCount: await prisma.follow.count({ where: { followingId: user.id } }),
+          followingCount: await prisma.follow.count({ where: { followerId: user.id } })
+        }
+      }
+    });
+  } catch (error) {
+    res.status(401).json({ success: false, message: 'Invalid or expired token' });
+  }
+});
+
 // POST /api/auth/verify-otp
 router.post('/verify-otp', async (req: Request, res: Response) => {
-  res.json({ success: true, message: 'OTP verified (Mock)', token: 'mock-jwt-token' });
+  res.status(501).json({ success: false, message: 'OTP verification not configured on this deployment' });
 });
 
 // POST /api/auth/request-password-reset
 router.post('/request-password-reset', async (req: Request, res: Response) => {
-  res.json({ success: true, message: 'Reset email sent (Mock)' });
+  res.status(501).json({ success: false, message: 'Password reset email not configured on this deployment' });
 });
 
 // POST /api/auth/reset-password
 router.post('/reset-password', async (req: Request, res: Response) => {
-  res.json({ success: true, message: 'Password reset (Mock)' });
+  res.status(501).json({ success: false, message: 'Password reset not configured on this deployment' });
 });
 
 export default router;

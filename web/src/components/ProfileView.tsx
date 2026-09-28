@@ -222,9 +222,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <h1 className="text-xl font-bold text-slate-900 dark:text-white">{user.fullName}</h1>
-              <span title="Verified Account">
-                <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400 fill-sky-100 dark:fill-sky-950" />
-              </span>
+              {(user as any).verificationStatus === 'VERIFIED' && (
+                <span title="Verified Account">
+                  <ShieldCheck className="w-5 h-5 text-sky-600 dark:text-sky-400 fill-sky-100 dark:fill-sky-950" />
+                </span>
+              )}
             </div>
 
             <p className="text-xs font-bold text-sky-600 dark:text-sky-400 mt-0.5">

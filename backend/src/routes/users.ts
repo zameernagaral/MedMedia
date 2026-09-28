@@ -116,9 +116,141 @@ router.delete('/:id/follow', requireAuth, async (req: Request, res: Response) =>
 router.get('/', async (req: Request, res: Response) => {
   try {
     const { role } = req.query;
-    const users = await prisma.user.findMany({ where: role ? { role: role as string } : {}, take: 50 });
-    res.json({ success: true, users });
+    const users = await prisma.user.findMany({
+      where: role ? { role: role as string } : {},
+      include: {
+        doctorProfile: true,
+        studentProfile: true,
+        _count: { select: { followers: true, following: true, posts: true } }
+      },
+      take: 100,
+      orderBy: { createdAt: 'desc' }
+    });
+    res.json({
+      success: true,
+      users: users.map(u => ({
+        id: u.id,
+        fullName: u.fullName,
+        username: u.username,
+        avatarUrl: u.avatarUrl,
+        role: u.role,
+        bio: u.bio,
+        verificationStatus: u.verificationStatus,
+        isPrivate: u.isPrivate,
+        coverPhotoUrl: u.coverPhotoUrl,
+        badgeTitle: u.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
+        doctorDetails: u.doctorProfile ? {
+          specialization: u.doctorProfile.specialization,
+          hospitalAffiliation: u.doctorProfile.hospitalAffiliation,
+          yearsExperience: u.doctorProfile.yearsExperience,
+          medicalCouncilRegNumber: u.doctorProfile.medicalCouncilRegNumber,
+          qualifications: (() => { try { return JSON.parse(u.doctorProfile!.qualifications); } catch { return []; } })()
+        } : undefined,
+        studentDetails: u.studentProfile ? {
+          discipline: u.studentProfile.discipline,
+          collegeName: u.studentProfile.collegeName,
+          academicYear: u.studentProfile.academicYear,
+          futureSpecialty: u.studentProfile.futureSpecialty,
+          researchInterests: u.studentProfile.researchInterests
+        } : undefined,
+        stats: {
+          postsCount: u._count.posts,
+          followersCount: u._count.followers,
+          followingCount: u._count.following
+        }
+      }))
+    });
   } catch (error) { res.status(500).json({ success: false }); }
+});
+
+
+// GET /api/users/me/suggested — suggested connections based on specialty/hospital/college
+router.get('/me/suggested', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const currentUser = await prisma.user.findUnique({
+      where: { id: userId },
+      include: { doctorProfile: true, studentProfile: true }
+    });
+    if (!currentUser) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Get users already followed
+    const alreadyFollowing = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true }
+    });
+    const followingIds = new Set(alreadyFollowing.map(f => f.followingId));
+    followingIds.add(userId); // exclude self
+
+    // Build where conditions for similarity signals
+    const orConditions: any[] = [];
+    if (currentUser.role === 'DOCTOR' && currentUser.doctorProfile) {
+      orConditions.push({ role: 'DOCTOR', doctorProfile: { specialization: currentUser.doctorProfile.specialization } });
+      orConditions.push({ role: 'DOCTOR', doctorProfile: { hospitalAffiliation: currentUser.doctorProfile.hospitalAffiliation } });
+    }
+    if (currentUser.role === 'STUDENT' && currentUser.studentProfile) {
+      orConditions.push({ role: 'STUDENT', studentProfile: { collegeName: currentUser.studentProfile.collegeName } });
+      orConditions.push({ role: 'STUDENT', studentProfile: { discipline: currentUser.studentProfile.discipline } });
+    }
+    // Always include some doctors for students and vice versa
+    orConditions.push({ role: currentUser.role === 'DOCTOR' ? 'STUDENT' : 'DOCTOR' });
+
+    const candidates = await prisma.user.findMany({
+      where: {
+        id: { notIn: Array.from(followingIds) },
+        OR: orConditions.length > 0 ? orConditions : undefined
+      },
+      include: {
+        doctorProfile: true,
+        studentProfile: true,
+        _count: { select: { followers: true, following: true } }
+      },
+      take: 10,
+      orderBy: { createdAt: 'desc' }
+    });
+
+    res.json({
+      success: true,
+      suggestions: candidates.map(u => ({
+        id: u.id,
+        fullName: u.fullName,
+        username: u.username,
+        avatarUrl: u.avatarUrl,
+        role: u.role,
+        verificationStatus: u.verificationStatus,
+        bio: u.bio,
+        doctorDetails: u.doctorProfile ? {
+          specialization: u.doctorProfile.specialization,
+          hospitalAffiliation: u.doctorProfile.hospitalAffiliation,
+          yearsExperience: u.doctorProfile.yearsExperience
+        } : undefined,
+        studentDetails: u.studentProfile ? {
+          discipline: u.studentProfile.discipline,
+          collegeName: u.studentProfile.collegeName,
+          academicYear: u.studentProfile.academicYear
+        } : undefined,
+        stats: {
+          followersCount: u._count.followers,
+          followingCount: u._count.following
+        }
+      }))
+    });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to fetch suggestions' }); }
+});
+
+// GET /api/users/me/unread-messages — count unread messages across all conversations
+router.get('/me/unread-messages', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const count = await prisma.message.count({
+      where: {
+        conversation: { participants: { some: { userId } } },
+        senderId: { not: userId },
+        isRead: false
+      }
+    });
+    res.json({ success: true, count });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to fetch unread count' }); }
 });
 
 router.get('/me/bookmarks', requireAuth, async (req: Request, res: Response) => {

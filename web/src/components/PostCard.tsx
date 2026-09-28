@@ -43,7 +43,7 @@ export const PostCard: React.FC<PostCardProps> = ({
 }) => {
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
-  const [commentCount, setCommentCount] = useState(post.commentsCount || 2);
+  const [commentCount, setCommentCount] = useState(post.commentsCount || 0);
   const [copiedLink, setCopiedLink] = useState(false);
   const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
 

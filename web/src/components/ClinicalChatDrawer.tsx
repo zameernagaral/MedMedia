@@ -265,7 +265,9 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
   currentUser,
   onClose
 }) => {
+  // Start with demo conversations; replace with real ones when API loads
   const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
+  const [isLoadingConvs, setIsLoadingConvs] = useState(false);
   const [activeConvId, setActiveConvId] = useState<string>('conv-1');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [inputText, setInputText] = useState<string>('');
@@ -298,6 +300,63 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
   const docInputRef = useRef<HTMLInputElement>(null);
 
   const activeConversation = conversations.find(c => c.id === activeConvId) || conversations[0];
+
+  // Load real conversations from API when drawer opens
+  useEffect(() => {
+    if (!isOpen || !currentUser?.id) return;
+    setIsLoadingConvs(true);
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
+    fetch(`${API_BASE}/conversations`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.conversations) && data.conversations.length > 0) {
+          // Map real DB conversations to our local Conversation shape
+          const mapped: Conversation[] = data.conversations.map((c: any) => {
+            const otherParticipant = c.participants?.find((p: any) => p.user?.id !== currentUser.id);
+            const lastMsg = c.messages?.[0];
+            return {
+              id: c.id,
+              name: otherParticipant?.user?.fullName || 'Unknown',
+              avatar: otherParticipant?.user?.avatarUrl || `https://ui-avatars.com/api/?name=U&background=0284c7&color=fff`,
+              role: 'DOCTOR' as const,
+              specialtyOrDiscipline: '',
+              isOnline: false,
+              lastMessage: lastMsg?.content || '',
+              lastTime: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
+              unreadCount: 0,
+              messages: [] // messages loaded on-demand when conversation is opened
+            };
+          });
+          setConversations(mapped);
+          if (mapped.length > 0) setActiveConvId(mapped[0].id);
+        }
+        // If no real conversations, keep demo conversations
+      })
+      .catch(() => { /* backend unreachable, keep demo conversations */ })
+      .finally(() => setIsLoadingConvs(false));
+  }, [isOpen, currentUser?.id]);
+
+  // Load messages for a conversation when selected
+  const loadConversationMessages = (convId: string) => {
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
+    // Only load from API for real UUIDs (not demo conv-1, conv-2, etc.)
+    if (convId.startsWith('conv-')) return;
+    fetch(`${API_BASE}/conversations/${convId}/messages`, { credentials: 'include' })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success && Array.isArray(data.messages)) {
+          const mapped: Message[] = data.messages.map((m: any) => ({
+            id: m.id,
+            sender: m.senderId === currentUser.id ? 'You' : m.sender || 'Peer',
+            text: m.content,
+            time: new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            isMe: m.senderId === currentUser.id
+          }));
+          setConversations(prev => prev.map(c => c.id === convId ? { ...c, messages: mapped } : c));
+        }
+      })
+      .catch(() => {});
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -351,7 +410,19 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     setShowEmojiPicker(false);
     setShowAttachMenu(false);
 
-    // Auto-Reply Simulator from Peer
+    // Send to real API if it's a real conversation (not demo)
+    if (activeConvId && !activeConvId.startsWith('conv-')) {
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
+      fetch(`${API_BASE}/conversations/${activeConvId}/messages`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ content: userMsgText })
+      }).catch(() => {});
+      return; // Don't run auto-reply for real conversations
+    }
+
+    // Auto-Reply Simulator for demo conversations only
     setIsTypingPeer(true);
     const targetPeerName = activeConversation.name;
     const targetConvId = activeConvId;
@@ -700,6 +771,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                   onClick={() => {
                     setActiveConvId(conv.id);
                     setMobileView('thread');
+                    loadConversationMessages(conv.id); // Load real messages from API
                   }}
                   className={`p-3 flex items-start gap-3 cursor-pointer transition ${
                     isActive

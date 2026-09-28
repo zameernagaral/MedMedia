@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import axios from 'axios';
 import { UserProfile } from '../types';
+
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:5001/api'
+  : '/api';
 
 interface AuthContextType {
   user: UserProfile | null;
@@ -27,6 +30,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     const initAuth = async () => {
       try {
+        // 1. Validate session server-side via httpOnly cookie
+        const res = await fetch(`${API_BASE}/auth/me`, { credentials: 'include' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.success && data.user) {
+            const safeUser = {
+              ...data.user,
+              stats: data.user.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
+            };
+            setUser(safeUser);
+            localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
+            setLoading(false);
+            return;
+          }
+        }
+      } catch (e) {
+        // Backend unreachable — fall through to localStorage cache
+        console.warn('[AuthContext] Backend unreachable, using cached session');
+      }
+
+      // 2. Fallback: restore from localStorage (offline/backend unreachable)
+      try {
         const savedUser = localStorage.getItem('medmedia_current_user');
         if (savedUser) {
           const parsed = JSON.parse(savedUser);
@@ -38,30 +63,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
         }
       } catch (e) {
-        console.error(e);
-      } finally {
-        setLoading(false);
+        console.error('[AuthContext] Failed to restore user from localStorage:', e);
       }
+      setLoading(false);
     };
     initAuth();
   }, []);
 
   const login = (token: string, userData: UserProfile) => {
-    // Ensure stats object always exists to prevent frontend crashes
     const safeUser = {
       ...userData,
       stats: userData.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
     };
     setUser(safeUser);
     localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
-    // We don't store token in localStorage because it's in httpOnly cookie!
+    // Token is stored in httpOnly cookie — we do NOT store it in localStorage
   };
 
   const logout = async () => {
     try {
-      await axios.post('http://localhost:5001/api/auth/logout', {}, { withCredentials: true });
+      await fetch(`${API_BASE}/auth/logout`, { method: 'POST', credentials: 'include' });
     } catch (e) {
-      console.error(e);
+      console.error('[AuthContext] Logout error:', e);
     }
     setUser(null);
     localStorage.removeItem('medmedia_current_user');
@@ -73,3 +96,5 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     </AuthContext.Provider>
   );
 };
+
+
