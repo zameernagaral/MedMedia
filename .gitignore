@@ -21,6 +21,7 @@ build/
 .env
 .env*.local
 *.pem
+backend/prisma/dev.db
 
 # Logs
 npm-debug.log*

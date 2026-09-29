@@ -625,6 +625,7 @@ const MainApp: React.FC = () => {
                   <ProfileView
                     user={selectedProfileUser || currentUser}
                     posts={posts.filter(p => p.authorId === (selectedProfileUser ? selectedProfileUser.id : currentUser.id))}
+                    clips={clips.filter(clip => clip.authorId === (selectedProfileUser ? selectedProfileUser.id : currentUser.id))}
                     currentUser={currentUser}
                     deviceSessions={sessions}
                     onRevokeSession={handleRevokeSession}

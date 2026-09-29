@@ -14,8 +14,7 @@ const authLimiter = rateLimit({
 
 
 const router = Router();
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("FATAL: JWT_SECRET environment variable is missing");
+const JWT_SECRET = env.JWT_SECRET;
 
 // POST /api/auth/login
 router.post('/login', authLimiter, async (req: Request, res: Response) => {

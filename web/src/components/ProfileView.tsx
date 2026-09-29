@@ -14,6 +14,7 @@ import {
   HelpCircle, 
   Trash2, 
   Share2, 
+  Play,
   CheckCircle2, 
   Sparkles,
   Settings,
@@ -25,7 +26,7 @@ import {
   EyeOff,
   LifeBuoy
 } from 'lucide-react';
-import { UserProfile, Post, DeviceSession } from '../types';
+import { UserProfile, Post, Medclip, DeviceSession } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { PostCard } from './PostCard';
 import { apiService } from '../services/api';
@@ -34,6 +35,7 @@ import { SettingsAndHelp } from './SettingsAndHelp';
 interface ProfileViewProps {
   user: UserProfile;
   posts: Post[];
+  clips: Medclip[];
   currentUser: UserProfile;
   deviceSessions: DeviceSession[];
   onRevokeSession: (sessionId: string) => void;
@@ -59,6 +61,7 @@ const BANNER_PRESETS = [
 export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   posts,
+  clips,
   currentUser,
   deviceSessions,
   onRevokeSession,
@@ -72,7 +75,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isDarkMode,
   onToggleDarkMode
 }) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'settings_help'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'about' | 'settings_help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
   const [isFollowing, setIsFollowing] = useState(Boolean((user as UserProfile & { isFollowing?: boolean }).isFollowing));
   const [coverPhoto, setCoverPhoto] = useState(user.coverPhotoUrl || '');
@@ -321,6 +324,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           >
             Posts ({posts.length})
           </button>
+
+          <button
+            onClick={() => setActiveTab('reels')}
+            className={`flex-1 min-w-[80px] py-3 text-center transition cursor-pointer ${
+              activeTab === 'reels'
+                ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+            }`}
+          >
+            Reels ({clips.length})
+          </button>
           
           <button
             onClick={() => setActiveTab('about')}
@@ -370,6 +384,51 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onSave={onSavePost}
               />
             ))
+          )}
+        </div>
+      )}
+
+      {activeTab === 'reels' && (
+        <div>
+          {isAccountLocked ? (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl p-10 text-center shadow-xs">
+              <div className="w-16 h-16 mx-auto rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-500 dark:text-slate-400 mb-4">
+                <Lock className="w-8 h-8" />
+              </div>
+              <h3 className="text-base font-bold text-slate-900 dark:text-white">This Account is Private</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-sm mx-auto">
+                Follow @{user.username} to view their reels.
+              </p>
+              <button
+                onClick={() => setIsFollowing(true)}
+                className="mt-5 px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition shadow-sm"
+              >
+                Follow to View Reels
+              </button>
+            </div>
+          ) : clips.length === 0 ? (
+            <div className="bg-white dark:bg-slate-900 p-8 rounded-2xl text-center text-xs text-slate-500 dark:text-slate-400 border border-slate-200 dark:border-slate-800">
+              No reels published yet.
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {clips.map((clip) => (
+                <article key={clip.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                  <video
+                    src={clip.videoUrl}
+                    poster={clip.thumbnailUrl && clip.thumbnailUrl !== clip.videoUrl ? clip.thumbnailUrl : undefined}
+                    controls
+                    playsInline
+                    preload="metadata"
+                    aria-label={`Play reel: ${clip.caption}`}
+                    className="aspect-[9/16] w-full bg-slate-950 object-cover"
+                  />
+                  <p className="line-clamp-2 px-3 py-2 text-xs text-slate-700 dark:text-slate-300">
+                    {clip.caption}
+                  </p>
+                </article>
+              ))}
+            </div>
           )}
         </div>
       )}
