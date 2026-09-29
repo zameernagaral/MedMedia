@@ -95,14 +95,14 @@ redisClient.on('error', (err) => {
   }
 });
 
-const isTest = process.env.NODE_ENV === 'test';
+const useRedis = process.env.USE_REDIS === 'true';
 
 const globalLimiter = rateLimit({
-  store: isTest
-    ? undefined
-    : new RedisStore({
+  store: useRedis
+    ? new RedisStore({
         sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any
-      }),
+      })
+    : undefined,
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200, // limit each IP to 200 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
