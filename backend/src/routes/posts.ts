@@ -254,4 +254,92 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to delete post' }); }
 });
 
+// Middleware to record a unique view per authenticated user
+router.get('/:id', async (req: Request, res: Response) => {
+  try {
+    const postId = req.params.id as string;
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      include: { user: { include: { doctorProfile: true, studentProfile: true } } }
+    });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+
+    // Record view if user is authenticated
+    const authHeader = req.headers.authorization;
+    let token: string | undefined;
+    if (authHeader && authHeader.startsWith('Bearer ')) token = authHeader.split(' ')[1];
+    if (!token && req.cookies?.token) token = req.cookies.token;
+    if (token) {
+      try {
+        const decoded: any = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
+        const userId = decoded.userId;
+        // Upsert a view record (unique per user‑post)
+        await prisma.postView.upsert({
+          where: { userId_postId: { userId, postId } },
+          create: { userId, postId },
+          update: { viewedAt: new Date() }
+        });
+        // Increment counter safely
+        await prisma.post.update({ where: { id: postId }, data: { viewsCount: { increment: 1 } } });
+      } catch (_) { /* ignore invalid token */ }
+    }
+
+    const response = {
+      id: post.id,
+      authorId: post.userId,
+      authorName: post.user.fullName,
+      authorUsername: post.user.username,
+      authorAvatar: post.user.avatarUrl,
+      content: post.content,
+      mediaUrls: post.mediaUrls ? JSON.parse(post.mediaUrls) : [],
+      clinicalTags: post.clinicalTags ? JSON.parse(post.clinicalTags) : [],
+      likesCount: post.likesCount,
+      commentsCount: post.commentsCount,
+      savesCount: post.savesCount,
+      sharesCount: post.sharesCount,
+      viewsCount: post.viewsCount,
+      createdAt: post.createdAt.toISOString()
+    };
+    res.json({ success: true, post: response });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Failed to fetch post' });
+  }
+});
+
+// Owner‑only insights endpoint
+router.get('/:id/insights', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const postId = req.params.id as string;
+    const userId = (req as any).user.userId;
+    const post = await prisma.post.findUnique({ where: { id: postId } });
+    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (post.userId !== userId && (req as any).user.role !== 'ADMIN') {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    // Gather related data
+    const views = await prisma.postView.findMany({ where: { postId }, select: { userId: true, viewedAt: true } });
+    const likes = await prisma.post.findMany({ where: { id: postId }, select: { likesCount: true } }); // placeholder – real likes table not defined yet
+    const comments = await prisma.comment.findMany({ where: { postId }, select: { authorId: true, createdAt: true } });
+    const saves = await prisma.bookmark.findMany({ where: { postId }, select: { userId: true } });
+    const shares = await prisma.post.findMany({ where: { id: postId }, select: { sharesCount: true } }); // placeholder
+    res.json({
+      success: true,
+      insights: {
+        totalViews: views.length,
+        totalLikes: post.likesCount,
+        totalComments: post.commentsCount,
+        totalSaves: post.savesCount,
+        totalShares: post.sharesCount,
+        viewers: views.map(v => v.userId),
+        likers: [], // would come from a Likes table if it existed
+        commenters: comments.map(c => c.authorId),
+        savers: saves.map(s => s.userId),
+        sharers: [] // would come from a Shares table if it existed
+      }
+    });
+  } catch (e) {
+    res.status(500).json({ success: false, message: 'Insights error' });
+  }
+});
+
 export default router;

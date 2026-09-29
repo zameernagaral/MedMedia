@@ -45,6 +45,8 @@ model User {
   sentNotifications    Notification[]            @relation("NotificationActor")
   conversations        ConversationParticipant[]
   sentMessages         Message[]
+  postViews            PostView[]                @relation("UserPostViews")
+  projectMessagesSent  ProjectMessage[]          @relation("UserProjectMessages")
 }
 
 model DoctorProfile {
@@ -101,9 +103,11 @@ model Post {
   commentsCount Int        @default(0)
   savesCount    Int        @default(0)
   sharesCount   Int        @default(0)
+  viewsCount    Int        @default(0)
   createdAt     DateTime   @default(now())
   bookmarks     Bookmark[]
-  comments      Comment[]
+  comments      Comment[],
+  postViews    PostView[]
 }
 
 model Comment {
@@ -304,17 +308,7 @@ model Story {
   expiresAt    DateTime
 }
 
-model ResearchProject {
-  id               String   @id @default(uuid())
-  title            String
-  field            String
-  phase            String
-  leadInvestigator String
-  institution      String
-  description      String
-  createdAt        DateTime @default(now())
-}
-
+// Duplicate ResearchProject model removed
 model LocumGig {
   id           String   @id @default(uuid())
   title        String
@@ -371,4 +365,59 @@ model SupportTicket {
   category  String   @default("general")
   status    String   @default("open")
   createdAt DateTime @default(now())
+}
+
+model PostView {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  viewedAt  DateTime @default(now())
+  user      User     @relation("UserPostViews", fields: [userId], references: [id], onDelete: Cascade)
+  post      Post     @relation("PostPostViews", fields: [postId], references: [id], onDelete: Cascade)
+  @@unique([userId, postId])
+}
+
+model ProjectMedia {
+  id        String   @id @default(uuid())
+  projectId String
+  mediaUrl  String
+  type      String   // IMAGE or VIDEO
+  createdAt DateTime @default(now())
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ProjectMessage {
+  id        String   @id @default(uuid())
+  projectId String
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  sender    User @relation("UserProjectMessages", fields: [senderId], references: [id], onDelete: Cascade)
+}
+
+model ProjectPaper {
+  id          String   @id @default(uuid())
+  projectId   String
+  title       String
+  abstract    String
+  documentUrl String
+  references  String?
+  status      String   @default("DRAFT")
+  createdAt   DateTime @default(now())
+  project     ResearchProject @relation("ResearchProjectMessages", fields: [projectId], references: [id], onDelete: Cascade)
+}
+
+model ResearchProject {
+  id               String   @id @default(uuid())
+  title            String
+  field            String
+  phase            String
+  leadInvestigator String
+  institution      String
+  description      String
+  createdAt        DateTime @default(now())
+  media            ProjectMedia[]
+  messages         ProjectMessage[] @relation("ResearchProjectMessages")
+  paper            ProjectPaper?
 }
