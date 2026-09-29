@@ -106,8 +106,8 @@ model Post {
   viewsCount    Int        @default(0)
   createdAt     DateTime   @default(now())
   bookmarks     Bookmark[]
-  comments      Comment[],
-  postViews    PostView[]
+  comments      Comment[]
+  postViews     PostView[] @relation("PostPostViews")
 }
 
 model Comment {
@@ -392,20 +392,20 @@ model ProjectMessage {
   senderId  String
   content   String
   createdAt DateTime @default(now())
-  project   ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  project   ResearchProject @relation("ResearchProjectMessages", fields: [projectId], references: [id], onDelete: Cascade)
   sender    User @relation("UserProjectMessages", fields: [senderId], references: [id], onDelete: Cascade)
 }
 
 model ProjectPaper {
   id          String   @id @default(uuid())
-  projectId   String
+  projectId   String   @unique
   title       String
   abstract    String
   documentUrl String
   references  String?
   status      String   @default("DRAFT")
   createdAt   DateTime @default(now())
-  project     ResearchProject @relation("ResearchProjectMessages", fields: [projectId], references: [id], onDelete: Cascade)
+  project     ResearchProject @relation(fields: [projectId], references: [id], onDelete: Cascade)
 }
 
 model ResearchProject {
