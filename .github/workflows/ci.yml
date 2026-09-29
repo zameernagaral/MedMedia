@@ -14,6 +14,20 @@ jobs:
       run:
         working-directory: ./backend
 
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: rootpassword
+          MYSQL_DATABASE: medmedia_test
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
     steps:
     - uses: actions/checkout@v3
     - name: Use Node.js 18.x
@@ -29,12 +43,17 @@ jobs:
     - name: Generate Prisma Client
       run: npx prisma generate
       
+    - name: Push Database Schema
+      run: npx prisma db push --skip-generate
+      env:
+        DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/medmedia_test
+
     - name: Run Backend Tests
       run: npm test
       env:
         NODE_ENV: test
         JWT_SECRET: test_secret_key_needs_32_characters_long_min
-        DATABASE_URL: file:./data/medmedia_test.db
+        DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/medmedia_test
         PORT: 5001
 
   frontend-build:

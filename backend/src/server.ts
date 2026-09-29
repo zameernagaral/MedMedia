@@ -85,16 +85,24 @@ const redisClient = new Redis({
   host: process.env.REDIS_HOST || '127.0.0.1',
   port: Number(process.env.REDIS_PORT) || 6379,
   password: process.env.REDIS_PASSWORD || undefined,
-  lazyConnect: true
+  lazyConnect: true,
+  enableOfflineQueue: false,
+  maxRetriesPerRequest: 1
 });
 redisClient.on('error', (err) => {
-  console.warn('[Redis Warning]', err.message);
+  if (process.env.NODE_ENV !== 'test') {
+    console.warn('[Redis Warning]', err.message);
+  }
 });
 
+const isTest = process.env.NODE_ENV === 'test';
+
 const globalLimiter = rateLimit({
-  store: new RedisStore({
-    sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any
-  }),
+  store: isTest
+    ? undefined
+    : new RedisStore({
+        sendCommand: (...args: string[]) => redisClient.call(args[0], ...args.slice(1)) as any
+      }),
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 200, // limit each IP to 200 requests per windowMs
   message: 'Too many requests from this IP, please try again later.'
