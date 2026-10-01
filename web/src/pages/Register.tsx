@@ -26,6 +26,7 @@ export const Register: React.FC = () => {
       }, { withCredentials: true });
       
       if (res.data.success) {
+          localStorage.setItem('medmedia_theme_prompt_pending', 'true');
         login(res.data.token, res.data.user);
         navigate('/');
       }

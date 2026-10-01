@@ -37,7 +37,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 
     const existing = await prisma.conversation.findFirst({
       where: { participants: { every: { userId: { in: [userId, participantId] } } } },
-      include: { participants: true }
+      include: { participants: { include: { user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true } } } } }
     });
     if (existing && existing.participants.length === 2) return res.json({ success: true, conversation: existing });
 

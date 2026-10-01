@@ -72,6 +72,22 @@ npm.cmd run preview -- --port 3000 --host
 ```
 Open in browser: `http://localhost:3000/`
 
+### Railway Production Deployment
+
+Railway uses the repository-root `Dockerfile` as the single production build/start strategy. The image builds the React site and TypeScript API, generates Prisma Client, applies checked-in migrations with `prisma migrate deploy`, and starts the API, which serves both `/api` and the built SPA. It listens on Railway's injected `PORT` and binds to `0.0.0.0`.
+
+1. Connect this GitHub repository to Railway and create a MySQL service.
+2. Add an application service from the repository. Keep the Dockerfile builder selected; do not override the image start command.
+3. Set `DATABASE_URL` to a private Railway variable reference such as `${{MySQL.MYSQL_URL}}` (replace `MySQL` with your service name), `JWT_SECRET` to a cryptographically random value of at least 32 characters, and `NODE_ENV=production`. Railway supplies `PORT` automatically.
+4. To enable media uploads, set `CLOUDINARY_URL` in the application service. Production uploads return `503` when persistent storage is not configured; the app never stores production media on the ephemeral Railway filesystem.
+5. Same-origin web traffic needs no CORS entry. For separately hosted clients, set `CORS_ORIGINS` to a comma-separated allowlist of exact HTTPS origins. Keep `USE_REDIS=false` unless a Railway Redis service is connected; if enabled, set `REDIS_URL` or `REDIS_HOST` (and optionally `REDIS_PORT`/`REDIS_PASSWORD`).
+6. Deploy from the repository root. The container runs migrations on startup; it does not reset or seed the database. Do not run `prisma db push --force-reset` against production.
+7. Generate a Railway public domain (or attach your custom domain), then verify `https://<domain>/api/health` and load the frontend at `https://<domain>/`.
+
+Troubleshooting: a startup failure before listening usually indicates missing/invalid `DATABASE_URL` or `JWT_SECRET`; check Railway deployment logs without pasting secrets. Migration failures require resolving the migration/database state before retrying. Uploads require Cloudinary. `/api/ready` checks MySQL and checks Redis only when `USE_REDIS=true`.
+
+For local backend setup, copy `backend/.env.example` to `backend/.env`, configure a reachable MySQL database, and use private local-only credentials. Never commit `.env` files.
+
 ### 3. Native Android Mobile App (Play Store Ready)
 ```powershell
 cd mobile

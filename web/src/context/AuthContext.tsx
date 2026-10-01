@@ -40,31 +40,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
               stats: data.user.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
             };
             setUser(safeUser);
-            localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
+            localStorage.removeItem('medmedia_current_user');
             setLoading(false);
             return;
           }
         }
-      } catch (e) {
-        // Backend unreachable — fall through to localStorage cache
-        console.warn('[AuthContext] Backend unreachable, using cached session');
+      } catch {
+        localStorage.removeItem('medmedia_current_user');
       }
 
-      // 2. Fallback: restore from localStorage (offline/backend unreachable)
-      try {
-        const savedUser = localStorage.getItem('medmedia_current_user');
-        if (savedUser) {
-          const parsed = JSON.parse(savedUser);
-          const safeUser = {
-            ...parsed,
-            stats: parsed.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
-          };
-          setUser(safeUser);
-          localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
-        }
-      } catch (e) {
-        console.error('[AuthContext] Failed to restore user from localStorage:', e);
-      }
+      setUser(null);
       setLoading(false);
     };
     initAuth();
@@ -76,8 +61,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       stats: userData.stats || { postsCount: 0, followersCount: 0, followingCount: 0 }
     };
     setUser(safeUser);
-    localStorage.setItem('medmedia_current_user', JSON.stringify(safeUser));
-    // Token is stored in httpOnly cookie — we do NOT store it in localStorage
+    localStorage.removeItem('medmedia_current_user');
   };
 
   const logout = async () => {

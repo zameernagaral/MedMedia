@@ -41,6 +41,7 @@ model User {
   following            Follow[]                  @relation("Following")
   followers            Follow[]                  @relation("Followers")
   bookmarks            Bookmark[]
+  clipBookmarks        ClipBookmark[]
   notifications        Notification[]            @relation("NotificationRecipient")
   sentNotifications    Notification[]            @relation("NotificationActor")
   conversations        ConversationParticipant[]
@@ -98,6 +99,7 @@ model Post {
   content       String
   mediaUrls     String
   linkUrl       String?
+  casePoll      String?
   clinicalTags  String
   likesCount    Int        @default(0)
   commentsCount Int        @default(0)
@@ -222,6 +224,20 @@ model Medclip {
   commentsCount    Int      @default(0)
   savesCount       Int      @default(0)
   createdAt        DateTime @default(now())
+  bookmarks        ClipBookmark[]
+}
+
+model ClipBookmark {
+  id        String   @id @default(uuid())
+  userId    String
+  clipId    String
+  createdAt DateTime @default(now())
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clip Medclip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clipId])
+  @@index([clipId])
 }
 
 model Job {

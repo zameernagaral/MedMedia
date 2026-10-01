@@ -1,6 +1,8 @@
 import { Router, Request, Response } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
+import { z } from 'zod';
 import prisma from '../data/prismaClient';
 
 import { env } from '../config/env';
@@ -15,6 +17,34 @@ const authLimiter = rateLimit({
 
 const router = Router();
 const JWT_SECRET = env.JWT_SECRET;
+const DUMMY_PASSWORD_HASH = bcrypt.hashSync(randomBytes(32).toString('hex'), 10);
+const registrationSchema = z.object({
+  fullName: z.string().trim().min(1).max(120),
+  username: z.string().trim().min(3).max(60).regex(/^[a-zA-Z0-9_.-]+$/),
+  email: z.string().trim().email().max(254),
+  phoneNumber: z.string().trim().max(32).optional(),
+  password: z.string().min(8).max(128),
+  role: z.enum(['DOCTOR', 'STUDENT', 'INSTITUTION']).default('DOCTOR'),
+  bio: z.string().trim().max(500).optional(),
+  isPrivate: z.boolean().default(false),
+  doctorDetails: z.object({
+    specialization: z.string().trim().max(120).optional(),
+    hospitalAffiliation: z.string().trim().max(160).optional(),
+    location: z.string().trim().max(160).optional(),
+    yearsExperience: z.coerce.number().int().min(0).max(80).optional(),
+    medicalCouncilRegNumber: z.string().trim().max(100).optional(),
+    qualifications: z.array(z.string().max(120)).max(30).optional(),
+    clinicalInterests: z.array(z.string().max(120)).max(50).optional(),
+    researchPublications: z.array(z.string().max(500)).max(100).optional()
+  }).passthrough().optional(),
+  studentDetails: z.object({
+    discipline: z.enum(['MEDICAL_STUDENT', 'NURSING', 'B_PHARM', 'D_PHARM', 'LAB_PRACTITIONER']).optional(),
+    collegeName: z.string().trim().max(160).optional(),
+    academicYear: z.coerce.number().int().min(1).max(20).optional(),
+    interests: z.array(z.string().max(120)).max(50).optional(),
+    researchInterests: z.array(z.string().max(500)).max(100).optional()
+  }).passthrough().optional()
+}).passthrough();
 
 // POST /api/auth/login
 router.post('/login', authLimiter, async (req: Request, res: Response) => {
@@ -40,15 +70,14 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       }
     });
 
-    if (!user) {
-      return res.status(401).json({ success: false, message: "User not found." });
+    if (!user?.passwordHash) {
+      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
-    if (user.passwordHash) {
-      const isMatch = await bcrypt.compare(password, user.passwordHash);
-      if (!isMatch) {
-        return res.status(401).json({ success: false, message: "Invalid credentials." });
-      }
+    const isMatch = await bcrypt.compare(password, user.passwordHash);
+    if (!isMatch) {
+      return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
     const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
@@ -62,8 +91,6 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 
     res.json({
       success: true,
-      token,
-      sessionId: `sess-${user.id}`,
       user: {
         id: user.id,
         fullName: user.fullName,
@@ -71,7 +98,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
         email: user.email,
         avatarUrl: user.avatarUrl,
         role: user.role,
-        isPrivate: false,
+        isPrivate: user.isPrivate,
         verificationStatus: user.verificationStatus,
         badgeTitle: user.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
         doctorDetails: user.doctorProfile ? {
@@ -93,7 +120,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('[Auth API] Login Error:', error);
+    console.error('[Auth API] Login failed');
     res.status(500).json({ success: false, message: "Server error during login" });
   }
 });
@@ -101,20 +128,11 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
 // POST /api/auth/register
 router.post('/register', authLimiter, async (req: Request, res: Response) => {
   try {
-    let {
-      fullName, username, email, phoneNumber, password, role, 
-      doctorDetails, studentDetails 
-    } = req.body;
-    if (email) email = email.toLowerCase();
-    if (username) username = username.toLowerCase();
-
-    const normalizedEmail = typeof email === 'string' ? email.trim().toLowerCase() : '';
-    const normalizedUsername = typeof username === 'string' ? username.trim().toLowerCase() : '';
-    const normalizedPhone = typeof phoneNumber === 'string' ? phoneNumber.trim() : undefined;
-
-    if (!fullName?.trim() || !normalizedUsername || !normalizedEmail || !password || password.length < 8) {
-      return res.status(400).json({ success: false, message: "Full name, username, email, and a password of at least 8 characters are required" });
-    }
+    const registration = registrationSchema.parse(req.body);
+    const { fullName, username, email, phoneNumber, password, role: assignedRole, doctorDetails, studentDetails } = registration;
+    const normalizedEmail = email.toLowerCase();
+    const normalizedUsername = username.toLowerCase();
+    const normalizedPhone = phoneNumber || undefined;
 
     const existingUser = await prisma.user.findFirst({
       where: {
@@ -130,20 +148,20 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Email or username already exists" });
     }
 
-    const passwordHash = await bcrypt.hash(password || 'password123', 10);
-    const verificationStatus = (doctorDetails?.medicalCouncilRegNumber || studentDetails?.studentIdCredentialUrl) ? 'VERIFIED' : 'UNVERIFIED';
-
+    const passwordHash = await bcrypt.hash(password, 12);
     const newUser = await prisma.user.create({
       data: {
-        fullName: fullName.trim(),
+        fullName,
         username: normalizedUsername,
         email: normalizedEmail,
         passwordHash,
         phoneNumber: normalizedPhone,
-        role: role || "DOCTOR",
+        role: assignedRole,
         avatarUrl: null,
-        verificationStatus,
-        doctorProfile: role === 'DOCTOR' ? {
+        bio: registration.bio || null,
+        isPrivate: registration.isPrivate,
+        verificationStatus: 'PENDING',
+        doctorProfile: assignedRole === 'DOCTOR' ? {
           create: {
             specialization: doctorDetails?.specialization || "General Medicine",
             hospitalAffiliation: doctorDetails?.hospitalAffiliation || "Hospital",
@@ -155,7 +173,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
             researchPublications: JSON.stringify(doctorDetails?.researchPublications || [])
           }
         } : undefined,
-        studentProfile: role === 'STUDENT' ? {
+        studentProfile: assignedRole === 'STUDENT' ? {
           create: {
             discipline: studentDetails?.discipline || "MEDICAL_STUDENT",
             collegeName: studentDetails?.collegeName || "Medical College",
@@ -173,17 +191,17 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
 
     const token = jwt.sign({ userId: newUser.id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
 
-    res.cookie('token', token, { 
+    res.cookie('token', token, {
       httpOnly: true, 
       secure: process.env.NODE_ENV === 'production', 
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000 
     });
 
     res.status(201).json({
       success: true,
       message: "User registered successfully",
-      token,
       user: {
         id: newUser.id,
         fullName: newUser.fullName,
@@ -196,7 +214,8 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    console.error('[Auth API] Registration Error:', error);
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
+    console.error('[Auth API] Registration failed');
     res.status(500).json({ success: false, message: "Server error during registration" });
   }
 });
@@ -208,7 +227,12 @@ router.post('/google', async (req: Request, res: Response) => {
 
 // POST /api/auth/logout
 router.post('/logout', (req: Request, res: Response) => {
-  res.clearCookie('token');
+  res.clearCookie('token', {
+    httpOnly: true,
+    secure: env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    path: '/'
+  });
   res.json({ success: true, message: 'Logged out successfully' });
 });
 
@@ -221,12 +245,15 @@ router.get('/me', async (req: Request, res: Response) => {
     }
     if (!token) return res.status(401).json({ success: false, message: 'No token' });
 
-    const decoded: any = require('jsonwebtoken').verify(token, JWT_SECRET);
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    if (typeof decoded === 'string' || typeof decoded.userId !== 'string') {
+      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { doctorProfile: true, studentProfile: true }
     });
-    if (!user) return res.status(401).json({ success: false, message: 'User not found' });
+    if (!user) return res.status(401).json({ success: false, message: 'Invalid or expired token' });
 
     res.json({
       success: true,

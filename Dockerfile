@@ -1,5 +1,5 @@
 # Stage 1: Build the frontend (Vite React App)
-FROM node:18-alpine AS frontend-builder
+FROM node:22-alpine AS frontend-builder
 WORKDIR /app/web
 COPY web/package*.json ./
 RUN npm ci
@@ -7,17 +7,18 @@ COPY web ./
 RUN npm run build
 
 # Stage 2: Build the backend (Express TS API)
-FROM node:18-alpine AS backend-builder
+FROM node:22-alpine AS backend-builder
 WORKDIR /app/backend
 COPY backend/package*.json ./
-COPY backend/prisma ./prisma/
+COPY backend/prisma ./prisma
+COPY backend/tsconfig.json ./
+COPY backend/src ./src
 RUN npm ci
-COPY backend ./
-RUN npx prisma generate
+RUN ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma
 RUN npm run build
 
 # Stage 3: Production Server
-FROM node:18-alpine AS production
+FROM node:22-alpine AS production
 WORKDIR /app
 
 # Install production dependencies for backend
@@ -29,13 +30,12 @@ COPY --from=backend-builder /app/backend/dist ./backend/dist
 COPY --from=backend-builder /app/backend/prisma ./backend/prisma
 COPY --from=frontend-builder /app/web/dist ./web/dist
 
-# Generate Prisma Client in production image
-RUN cd backend && npx prisma generate
+# Generate the client with the pinned CLI installed by the production lockfile.
+RUN cd backend && ./node_modules/.bin/prisma generate --schema=prisma/schema.prisma
 
-# Expose port and start
-EXPOSE 5001
 ENV NODE_ENV=production
-ENV PORT=5001
+RUN chown -R node:node /app
+USER node
 
-# The compiled output of backend uses dist/src/server.js
-CMD ["node", "backend/dist/server.js"]
+CMD ["sh", "-c", "cd backend && npm run db:deploy && npm start"]
+

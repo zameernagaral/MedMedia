@@ -8,21 +8,26 @@ export interface AuthRequest extends Request {
   user?: any;
 }
 
-export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+export const optionalAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
   let token = req.cookies?.token;
   if (!token && req.headers.authorization?.startsWith('Bearer ')) {
     token = req.headers.authorization.split(' ')[1];
   }
 
-  if (!token) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: No token provided' });
-  }
+  if (!token) return next();
 
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    req.user = decoded;
+    const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+    if (typeof decoded === 'object' && typeof decoded.userId === 'string') req.user = decoded;
+  } catch {}
+  next();
+};
+
+export const requireAuth = (req: AuthRequest, res: Response, next: NextFunction) => {
+  optionalAuth(req, res, () => {
+    if (!req.user) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
     next();
-  } catch (error) {
-    return res.status(401).json({ success: false, message: 'Unauthorized: Invalid token' });
-  }
+  });
 };

@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../data/prismaClient';
-import { requireAuth } from '../middleware/authMiddleware';
+import { optionalAuth, requireAuth } from '../middleware/authMiddleware';
+import { isAdminAccount } from '../middleware/role';
 import { z } from 'zod';
 
 const router = Router();
@@ -13,14 +14,24 @@ const createStorySchema = z.object({
 });
 
 // GET /api/stories
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
+    const viewerId = (req as any).user?.userId as string | undefined;
     const stories = await prisma.story.findMany({
       where: {
-        expiresAt: { gt: new Date() } // Only show non-expired stories
+        expiresAt: { gt: new Date() },
+        user: {
+          OR: [
+            { isPrivate: false },
+            ...(viewerId ? [
+              { id: viewerId },
+              { followers: { some: { followerId: viewerId } } }
+            ] : [])
+          ]
+        }
       },
       include: {
-        user: true
+        user: { select: { id: true, fullName: true, avatarUrl: true } }
       },
       orderBy: { createdAt: 'desc' }
     });
@@ -39,8 +50,8 @@ router.get('/', async (req: Request, res: Response) => {
     }));
 
     res.json({ success: true, count: formattedStories.length, stories: formattedStories });
-  } catch (error: any) {
-    res.status(500).json({ success: false, message: 'Failed to fetch stories', error: error.message });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to fetch stories' });
   }
 });
 
@@ -62,7 +73,7 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         isVideo: validatedData.isVideo || false,
         expiresAt
       },
-      include: { user: true }
+      include: { user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } }
     });
 
     res.status(201).json({
@@ -99,7 +110,7 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
       return res.status(404).json({ success: false, message: 'Story not found' });
     }
 
-    if (story.userId !== userId && (req as any).user.role !== 'ADMIN') {
+    if (story.userId !== userId && !(await isAdminAccount(userId))) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 

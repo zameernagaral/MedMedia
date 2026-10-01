@@ -17,6 +17,9 @@ import {
 import { UserProfile, Job } from '../types';
 import { getPersonalizedMentorsAndProfessors } from '../utils/algorithmEngine';
 
+const containsQuery = (value: unknown, query: string) =>
+  typeof value === 'string' && value.toLowerCase().includes(query);
+
 interface SearchAndNetworkingProps {
   currentUser: UserProfile;
   availableUsers: UserProfile[];
@@ -63,45 +66,36 @@ export const SearchAndNetworking: React.FC<SearchAndNetworkingProps> = ({
   const filteredAllAccounts = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return validUsers;
-    return validUsers.filter((u) => {
-      const matchName = u.fullName.toLowerCase().includes(q);
-      const matchUsername = u.username.toLowerCase().includes(q);
-      const matchBio = u.bio?.toLowerCase().includes(q);
-      const matchDoctor = u.doctorDetails && (
-        u.doctorDetails.specialization.toLowerCase().includes(q) ||
-        u.doctorDetails.hospitalAffiliation.toLowerCase().includes(q) ||
-        (u.doctorDetails.academicTitle && u.doctorDetails.academicTitle.toLowerCase().includes(q))
-      );
-      const matchStudent = u.studentDetails && (
-        u.studentDetails.collegeName.toLowerCase().includes(q) ||
-        u.studentDetails.futureSpecialty.toLowerCase().includes(q) ||
-        u.studentDetails.discipline.toLowerCase().includes(q)
-      );
-      return matchName || matchUsername || matchBio || matchDoctor || matchStudent;
-    });
+    return validUsers.filter((u) => [
+      u.fullName,
+      u.username,
+      u.bio,
+      u.doctorDetails?.specialization,
+      u.doctorDetails?.hospitalAffiliation,
+      u.doctorDetails?.academicTitle,
+      u.studentDetails?.collegeName,
+      u.studentDetails?.futureSpecialty,
+      u.studentDetails?.discipline
+    ].some(value => containsQuery(value, q)));
   }, [availableUsers, searchQuery]);
 
   // Filtered mentors based on search
   const filteredMentors = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return algorithmicMentors;
-    return algorithmicMentors.filter(m => (
-      m.fullName.toLowerCase().includes(q) ||
-      m.doctorDetails?.specialization.toLowerCase().includes(q) ||
-      m.doctorDetails?.hospitalAffiliation.toLowerCase().includes(q) ||
-      (m.doctorDetails?.academicTitle && m.doctorDetails.academicTitle.toLowerCase().includes(q))
-    ));
+    return algorithmicMentors.filter(m => [
+      m.fullName,
+      m.doctorDetails?.specialization,
+      m.doctorDetails?.hospitalAffiliation,
+      m.doctorDetails?.academicTitle
+    ].some(value => containsQuery(value, q)));
   }, [algorithmicMentors, searchQuery]);
 
   const internshipJobs = useMemo(() => jobs.filter(j => j.category === 'Internship'), [jobs]);
   const filteredInternships = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
     if (!q) return internshipJobs;
-    return internshipJobs.filter(j => (
-      j.title.toLowerCase().includes(q) ||
-      j.companyName.toLowerCase().includes(q) ||
-      j.place.toLowerCase().includes(q)
-    ));
+    return internshipJobs.filter(j => [j.title, j.companyName, j.place].some(value => containsQuery(value, q)));
   }, [internshipJobs, searchQuery]);
 
   const communityBranches = [

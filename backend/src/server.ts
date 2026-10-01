@@ -5,7 +5,6 @@ import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import pinoHttp from 'pino-http';
 import express from 'express';
 import cors from 'cors';
-import dotenv from 'dotenv';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import Redis from 'ioredis';
@@ -29,9 +28,6 @@ import resourcesRoutes from './routes/resources';
 import settingsRoutes from './routes/settings';
 import conversationsRoutes from './routes/conversations';
 
-dotenv.config();
-
-
 Sentry.init({
   dsn: process.env.SENTRY_DSN || '',
   integrations: [
@@ -42,7 +38,7 @@ Sentry.init({
 
 const app = express();
 app.disable('x-powered-by'); // hide Express signature
-const PORT = env.PORT || 5001;
+const PORT = env.PORT;
 
 // Resolve candidate dist paths for web frontend
 const candidateDistPaths = [
@@ -52,50 +48,71 @@ const candidateDistPaths = [
 ];
 const frontendDist = candidateDistPaths.find(p => fs.existsSync(p));
 
-if (frontendDist) {
-  console.log(`[MedMedia] Serving production frontend build from: ${frontendDist}`);
-  app.use(express.static(frontendDist));
-}
-
 import cookieParser from 'cookie-parser';
 
 // Middleware (support larger payloads for device image uploads)
-const corsOrigins = process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [];
+const corsOrigins = env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean);
 app.use(cors({
   origin: corsOrigins.length ? corsOrigins : false,
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ limit: '50mb', extended: true }));
+app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
 
-// Serve local uploads (Must be before Helmet to avoid Cross-Origin-Resource-Policy blocks)
-app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
-
 // Security Middlewares
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      'default-src': ["'self'"],
+      'base-uri': ["'self'"],
+      'font-src': ["'self'", 'https:', 'data:'],
+      'form-action': ["'self'"],
+      'frame-ancestors': ["'self'"],
+      'img-src': ["'self'", 'data:', 'https:'],
+      'media-src': ["'self'", 'data:', 'https:'],
+      'object-src': ["'none'"],
+      'script-src': ["'self'"],
+      'script-src-attr': ["'none'"],
+      'style-src': ["'self'", 'https:', "'unsafe-inline'"],
+      'connect-src': ["'self'", 'https:']
+    }
+  }
+}));
 app.use(pinoHttp({
+  redact: ['req.headers.authorization', 'req.headers.cookie'],
   genReqId: (req) => req.headers['x-request-id'] || crypto.randomUUID(),
   transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined
 }));
 app.use(hpp());
 
+if (frontendDist) {
+  console.log(`[MedMedia] Serving production frontend build from: ${frontendDist}`);
+  app.use(express.static(frontendDist));
+}
+app.use('/uploads', express.static(path.join(__dirname, '../../uploads')));
+
 // Rate Limiting (Global)
-const redisClient = new Redis({
-  host: process.env.REDIS_HOST || '127.0.0.1',
-  port: Number(process.env.REDIS_PORT) || 6379,
-  password: process.env.REDIS_PASSWORD || undefined,
+const redisOptions = {
   lazyConnect: true,
   enableOfflineQueue: false,
   maxRetriesPerRequest: 1
-});
+} as const;
+const redisClient = env.REDIS_URL
+  ? new Redis(env.REDIS_URL, redisOptions)
+  : new Redis({
+      host: env.REDIS_HOST || '127.0.0.1',
+      port: env.REDIS_PORT || 6379,
+      password: env.REDIS_PASSWORD || undefined,
+      ...redisOptions
+    });
 redisClient.on('error', (err) => {
   if (process.env.NODE_ENV !== 'test') {
-    console.warn('[Redis Warning]', err.message);
+    console.warn('[Redis Warning] Redis connection unavailable');
   }
 });
 
-const useRedis = process.env.USE_REDIS === 'true';
+const useRedis = env.USE_REDIS;
 
 const globalLimiter = rateLimit({
   store: useRedis
@@ -124,10 +141,11 @@ app.get('/api/health', (req, res) => {
 app.get('/api/ready', async (req, res) => {
   try {
     await prisma.$connect();
-    await redisClient.ping();
+    if (useRedis) await redisClient.ping();
     res.json({ ready: true });
   } catch (err) {
-    res.status(500).json({ ready: false, error: (err as any).message });
+    console.error('[Readiness] check failed:', err);
+    res.status(503).json({ ready: false });
   }
 });
 
@@ -180,7 +198,7 @@ app.use((req, res) => {
 });
 
 if (process.env.NODE_ENV !== 'test') {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`[MedMedia] Backend Server listening at http://localhost:${PORT}`);
   });
 }

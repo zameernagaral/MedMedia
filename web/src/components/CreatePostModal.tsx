@@ -64,6 +64,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [videoWarning, setVideoWarning] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState('');
 
   // Post Specific State
   const [postType, setPostType] = useState<'TWEET' | 'IMAGE_CASE' | 'TEXT' | 'CLINICAL_DISCUSSION'>('TWEET');
@@ -147,43 +148,40 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   };
 
   // Submit Post
-  const handlePostSubmit = (e: React.FormEvent) => {
+  const handlePostSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!content.trim() && !mediaUrl) return;
 
     const tags = tagInput.split(' ').filter(t => t.startsWith('#'));
-
-    const newPost: Post = {
-      id: `post-${Date.now()}`,
-      authorId: currentUser.id,
-      authorName: currentUser.fullName,
-      authorUsername: currentUser.username,
-      authorAvatar: currentUser.avatarUrl,
-      authorRole: currentUser.role,
-      authorSpecializationOrDiscipline: currentUser.role === 'DOCTOR'
-        ? (currentUser.doctorDetails?.specialization || "Clinical Medicine")
-        : (currentUser.studentDetails?.discipline.replace('_', ' ') || "Medical Scholar"),
-      isVerified: currentUser.verificationStatus === 'VERIFIED',
-      postType,
-      content,
-      mediaUrls: mediaUrl ? [mediaUrl] : undefined,
-      clinicalTags: tags.length > 0 ? tags : ["#ClinicalDiscussion"],
-      casePoll: postType === 'CLINICAL_DISCUSSION' ? {
-        question: pollQuestion,
-        options: pollOptions.map((text, idx) => ({ id: `opt-${idx}`, text, votes: 0 })),
-        totalVotes: 0
-      } : undefined,
-      likesCount: 0,
-      commentsCount: 0,
-      savesCount: 0,
-      sharesCount: 0,
-      isLiked: false,
-      isSaved: false,
-      createdAt: "Just now"
-    };
-
-    onPostCreated(newPost);
-    onClose();
+    setIsSubmitting(true);
+    setSubmitError('');
+    try {
+      const created = await apiService.createPost({
+        authorId: currentUser.id,
+        authorName: currentUser.fullName,
+        authorUsername: currentUser.username,
+        authorAvatar: currentUser.avatarUrl,
+        authorRole: currentUser.role,
+        authorSpecializationOrDiscipline: currentUser.role === 'DOCTOR'
+          ? (currentUser.doctorDetails?.specialization || 'Clinical Medicine')
+          : (currentUser.studentDetails?.discipline.replace('_', ' ') || 'Medical Scholar'),
+        postType,
+        content: content.trim(),
+        mediaUrls: mediaUrl ? [mediaUrl] : undefined,
+        clinicalTags: tags.length > 0 ? tags : ['#ClinicalDiscussion'],
+        casePoll: postType === 'CLINICAL_DISCUSSION' ? {
+          question: pollQuestion,
+          options: pollOptions.map((text, index) => ({ id: `option-${index}`, text, votes: 0 })),
+          totalVotes: 0
+        } : undefined
+      });
+      onPostCreated(created);
+      onClose();
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Failed to publish post. Please try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   // Submit Story (30s limit saved to MySQL & local database)
@@ -193,6 +191,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     if (!finalMedia) return;
 
     setIsSubmitting(true);
+    setSubmitError('');
     try {
       const created = await apiService.createStory({
         userId: currentUser.id,
@@ -209,7 +208,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       }
       onClose();
     } catch (err) {
-      console.error('Failed to create story:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to publish story. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -221,6 +220,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
     if (!mediaUrl) return;
 
     setIsSubmitting(true);
+    setSubmitError('');
     try {
       const created = await apiService.createClip({
         userId: currentUser.id,
@@ -238,7 +238,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
       }
       onClose();
     } catch (err) {
-      console.error('Failed to create clip:', err);
+      setSubmitError(err instanceof Error ? err.message : 'Failed to publish reel. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -502,6 +502,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
             </div>
 
             {/* Post Action Buttons */}
+            {submitError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">{submitError}</p>}
             <div className="flex justify-end gap-2 pt-2">
               <button
                 type="button"
@@ -512,11 +513,11 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={!hipaaAcknowledged || (!content.trim() && !mediaUrl)}
+                disabled={isSubmitting || !hipaaAcknowledged || (!content.trim() && !mediaUrl)}
                 className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />
-                Publish to Medical Feed
+                {isSubmitting ? 'Publishing…' : 'Publish to Medical Feed'}
               </button>
             </div>
 
@@ -526,6 +527,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         {/* ================= MODE 2: ADD 24H STORY (30s LIMIT) ================= */}
         {creationMode === 'story' && (
           <form onSubmit={handleStorySubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+            {submitError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">{submitError}</p>}
             
             {/* 30 Seconds Limit Highlight Banner */}
             <div className="p-3 bg-gradient-to-r from-rose-50 to-amber-50 dark:from-rose-950/40 dark:to-amber-950/40 border border-rose-200/80 dark:border-rose-900/60 rounded-2xl flex items-center justify-between">
@@ -698,6 +700,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
         {/* ================= MODE 3: ADD MEDCLIP ================= */}
         {creationMode === 'medclip' && (
           <form onSubmit={handleClipSubmit} className="p-5 space-y-4 max-h-[75vh] overflow-y-auto">
+            {submitError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">{submitError}</p>}
             
             {/* Medclip Category Selection */}
             <div className="flex border-b border-slate-100 dark:border-slate-800 pb-2 gap-2 text-xs font-semibold">

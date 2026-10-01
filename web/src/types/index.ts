@@ -1,4 +1,4 @@
-export type UserRole = 'DOCTOR' | 'STUDENT';
+export type UserRole = 'DOCTOR' | 'STUDENT' | 'INSTITUTION' | 'ADMIN';
 export type VerificationStatus = 'VERIFIED' | 'PENDING' | 'UNVERIFIED';
 export type StudentDiscipline = 'MEDICAL_STUDENT' | 'NURSING' | 'B_PHARM' | 'D_PHARM' | 'LAB_PRACTITIONER';
 

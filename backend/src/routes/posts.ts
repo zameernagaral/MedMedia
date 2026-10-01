@@ -1,17 +1,28 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../data/prismaClient';
-import { requireAuth } from '../middleware/authMiddleware';
+import { optionalAuth, requireAuth } from '../middleware/authMiddleware';
+import { isAdminAccount } from '../middleware/role';
 import { z } from 'zod';
 import { createNotification } from '../services/notificationService';
 
 const router = Router();
 
 const createPostSchema = z.object({
-  content: z.string().min(1, "Post content cannot be empty"),
-  postType: z.string().optional(),
-  clinicalTags: z.array(z.string()).optional(),
+  content: z.string().trim().min(1, "Post content cannot be empty").max(10000),
+  postType: z.string().trim().max(50).optional(),
+  clinicalTags: z.array(z.string().trim().max(100)).max(50).optional(),
   mediaUrls: z.array(z.string().url()).optional(),
-  linkUrl: z.string().url().optional()
+  linkUrl: z.string().url().optional(),
+  casePoll: z.object({
+    question: z.string().trim().min(1).max(500),
+    options: z.array(z.object({
+      id: z.string().max(100),
+      text: z.string().trim().min(1).max(300),
+      votes: z.number().int().min(0).default(0)
+    })).min(2).max(8),
+    totalVotes: z.number().int().min(0).default(0),
+    userVotedOptionId: z.string().max(100).optional()
+  }).optional()
 });
 
 const createCommentSchema = z.object({
@@ -20,7 +31,7 @@ const createCommentSchema = z.object({
 });
 
 // GET /api/posts - Home Feed
-router.get('/', async (req: Request, res: Response) => {
+router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
     const { type, tag, page = '1', limit = '10' } = req.query;
     const pageNum = parseInt(page as string);
@@ -29,8 +40,20 @@ router.get('/', async (req: Request, res: Response) => {
 
     let where: any = {};
     const currentUserId = (req as any).user?.userId;
+    const isAdminViewer = currentUserId ? await isAdminAccount(currentUserId) : false;
     if (type) where.postType = type;
     if (tag) where.clinicalTags = { contains: tag as string };
+    if (!isAdminViewer) {
+      where.user = {
+        OR: [
+          { isPrivate: false },
+          ...(currentUserId ? [
+            { id: currentUserId },
+            { followers: { some: { followerId: currentUserId } } }
+          ] : [])
+        ]
+      };
+    }
 
     const postsCount = await prisma.post.count({ where });
     const prismaPosts = await prisma.post.findMany({
@@ -86,14 +109,34 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
         content: validatedData.content,
         clinicalTags: JSON.stringify(validatedData.clinicalTags || []),
         mediaUrls: JSON.stringify(validatedData.mediaUrls || []),
-        linkUrl: validatedData.linkUrl
+        linkUrl: validatedData.linkUrl,
+        casePoll: validatedData.casePoll ? JSON.stringify(validatedData.casePoll) : null
       },
       include: { user: { include: { doctorProfile: true, studentProfile: true } } }
     });
 
     res.status(201).json({ success: true, post: {
-      id: newPost.id, authorId: newPost.user.id, authorName: newPost.user.fullName, 
-      content: newPost.content, createdAt: newPost.createdAt.toISOString() 
+      id: newPost.id,
+      authorId: newPost.user.id,
+      authorName: newPost.user.fullName,
+      authorUsername: newPost.user.username,
+      authorAvatar: newPost.user.avatarUrl,
+      authorRole: newPost.user.role,
+      authorSpecializationOrDiscipline: newPost.user.role === 'DOCTOR' ? newPost.user.doctorProfile?.specialization : newPost.user.studentProfile?.discipline,
+      isVerified: newPost.user.verificationStatus === 'VERIFIED',
+      postType: newPost.postType,
+      content: newPost.content,
+      clinicalTags: validatedData.clinicalTags || [],
+      mediaUrls: validatedData.mediaUrls || [],
+      linkUrl: newPost.linkUrl,
+      casePoll: validatedData.casePoll,
+      likesCount: newPost.likesCount,
+      commentsCount: newPost.commentsCount,
+      savesCount: newPost.savesCount,
+      sharesCount: newPost.sharesCount,
+      isLiked: false,
+      isSaved: false,
+      createdAt: newPost.createdAt.toISOString()
     } });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: (error as any).errors });
@@ -168,7 +211,7 @@ router.delete('/:postId/comments/:commentId', requireAuth, async (req: Request, 
     const comment = await prisma.comment.findFirst({ where: { id: req.params.commentId as string, postId: req.params.postId as string } });
     if (!comment) return res.status(404).json({ success: false, message: 'Comment not found' });
     const user = (req as any).user;
-    if (comment.authorId !== user.userId && user.role !== 'ADMIN') return res.status(403).json({ success: false, message: 'Forbidden' });
+    if (comment.authorId !== user.userId && !(await isAdminAccount(user.userId))) return res.status(403).json({ success: false, message: 'Forbidden' });
     await prisma.comment.delete({ where: { id: comment.id } });
     await prisma.post.update({ where: { id: comment.postId }, data: { commentsCount: { decrement: 1 } } });
     res.json({ success: true, commentId: comment.id });
@@ -231,10 +274,13 @@ router.delete('/:id/bookmark', requireAuth, async (req: Request, res: Response) 
 router.post('/:id/share', async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    if (!z.string().uuid().safeParse(id).success) {
+      return res.status(400).json({ success: false, message: 'Invalid post id' });
+    }
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
     const updated = await prisma.post.update({ where: { id }, data: { sharesCount: { increment: 1 } } });
-    res.json({ success: true, sharesCount: updated.sharesCount, shareUrl: `/posts/${id}` });
+    res.json({ success: true, sharesCount: updated.sharesCount, shareUrl: `/#post-${id}` });
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to track share' }); }
 });
 
@@ -243,10 +289,9 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const userId = (req as any).user.userId as string;
-    const userRole = (req as any).user.role as string;
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    if (post.userId !== userId && userRole !== 'ADMIN') {
+    if (post.userId !== userId && !(await isAdminAccount(userId))) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
     await prisma.post.delete({ where: { id } });
@@ -313,7 +358,7 @@ router.get('/:id/insights', requireAuth, async (req: Request, res: Response) => 
     const userId = (req as any).user.userId;
     const post = await prisma.post.findUnique({ where: { id: postId } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    if (post.userId !== userId && (req as any).user.role !== 'ADMIN') {
+    if (post.userId !== userId && !(await isAdminAccount(userId))) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
     // Gather related data

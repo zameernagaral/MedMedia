@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../data/prismaClient';
 import { requireAuth } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/role';
 import { z } from 'zod';
 
 const router = Router();
@@ -130,7 +131,8 @@ router.delete('/communities/:id', requireAuth, async (req: Request, res: Respons
     const user = (req as any).user;
     const community = await prisma.community.findUnique({ where: { id: communityId } });
     if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
-    if (community.creatorId !== user.userId && user.role !== 'ADMIN') return res.status(403).json({ success: false, message: 'Only the creator can delete this community' });
+    const account = await prisma.user.findUnique({ where: { id: user.userId }, select: { role: true } });
+    if (community.creatorId !== user.userId && account?.role !== 'ADMIN') return res.status(403).json({ success: false, message: 'Only the creator or an administrator can delete this community' });
     await prisma.community.delete({ where: { id: communityId } });
     res.json({ success: true, communityId });
   } catch (error) {
@@ -139,12 +141,17 @@ router.delete('/communities/:id', requireAuth, async (req: Request, res: Respons
 });
 
 // COMMUNITY MESSAGES
-router.get('/communities/:id/messages', async (req: Request, res: Response) => {
+router.get('/communities/:id/messages', requireAuth, async (req: Request, res: Response) => {
   try {
     const { id } = req.params;
+    const userId = (req as any).user.userId as string;
+    const community = await prisma.community.findUnique({ where: { id: id as string }, select: { creatorId: true } });
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
+    const membership = await prisma.communityMember.findUnique({ where: { communityId_userId: { communityId: id as string, userId } } });
+    if (!membership && community.creatorId !== userId) return res.status(403).json({ success: false, message: 'Join this community to view its messages' });
     const messages = await prisma.communityMessage.findMany({
       where: { communityId: id as string },
-      include: { sender: true },
+      include: { sender: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true } } },
       orderBy: { createdAt: 'asc' }
     });
     res.json({ success: true, count: messages.length, messages });
@@ -157,7 +164,16 @@ router.post('/communities/:id/messages', requireAuth, async (req: Request, res: 
   try {
     const { id } = req.params;
     const senderId = (req as any).user.userId;
-    const { text, imageUrl, videoUrl } = req.body;
+    const data = z.object({
+      text: z.string().trim().max(5000).optional(),
+      imageUrl: z.string().url().optional(),
+      videoUrl: z.string().url().optional()
+    }).strict().refine(value => Boolean(value.text || value.imageUrl || value.videoUrl)).parse(req.body);
+    const community = await prisma.community.findUnique({ where: { id: id as string }, select: { creatorId: true } });
+    if (!community) return res.status(404).json({ success: false, message: 'Community not found' });
+    const membership = await prisma.communityMember.findUnique({ where: { communityId_userId: { communityId: id as string, userId: senderId } } });
+    if (!membership && community.creatorId !== senderId) return res.status(403).json({ success: false, message: 'Join this community to send messages' });
+    const { text, imageUrl, videoUrl } = data;
     
     if (!text && !imageUrl && !videoUrl) {
       return res.status(400).json({ success: false, message: 'Message content is required' });
@@ -171,11 +187,12 @@ router.post('/communities/:id/messages', requireAuth, async (req: Request, res: 
         communityId: id as string,
         senderId
       },
-      include: { sender: true }
+      include: { sender: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true } } }
     });
 
     res.status(201).json({ success: true, message });
   } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
     res.status(500).json({ success: false });
   }
 });
@@ -190,13 +207,8 @@ router.get('/jobs', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/jobs', requireAuth, async (req: Request, res: Response) => {
+router.post('/jobs', requireAuth, requireRole('INSTITUTION'), async (req: Request, res: Response) => {
   try {
-    // Basic role guard
-    if ((req as any).user.role !== 'INSTITUTION' && (req as any).user.role !== 'ADMIN') {
-      return res.status(403).json({ success: false, message: 'Only institutions can post jobs' });
-    }
-
     const data = createJobSchema.parse(req.body);
     
     const newJob = await prisma.job.create({

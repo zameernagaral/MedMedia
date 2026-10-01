@@ -1,6 +1,7 @@
 import { Router, Request, Response } from 'express';
 import prisma from '../data/prismaClient';
-import { requireAuth } from '../middleware/authMiddleware';
+import { optionalAuth, requireAuth } from '../middleware/authMiddleware';
+import { isAdminAccount } from '../middleware/role';
 import { z } from 'zod';
 import { createNotification } from '../services/notificationService';
 
@@ -15,7 +16,7 @@ const updateUserSchema = z.object({
   studentDetails: z.any().optional()
 });
 
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const user = await prisma.user.findUnique({
@@ -28,18 +29,27 @@ router.get('/:id', async (req: Request, res: Response) => {
     });
     if (!user) return res.status(404).json({ success: false, message: "User not found" });
 
-    const userPosts = await prisma.post.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
-
     const currentUserId = (req as any).user?.userId;
     const isFollowing = currentUserId
       ? Boolean(await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: currentUserId, followingId: id } } }))
       : false;
 
+    if (user.isPrivate && currentUserId !== id && !isFollowing) {
+      return res.json({
+        success: true,
+        user: { id: user.id, fullName: user.fullName, username: user.username, avatarUrl: user.avatarUrl, isPrivate: true },
+        posts: [],
+        isMasked: true
+      });
+    }
+
+    const userPosts = await prisma.post.findMany({ where: { userId: user.id }, orderBy: { createdAt: 'desc' } });
+
     res.json({
       success: true,
       user: {
         id: user.id, fullName: user.fullName, username: user.username, avatarUrl: user.avatarUrl,
-        role: user.role, bio: user.bio, verificationStatus: user.verificationStatus,
+        role: user.role, bio: user.bio, isPrivate: user.isPrivate, verificationStatus: user.verificationStatus,
         doctorDetails: user.doctorProfile || undefined, studentDetails: user.studentProfile || undefined,
         stats: {
           postsCount: user._count.posts,
@@ -57,14 +67,26 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.put('/:id', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
-    if ((req as any).user.userId !== id && (req as any).user.role !== 'ADMIN') {
+    if ((req as any).user.userId !== id && !(await isAdminAccount((req as any).user.userId))) {
       return res.status(403).json({ success: false, message: 'Forbidden' });
     }
 
     const data = updateUserSchema.parse(req.body);
     const updatedUser = await prisma.user.update({
       where: { id },
-      data: { fullName: data.fullName, bio: data.bio, avatarUrl: data.avatarUrl }
+      data: { fullName: data.fullName, bio: data.bio, avatarUrl: data.avatarUrl },
+      select: {
+        id: true,
+        fullName: true,
+        username: true,
+        email: true,
+        avatarUrl: true,
+        bio: true,
+        role: true,
+        verificationStatus: true,
+        isPrivate: true,
+        coverPhotoUrl: true
+      }
     });
 
     res.json({ success: true, user: updatedUser });

@@ -44,26 +44,73 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const [showCommentsModal, setShowCommentsModal] = useState(false);
   const [commentCount, setCommentCount] = useState(post.commentsCount || 0);
-  const [copiedLink, setCopiedLink] = useState(false);
+  const [shareCount, setShareCount] = useState(post.sharesCount || 0);
+  const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
+  const [showFullContent, setShowFullContent] = useState(false);
   const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
 
+  const words = post.content.trim().split(/\s+/);
+  const shouldTruncate = words.length > 100;
+  const previewContent = words.slice(0, 100).join(' ');
+
+  const copyLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      return;
+    } catch {}
+
+    const input = document.createElement('textarea');
+    input.value = url;
+    input.setAttribute('readonly', '');
+    input.style.position = 'fixed';
+    input.style.opacity = '0';
+    document.body.appendChild(input);
+    input.select();
+    const copied = document.execCommand('copy');
+    input.remove();
+    if (!copied) throw new Error('Clipboard access is unavailable');
+  };
 
   const handleShare = async () => {
-    const url = `${window.location.origin}/posts/${post.id}`;
-    if (navigator.share) {
-      await navigator.share({ title: `${post.authorName} on MedMedia`, text: post.content, url });
-    } else {
-      await navigator.clipboard?.writeText?.(url);
+    const url = new URL('/', window.location.origin);
+    url.hash = `post-${post.id}`;
+    let shared = false;
+
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: `${post.authorName} on MedMedia`, text: post.content, url: url.href });
+        setShareStatus('shared');
+        shared = true;
+      } else {
+        await copyLink(url.href);
+        setShareStatus('copied');
+        shared = true;
+      }
+    } catch (error) {
+      if (error instanceof DOMException && error.name === 'AbortError') return;
+      try {
+        await copyLink(url.href);
+        setShareStatus('copied');
+        shared = true;
+      } catch {
+        window.prompt('Copy this post link', url.href);
+        setShareStatus(null);
+      }
     }
-    setCopiedLink(true);
+
+    if (shared) {
+      const result = await apiService.sharePost(post.id);
+      if (result) setShareCount(result.sharesCount);
+    }
+
     setTimeout(() => {
-      setCopiedLink(false);
+      setShareStatus(null);
       setShowMoreMenu(false);
     }, 1500);
   };
 
   return (
-    <article className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl mb-4 overflow-hidden shadow-xs hover:shadow-md dark:shadow-slate-950/40 transition-all duration-200">
+    <article id={`post-${post.id}`} className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl mb-4 overflow-hidden shadow-xs hover:shadow-md dark:shadow-slate-950/40 transition-all duration-200">
       
       {/* Algorithmic Reason Pill */}
       {(post as any).matchReasonBadge && (
@@ -179,7 +226,7 @@ export const PostCard: React.FC<PostCardProps> = ({
                   className="w-full px-3.5 py-2 text-left text-xs font-medium text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 flex items-center gap-2 cursor-pointer"
                 >
                   <Copy className="w-4 h-4 text-slate-500 dark:text-slate-400" />
-                  {copiedLink ? "Link Shared!" : "Share Post"}
+                  {shareStatus === 'copied' ? 'Link Copied!' : shareStatus === 'shared' ? 'Link Shared!' : 'Share Post'}
                 </button>
                 <button
                   onClick={() => {
@@ -228,7 +275,16 @@ export const PostCard: React.FC<PostCardProps> = ({
       {/* 2. Main Content Body (Slide 5: Text, tweets, Images, Links, Discussions) */}
       <div className="px-4 pb-3">
         <p className="text-sm text-slate-800 dark:text-slate-200 whitespace-pre-line leading-relaxed font-normal">
-          {post.content}
+          {shouldTruncate && !showFullContent ? `${previewContent}…` : post.content}
+          {shouldTruncate && (
+            <button
+              type="button"
+              onClick={() => setShowFullContent(value => !value)}
+              className="ml-1 font-semibold text-sky-700 dark:text-sky-400 hover:underline"
+            >
+              {showFullContent ? 'Read less' : 'Read more'}
+            </button>
+          )}
         </p>
 
         {/* Clinical Tags */}
@@ -359,11 +415,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           {/* Share - Transparent icon */}
           <button
             onClick={handleShare}
+            aria-label={shareStatus === 'copied' ? 'Post link copied' : shareStatus === 'shared' ? 'Post shared' : 'Share Post'}
             className="bg-transparent border-0 p-0 flex items-center gap-1.5 text-xs font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-500 transition cursor-pointer group"
             title="Share Post"
           >
             <Share2 className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-sky-500 transition" />
-            <span className="hidden sm:inline">{post.sharesCount}</span>
+            <span className="hidden sm:inline">{shareStatus === 'copied' ? 'Copied!' : shareStatus === 'shared' ? 'Shared!' : shareCount}</span>
           </button>
         </div>
 

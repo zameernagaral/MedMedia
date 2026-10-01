@@ -5,8 +5,6 @@ import {
   MessageSquare, 
   ShieldCheck, 
   ChevronDown, 
-  Sun, 
-  Moon,
   ShieldAlert,
   Trash2
 } from 'lucide-react';
@@ -20,9 +18,6 @@ interface TopNavProps {
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
   onOpenAuth: () => void;
-  isDarkMode?: boolean;
-  onToggleDarkMode?: () => void;
-  onClearAllTestData?: () => void;
   unreadNotificationsCount?: number;
   unreadMessagesCount?: number;
 }
@@ -35,9 +30,6 @@ export const TopNav: React.FC<TopNavProps> = ({
   onOpenNotifications,
   onOpenMessages,
   onOpenAuth,
-  isDarkMode,
-  onToggleDarkMode,
-  onClearAllTestData,
   unreadNotificationsCount = 0,
   unreadMessagesCount = 0
 }) => {
@@ -84,17 +76,6 @@ export const TopNav: React.FC<TopNavProps> = ({
 
         {/* Right Action Icons: Notification, Message only — Profile is in bottom nav */}
         <div className="flex items-center gap-1.5 sm:gap-3">
-
-          {/* Dark mode toggle */}
-          {onToggleDarkMode && (
-            <button
-              onClick={onToggleDarkMode}
-              className="p-2.5 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 transition cursor-pointer"
-              title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-            >
-              {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-            </button>
-          )}
 
           {/* Notifications Button */}
           <button

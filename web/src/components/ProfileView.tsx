@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   ShieldCheck, 
   Stethoscope, 
@@ -36,11 +36,14 @@ interface ProfileViewProps {
   user: UserProfile;
   posts: Post[];
   clips: Medclip[];
+  savedPosts?: Post[];
+  savedClips?: Medclip[];
   currentUser: UserProfile;
   deviceSessions: DeviceSession[];
   onRevokeSession: (sessionId: string) => void;
   onLikePost: (postId: string) => void;
   onSavePost: (postId: string) => void;
+  onSaveClip?: (clipId: string) => void;
   onConnectUser: (userId: string, isFollowing: boolean) => void;
   onOpenHelpCenter?: () => void;
   onOpenSupportModal?: () => void;
@@ -62,11 +65,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   user,
   posts,
   clips,
+  savedPosts = [],
+  savedClips = [],
   currentUser,
   deviceSessions,
   onRevokeSession,
   onLikePost,
   onSavePost,
+  onSaveClip,
   onConnectUser,
   onOpenHelpCenter,
   onOpenSupportModal,
@@ -75,7 +81,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   isDarkMode,
   onToggleDarkMode
 }) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'about' | 'settings_help'>('posts');
+  const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'about' | 'settings_help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
   const [isFollowing, setIsFollowing] = useState(Boolean((user as UserProfile & { isFollowing?: boolean }).isFollowing));
   const [coverPhoto, setCoverPhoto] = useState(user.coverPhotoUrl || '');
@@ -86,6 +92,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const isDoctor = user.role === 'DOCTOR';
   const { logout } = useAuth();
   const isSelf = user.id === currentUser.id;
+
+  useEffect(() => {
+    setActiveTab('posts');
+  }, [user.id]);
 
   const handleTogglePrivacy = async () => {
     const nextVal = !isPrivateAccount;
@@ -335,6 +345,19 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           >
             Reels ({clips.length})
           </button>
+
+          {isSelf && (
+            <button
+              onClick={() => setActiveTab('saved')}
+              className={`flex-1 min-w-[80px] py-3 text-center transition cursor-pointer ${
+                activeTab === 'saved'
+                  ? 'text-sky-600 dark:text-sky-400 border-b-2 border-sky-600 dark:border-sky-500 bg-white dark:bg-slate-900'
+                  : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'
+              }`}
+            >
+              Saved ({savedPosts.length + savedClips.length})
+            </button>
+          )}
           
           <button
             onClick={() => setActiveTab('about')}
@@ -430,6 +453,60 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeTab === 'saved' && isSelf && (
+        <div className="space-y-6">
+          <section className="space-y-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Saved Posts ({savedPosts.length})</h2>
+            {savedPosts.length ? savedPosts.map(post => (
+              <PostCard
+                key={post.id}
+                post={post}
+                currentUser={currentUser}
+                onLike={onLikePost}
+                onSave={onSavePost}
+              />
+            )) : (
+              <p className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                No saved posts yet.
+              </p>
+            )}
+          </section>
+
+          <section className="space-y-3">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Saved Reels ({savedClips.length})</h2>
+            {savedClips.length ? (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                {savedClips.map(clip => (
+                  <article key={clip.id} className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+                    <video
+                      src={clip.videoUrl}
+                      poster={clip.thumbnailUrl && clip.thumbnailUrl !== clip.videoUrl ? clip.thumbnailUrl : undefined}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      aria-label={`Play saved reel: ${clip.caption}`}
+                      className="aspect-[9/16] w-full bg-slate-950 object-cover"
+                    />
+                    <div className="flex items-start justify-between gap-2 px-3 py-2">
+                      <p className="line-clamp-2 text-xs text-slate-700 dark:text-slate-300">{clip.caption}</p>
+                      {onSaveClip && (
+                        <button type="button" onClick={() => onSaveClip(clip.id)} className="shrink-0 text-[11px] font-semibold text-sky-700 dark:text-sky-400 hover:underline">
+                          Remove
+                        </button>
+                      )}
+                    </div>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center text-xs text-slate-500 dark:text-slate-400">
+                No saved reels yet.
+              </p>
+            )}
+          </section>
         </div>
       )}
 

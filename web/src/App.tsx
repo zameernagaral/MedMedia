@@ -21,16 +21,7 @@ import { InternshipApplyModal } from './components/InternshipApplyModal';
 import { SupportModal } from './components/SupportModal';
 import { getPersonalizedFeed, getPersonalizedMedclips } from './utils/algorithmEngine';
 import { apiService } from './services/api';
-import { 
-  INITIAL_POSTS, 
-  INITIAL_CLIPS, 
-  INITIAL_JOBS, 
-  INITIAL_OPPORTUNITIES, 
-  INITIAL_STORIES,
-  INITIAL_SESSIONS,
-  INITIAL_NOTIFICATIONS
-} from './data/mockData';
-import { UserProfile, Post, Job, MentorshipRequest, InternshipApplication, NotificationItem, MedicalEvent } from './types';
+import { UserProfile, Story, Post, Medclip, Job, MentorshipRequest, InternshipApplication, NotificationItem, MedicalEvent, OpportunityItem, DeviceSession } from './types';
 import { 
   Smartphone, 
   Monitor, 
@@ -80,12 +71,14 @@ const MainApp: React.FC = () => {
   const currentUser = user!; // guaranteed by ProtectedRoute
   const [suggestedConnections, setSuggestedConnections] = useState<UserProfile[]>([]);
   const [selectedProfileUser, setSelectedProfileUser] = useState<UserProfile | null>(null);
-  const [stories, setStories] = useState(INITIAL_STORIES);
-  const [posts, setPosts] = useState<Post[]>(INITIAL_POSTS);
-  const [clips, setClips] = useState(INITIAL_CLIPS);
-  const [jobs, setJobs] = useState<Job[]>(INITIAL_JOBS);
+  const [stories, setStories] = useState<Story[]>([]);
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [clips, setClips] = useState<Medclip[]>([]);
+  const [savedClips, setSavedClips] = useState<Medclip[]>([]);
+  const [jobs, setJobs] = useState<Job[]>([]);
   const [events, setEvents] = useState<MedicalEvent[]>([]);
-  const [opportunities] = useState(INITIAL_OPPORTUNITIES);
+  const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
   // Track IDs of users that the current user follows (persisted in localStorage)
   const [followingIds, setFollowingIds] = useState<Set<string>>(() => {
     try {
@@ -93,12 +86,19 @@ const MainApp: React.FC = () => {
       return stored ? new Set(JSON.parse(stored)) : new Set<string>();
     } catch { return new Set<string>(); }
   });
-  const [sessions, setSessions] = useState(INITIAL_SESSIONS);
-  const [notifications, setNotifications] = useState<NotificationItem[]>(INITIAL_NOTIFICATIONS);
+  const [sessions, setSessions] = useState<DeviceSession[]>([]);
+  const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
   const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const [feedFilterTag, setFeedFilterTag] = useState<string>('All');
   const [showSupportModal, setShowSupportModal] = useState<boolean>(false);
+  const [showThemeChoice, setShowThemeChoice] = useState(() => localStorage.getItem('medmedia_theme_prompt_pending') === 'true');
+
+  const chooseTheme = (dark: boolean) => {
+    setIsDarkMode(dark);
+    setShowThemeChoice(false);
+    localStorage.removeItem('medmedia_theme_prompt_pending');
+  };
 
   // Load persistent data from backend on startup
   useEffect(() => {
@@ -106,44 +106,39 @@ const MainApp: React.FC = () => {
 
     // 1. Fetch posts from backend DB
     apiService.getPosts().then((loadedPosts) => {
-      if (loadedPosts && loadedPosts.length > 0) {
-        setPosts(loadedPosts);
-      }
+      setPosts(loadedPosts || []);
     });
+    apiService.getBookmarkedPosts().then(setSavedPosts);
 
     // 2. Fetch users from backend DB
     apiService.getUsers().then((loadedUsers) => {
-      if (loadedUsers && loadedUsers.length > 0) {
-        setUsers(loadedUsers);
-      }
+      setUsers(loadedUsers || []);
     });
 
     // 3. Fetch stories from backend DB
     apiService.getStories().then((loadedStories) => {
-      if (loadedStories && loadedStories.length > 0) {
-        setStories(loadedStories);
-      }
+      setStories(loadedStories || []);
     });
 
     apiService.getClips().then((loadedClips) => {
-      setClips(loadedClips && loadedClips.length > 0 ? loadedClips : []);
+      setClips(loadedClips || []);
     });
+    apiService.getSavedClips().then(setSavedClips);
 
     apiService.getEvents().then((loadedEvents) => {
-      if (loadedEvents) setEvents(loadedEvents);
+      setEvents(loadedEvents || []);
     });
+    apiService.getOpportunities().then(setOpportunities);
 
     // 4. Fetch notifications — all real types from DB
     apiService.getNotifications().then((loadedNotifs) => {
-      if (loadedNotifs && loadedNotifs.length > 0) {
-        setNotifications(loadedNotifs);
-        setUnreadNotifCount(loadedNotifs.filter((n: any) => !n.isRead).length);
-      }
+      setNotifications(loadedNotifs || []);
+      setUnreadNotifCount((loadedNotifs || []).filter((n: any) => !n.isRead).length);
     });
 
     // 5. Fetch jobs from backend
     apiService.getJobs().then((loadedJobs) => {
-      if (loadedJobs && loadedJobs.length > 0) setJobs(loadedJobs);
+      setJobs(loadedJobs || []);
     });
 
     // 6. Fetch suggested connections from backend
@@ -156,6 +151,11 @@ const MainApp: React.FC = () => {
       setUnreadMsgCount(count);
     });
   }, [user?.id]);
+
+  useEffect(() => {
+    const savedIds = new Set(savedPosts.map(post => post.id));
+    setPosts(prev => prev.map(post => ({ ...post, isSaved: savedIds.has(post.id) })));
+  }, [savedPosts]);
 
   // Active Navigation Tab (Slide 5: Home, Medclips, Search, Opportunities, Profile)
   const [currentTab, setCurrentTab] = useState<TabType>('home');
@@ -211,12 +211,29 @@ const MainApp: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleAddJob = async (newJob: Job) => {
-    // Ideally this would go through apiService.createJob, for now just local state
-    // Let's assume apiService.createJob doesn't exist yet so we'll just mock it or if it does, wait.
-    setJobs(prev => [newJob, ...prev]);
+  const handleAddJob = async (newJob: Job): Promise<boolean> => {
+    const result = await apiService.createJob({
+      title: newJob.title,
+      category: newJob.category,
+      employmentType: newJob.type,
+      companyName: newJob.companyName,
+      location: newJob.place,
+      jobDescription: newJob.description,
+      salaryRange: newJob.salary,
+      educationPreference: newJob.preferenceEducation,
+      skillsRequired: newJob.skills
+    });
+
+    if (!result.success || !result.job) {
+      setToastMessage(result.message || 'Unable to post this job.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return false;
+    }
+
+    setJobs(prev => [{ ...result.job!, hospitalLogoUrl: newJob.hospitalLogoUrl }, ...prev]);
     setToastMessage("Job posted successfully!");
     setTimeout(() => setToastMessage(null), 3000);
+    return true;
   };
 
   const handleAcceptFollow = (notifId: string, authorName?: string) => {
@@ -233,7 +250,14 @@ const MainApp: React.FC = () => {
 
   // Post Actions (Persisted to database)
   const handleLikePost = (postId: string) => {
-    setPosts(posts.map(p => {
+    setPosts(prev => prev.map(p => {
+      if (p.id === postId) {
+        const isLiked = !p.isLiked;
+        return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
+      }
+      return p;
+    }));
+    setSavedPosts(prev => prev.map(p => {
       if (p.id === postId) {
         const isLiked = !p.isLiked;
         return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
@@ -244,14 +268,22 @@ const MainApp: React.FC = () => {
   };
 
   const handleSavePost = (postId: string) => {
-    setPosts(posts.map(p => {
+    const post = posts.find(item => item.id === postId);
+    const wasSaved = Boolean(post?.isSaved || savedPosts.some(item => item.id === postId));
+    const shouldSave = !wasSaved;
+
+    setPosts(prev => prev.map(p => {
       if (p.id === postId) {
-        const isSaved = !p.isSaved;
-        return { ...p, isSaved, savesCount: p.savesCount + (isSaved ? 1 : -1) };
+        return { ...p, isSaved: shouldSave, savesCount: p.savesCount + (shouldSave ? 1 : -1) };
       }
       return p;
     }));
-    apiService.savePost(postId);
+    setSavedPosts(prev => shouldSave && post
+      ? [{ ...post, isSaved: true }, ...prev.filter(item => item.id !== postId)]
+      : prev.filter(item => item.id !== postId));
+    apiService.savePost(postId).then(async saved => {
+      if (saved !== shouldSave) setSavedPosts(await apiService.getBookmarkedPosts());
+    });
   };
 
   const handleVotePoll = (postId: string, optionId: string) => {
@@ -294,9 +326,12 @@ const MainApp: React.FC = () => {
   };
 
   const handleSaveClip = (clipId: string) => {
-    setClips(clips.map(c => {
+    const clip = clips.find(item => item.id === clipId);
+    if (!clip) return;
+    const shouldSave = !(clip.isSaved || savedClips.some(item => item.id === clipId));
+    setClips(prev => prev.map(c => {
       if (c.id === clipId) {
-        const isSaved = !c.isSaved;
+        const isSaved = shouldSave;
         return {
           ...c,
           isSaved,
@@ -305,6 +340,20 @@ const MainApp: React.FC = () => {
       }
       return c;
     }));
+    setSavedClips(prev => shouldSave
+      ? [{ ...clip, isSaved: true }, ...prev.filter(item => item.id !== clipId)]
+      : prev.filter(item => item.id !== clipId));
+    apiService.saveClip(clipId).then(async saved => {
+      if (saved === null) {
+        setClips(prev => prev.map(item => item.id === clipId ? { ...item, isSaved: !shouldSave } : item));
+        setSavedClips(await apiService.getSavedClips());
+        setToastMessage('Could not update saved reels. Please sign in and retry.');
+        setTimeout(() => setToastMessage(null), 3000);
+      } else if (saved !== shouldSave) {
+        setClips(prev => prev.map(item => item.id === clipId ? { ...item, isSaved: saved } : item));
+        setSavedClips(await apiService.getSavedClips());
+      }
+    });
   };
 
   const handleRevokeSession = (sessionId: string) => {
@@ -313,6 +362,18 @@ const MainApp: React.FC = () => {
   };
 
   const handleSelectUser = (userOrId: UserProfile | string) => {
+    const isCurrentUser = typeof userOrId === 'string'
+      ? [currentUser.id, currentUser.username, currentUser.fullName]
+        .some(value => value.toLowerCase() === userOrId.toLowerCase())
+      : userOrId.id === currentUser.id;
+
+    if (isCurrentUser) {
+      setSelectedProfileUser(null);
+      setCurrentTab('profile');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      return;
+    }
+
     if (typeof userOrId === 'string') {
       const found = users.find(u => 
         u.id === userOrId || 
@@ -336,18 +397,6 @@ const MainApp: React.FC = () => {
     setSelectedProfileUser(null);
     setToastMessage(`Switched active profile to ${user.fullName}`);
     setTimeout(() => setToastMessage(null), 3500);
-  };
-
-  // Wipe / Reset all test data
-  const handleClearAllTestData = async () => {
-    if (window.confirm("Are you sure you want to wipe all demo/test data? This will clear all posts, stories, and notifications to give you a completely clean test slate.")) {
-      setPosts([]);
-      setStories([]);
-      setNotifications([]);
-      await apiService.clearAllData();
-      setToastMessage("All demo data removed! Clean slate ready for testing.");
-      setTimeout(() => setToastMessage(null), 3500);
-    }
   };
 
   // Algorithmic Personalized Feed & Clips calculation
@@ -375,10 +424,7 @@ const MainApp: React.FC = () => {
         <TopNav
           currentUser={currentUser}
           availableUsers={users}
-          isDarkMode={isDarkMode}
-          onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
           onSwitchUser={(u) => setUser(u)}
-          onClearAllTestData={handleClearAllTestData}
           onCreatePost={() => {
             setCreateModalMode('post');
             setShowCreateModal(true);
@@ -626,11 +672,14 @@ const MainApp: React.FC = () => {
                     user={selectedProfileUser || currentUser}
                     posts={posts.filter(p => p.authorId === (selectedProfileUser ? selectedProfileUser.id : currentUser.id))}
                     clips={clips.filter(clip => clip.authorId === (selectedProfileUser ? selectedProfileUser.id : currentUser.id))}
+                    savedPosts={savedPosts}
+                    savedClips={savedClips}
                     currentUser={currentUser}
                     deviceSessions={sessions}
                     onRevokeSession={handleRevokeSession}
                     onLikePost={handleLikePost}
                     onSavePost={handleSavePost}
+                    onSaveClip={handleSaveClip}
                     onConnectUser={async (id, isFollowing) => {
                       try {
                         if (isFollowing) {
@@ -720,6 +769,22 @@ const MainApp: React.FC = () => {
         />
 
       </div>
+
+      {showThemeChoice && (
+        <div className="fixed inset-0 z-[120] flex items-center justify-center bg-black/60 p-4" role="dialog" aria-modal="true" aria-labelledby="theme-choice-title">
+          <div className="w-full max-w-sm rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+            <h2 id="theme-choice-title" className="text-base font-bold text-slate-900 dark:text-white">Choose your display theme</h2>
+            <div className="mt-5 grid grid-cols-2 gap-3">
+              <button onClick={() => chooseTheme(false)} className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                Light
+              </button>
+              <button onClick={() => chooseTheme(true)} className="rounded-xl border border-slate-300 bg-slate-50 px-4 py-3 text-sm font-semibold text-slate-800 hover:bg-slate-100 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
+                Dark
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Notifications Drawer (Strictly ONLY Conferences, Jobs, and Follows - Zero Likes or Comments) */}
       {showNotificationsDrawer && (
@@ -864,6 +929,7 @@ const MainApp: React.FC = () => {
       <ClinicalChatDrawer
         isOpen={showMessagesDrawer}
         currentUser={currentUser}
+        availableUsers={users}
         onClose={() => setShowMessagesDrawer(false)}
       />
 
@@ -879,18 +945,17 @@ const MainApp: React.FC = () => {
           initialMode={createModalMode}
           onClose={() => setShowCreateModal(false)}
           onPostCreated={(newPost) => {
-            setPosts([newPost, ...posts]);
-            apiService.createPost(newPost);
-            setToastMessage("Clinical post published & saved to laptop database & MySQL!");
+            setPosts(prev => [newPost, ...prev]);
+            setToastMessage('Clinical post published.');
             setTimeout(() => setToastMessage(null), 3500);
           }}
           onStoryCreated={(newStory) => {
-            setStories([newStory, ...stories]);
-            setToastMessage("24h Story published (30s limit) & saved to MySQL!");
+            setStories(prev => [newStory, ...prev]);
+            setToastMessage('24h Story published.');
             setTimeout(() => setToastMessage(null), 3500);
           }}
           onClipCreated={(newClip) => {
-            setClips([newClip, ...clips]);
+            setClips(prev => [newClip, ...prev]);
             setToastMessage("MedClip published!");
             setTimeout(() => setToastMessage(null), 3500);
             setCurrentTab('medclips');

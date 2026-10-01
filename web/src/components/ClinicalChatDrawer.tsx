@@ -70,182 +70,9 @@ export interface Conversation {
 interface ClinicalChatDrawerProps {
   isOpen: boolean;
   currentUser: UserProfile;
+  availableUsers: UserProfile[];
   onClose: () => void;
 }
-
-const INITIAL_CONVERSATIONS: Conversation[] = [
-  {
-    id: 'conv-1',
-    name: 'Dr. Priya Nair',
-    avatar: 'https://images.unsplash.com/photo-1594824813581-2292f725350c?w=120&h=120&fit=crop',
-    role: 'DOCTOR',
-    specialtyOrDiscipline: 'Pediatric Neurosurgery • Manipal Hospital',
-    isOnline: true,
-    lastMessage: 'The IVUS imaging was pivotal in deciding the stent sizing.',
-    lastTime: '10:45 AM',
-    unreadCount: 0,
-    messages: [
-      { 
-        id: 'm1', 
-        sender: 'Dr. Priya Nair', 
-        text: 'Hello Dr. Ramesh, reviewed your catheterization case study. Remarkable result on the bifurcation!', 
-        time: '10:42 AM', 
-        isMe: false,
-        reactions: { '👏': 1 }
-      },
-      {
-        id: 'm1-img',
-        sender: 'Dr. Priya Nair',
-        text: 'Sharing high-resolution IVUS coronary diagnostic image:',
-        time: '10:43 AM',
-        isMe: false,
-        attachment: {
-          type: 'IMAGE',
-          title: 'IVUS_Coronary_Angiography.jpg',
-          url: 'https://images.unsplash.com/photo-1579684385127-1ef15d508118?w=800&h=600&fit=crop',
-          size: '2.4 MB'
-        }
-      },
-      {
-        id: 'm1-doc',
-        sender: 'Dr. Priya Nair',
-        text: 'Here is the full surgical protocol PDF for reference:',
-        time: '10:44 AM',
-        isMe: false,
-        attachment: {
-          type: 'DOC',
-          title: 'Bifurcation_Stenting_Surgical_Protocol.pdf',
-          size: '1.8 MB',
-          content: 'Bifurcation lesion stenting guidelines. Detailed intravascular ultrasound lumen evaluation, kissing balloon inflation technique, and post-dilatation recommendations for left main coronary intervention.'
-        }
-      },
-      { 
-        id: 'm2', 
-        sender: 'You', 
-        text: 'Thank you Dr. Priya! The IVUS imaging was pivotal in deciding the stent sizing.', 
-        time: '10:45 AM', 
-        isMe: true,
-        replyTo: {
-          messageId: 'm1-img',
-          sender: 'Dr. Priya Nair',
-          text: 'Sharing high-resolution IVUS coronary diagnostic image:',
-          attachmentType: 'IMAGE',
-          attachmentTitle: 'IVUS_Coronary_Angiography.jpg'
-        },
-        reactions: { '❤️': 1, '🩺': 1 }
-      }
-    ]
-  },
-  {
-    id: 'conv-2',
-    name: 'Rohan Verma',
-    avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=120&h=120&fit=crop',
-    role: 'STUDENT',
-    specialtyOrDiscipline: 'Final Year MBBS • KIMS Research Forum',
-    isOnline: true,
-    lastMessage: 'Doctor, would love to assist on the AI-ECG project!',
-    lastTime: '11:15 AM',
-    unreadCount: 1,
-    messages: [
-      { 
-        id: 'm3', 
-        sender: 'Rohan Verma', 
-        text: 'Good morning Doctor! I saw your open research call on MedMedia for the ECG Detection study.', 
-        time: '11:14 AM', 
-        isMe: false 
-      },
-      {
-        id: 'm3-doc',
-        sender: 'Rohan Verma',
-        text: 'I prepared our cohort abstraction proposal document for review:',
-        time: '11:14 AM',
-        isMe: false,
-        attachment: {
-          type: 'DOC',
-          title: 'ICMR_AI_ECG_Research_Proposal.pdf',
-          size: '3.2 MB',
-          content: 'Multicenter AI deep-learning model for automated acute STEMI detection on 12-lead ECG strips. Includes dataset methodology, ethics committee clearance, and student investigator responsibilities.'
-        }
-      },
-      {
-        id: 'm3-img',
-        sender: 'Rohan Verma',
-        text: 'Sample anonymized 12-lead rhythm record:',
-        time: '11:15 AM',
-        isMe: false,
-        attachment: {
-          type: 'IMAGE',
-          title: '12_Lead_ECG_Anterior_STEMI.png',
-          url: 'https://images.unsplash.com/photo-1530497610245-94d3c16cda28?w=800&h=600&fit=crop',
-          size: '1.2 MB'
-        }
-      },
-      { 
-        id: 'm4', 
-        sender: 'Rohan Verma', 
-        text: 'Doctor, would love to assist on the AI-ECG project! I have experience abstracting anonymized patient cohorts.', 
-        time: '11:15 AM', 
-        isMe: false,
-        replyTo: {
-          messageId: 'm3-doc',
-          sender: 'Rohan Verma',
-          text: 'I prepared our cohort abstraction proposal document for review:',
-          attachmentType: 'DOC',
-          attachmentTitle: 'ICMR_AI_ECG_Research_Proposal.pdf'
-        },
-        reactions: { '👍': 1, '💡': 1 }
-      }
-    ]
-  },
-  {
-    id: 'conv-3',
-    name: 'Dr. Sandeep Kulkarni',
-    avatar: 'https://images.unsplash.com/photo-1537368910025-700350fe46c7?w=120&h=120&fit=crop',
-    role: 'DOCTOR',
-    specialtyOrDiscipline: 'CTVS Surgeon • AIIMS New Delhi Alumni',
-    isOnline: false,
-    lastMessage: 'Are you attending the All India Medical Congress in Nov?',
-    lastTime: 'Yesterday',
-    unreadCount: 0,
-    messages: [
-      { 
-        id: 'm5', 
-        sender: 'Dr. Sandeep Kulkarni', 
-        text: 'Hey Arvind! Long time. Are you attending the All India Medical Congress in Nov? Our AIIMS batch is meeting up.', 
-        time: 'Yesterday', 
-        isMe: false 
-      }
-    ]
-  },
-  {
-    id: 'conv-4',
-    name: 'Ananya Desai',
-    avatar: 'https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=120&h=120&fit=crop',
-    role: 'STUDENT',
-    specialtyOrDiscipline: 'B.Pharm 3rd Year • Clinical Pharmacokinetics',
-    isOnline: true,
-    lastMessage: 'Thank you for explaining the ARNI washout duration!',
-    lastTime: 'Sep 11',
-    unreadCount: 0,
-    messages: [
-      { id: 'm6', sender: 'Ananya Desai', text: 'Doctor, quick question from hospital rounds: does the 36-hour ARNI washout rule also apply when switching to an ARB?', time: 'Sep 11', isMe: false },
-      { id: 'm7', sender: 'You', text: 'No, only when switching from an ACE inhibitor because of dual NEP/ACE inhibition causing angioedema.', time: 'Sep 11', isMe: true },
-      { 
-        id: 'm8', 
-        sender: 'Ananya Desai', 
-        text: 'Thank you for explaining the ARNI washout duration!', 
-        time: 'Sep 11', 
-        isMe: false,
-        replyTo: {
-          messageId: 'm7',
-          sender: 'You',
-          text: 'No, only when switching from an ACE inhibitor because of dual NEP/ACE inhibition causing angioedema.'
-        },
-        reactions: { '🙏': 1, '✨': 1 }
-      }
-    ]
-  }
-];
 
 const POPULAR_EMOJIS = [
   '🩺', '💉', '💊', '🩹', '🧬', '🩸', '🏥', '🩻', '👨‍⚕️', '👩‍⚕️',
@@ -263,12 +90,13 @@ const POPULAR_GIFS = [
 export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
   isOpen,
   currentUser,
+  availableUsers,
   onClose
 }) => {
-  // Start with demo conversations; replace with real ones when API loads
-  const [conversations, setConversations] = useState<Conversation[]>(INITIAL_CONVERSATIONS);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [isLoadingConvs, setIsLoadingConvs] = useState(false);
-  const [activeConvId, setActiveConvId] = useState<string>('conv-1');
+  const [conversationError, setConversationError] = useState('');
+  const [activeConvId, setActiveConvId] = useState<string>('');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [inputText, setInputText] = useState<string>('');
   const [isTypingPeer, setIsTypingPeer] = useState<boolean>(false);
@@ -309,8 +137,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     fetch(`${API_BASE}/conversations`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
-        if (data.success && Array.isArray(data.conversations) && data.conversations.length > 0) {
-          // Map real DB conversations to our local Conversation shape
+        if (data.success && Array.isArray(data.conversations)) {
           const mapped: Conversation[] = data.conversations.map((c: any) => {
             const otherParticipant = c.participants?.find((p: any) => p.user?.id !== currentUser.id);
             const lastMsg = c.messages?.[0];
@@ -318,29 +145,32 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
               id: c.id,
               name: otherParticipant?.user?.fullName || 'Unknown',
               avatar: otherParticipant?.user?.avatarUrl || `https://ui-avatars.com/api/?name=U&background=0284c7&color=fff`,
-              role: 'DOCTOR' as const,
+              role: otherParticipant?.user?.role === 'STUDENT' ? 'STUDENT' as const : 'DOCTOR' as const,
               specialtyOrDiscipline: '',
               isOnline: false,
               lastMessage: lastMsg?.content || '',
               lastTime: lastMsg ? new Date(lastMsg.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '',
               unreadCount: 0,
-              messages: [] // messages loaded on-demand when conversation is opened
+              messages: []
             };
           });
           setConversations(mapped);
-          if (mapped.length > 0) setActiveConvId(mapped[0].id);
+          setActiveConvId(mapped[0]?.id || '');
+        } else {
+          setConversations([]);
+          setActiveConvId('');
         }
-        // If no real conversations, keep demo conversations
       })
-      .catch(() => { /* backend unreachable, keep demo conversations */ })
+      .catch(() => {
+        setConversations([]);
+        setActiveConvId('');
+      })
       .finally(() => setIsLoadingConvs(false));
   }, [isOpen, currentUser?.id]);
 
   // Load messages for a conversation when selected
   const loadConversationMessages = (convId: string) => {
     const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
-    // Only load from API for real UUIDs (not demo conv-1, conv-2, etc.)
-    if (convId.startsWith('conv-')) return;
     fetch(`${API_BASE}/conversations/${convId}/messages`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
@@ -358,11 +188,75 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
       .catch(() => {});
   };
 
+  const startConversation = async (targetUser: UserProfile) => {
+    setIsLoadingConvs(true);
+    setConversationError('');
+    try {
+      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
+      const response = await fetch(`${API_BASE}/conversations`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ participantId: targetUser.id })
+      });
+      const data = await response.json();
+      if (!response.ok || !data.conversation) throw new Error(data.message || 'Could not start conversation');
+      const conversation = data.conversation;
+      const participant = conversation.participants?.find((item: any) => item.user?.id !== currentUser.id)?.user || targetUser;
+      const mapped: Conversation = {
+        id: conversation.id,
+        name: participant.fullName,
+        avatar: participant.avatarUrl || '',
+        role: participant.role === 'STUDENT' ? 'STUDENT' : 'DOCTOR',
+        specialtyOrDiscipline: '',
+        isOnline: false,
+        lastMessage: '',
+        lastTime: '',
+        unreadCount: 0,
+        messages: []
+      };
+      setConversations(prev => [mapped, ...prev.filter(item => item.id !== mapped.id)]);
+      setActiveConvId(mapped.id);
+      setMobileView('thread');
+      loadConversationMessages(mapped.id);
+    } catch (error) {
+      setConversationError(error instanceof Error ? error.message : 'Could not start conversation');
+    } finally {
+      setIsLoadingConvs(false);
+    }
+  };
+
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [activeConversation?.messages, isTypingPeer]);
 
   if (!isOpen) return null;
+
+  if (!activeConversation) {
+    return (
+      <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4" role="dialog" aria-modal="true" aria-label="Messages">
+        <div className="w-full max-w-md rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-6 shadow-2xl">
+          <div className="flex items-center justify-between">
+            <h2 className="text-sm font-bold text-slate-900 dark:text-white">Messages</h2>
+            <button onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close messages"><X className="h-5 w-5" /></button>
+          </div>
+          <p className="mt-6 text-center text-sm text-slate-600 dark:text-slate-300">
+            {isLoadingConvs ? 'Loading conversations…' : 'No conversations yet.'}
+          </p>
+          {conversationError && <p role="alert" className="mt-3 text-center text-xs text-rose-700 dark:text-rose-300">{conversationError}</p>}
+          <div className="mt-4 max-h-64 space-y-2 overflow-y-auto">
+            {availableUsers.filter(person => person.id !== currentUser.id).slice(0, 8).map(person => (
+              <button key={person.id} type="button" disabled={isLoadingConvs} onClick={() => startConversation(person)} className="flex w-full items-center gap-3 rounded-xl border border-slate-200 dark:border-slate-700 p-2 text-left hover:bg-slate-50 dark:hover:bg-slate-800 disabled:opacity-50">
+                <img src={person.avatarUrl || undefined} alt="" className="h-9 w-9 rounded-full bg-slate-200 object-cover" />
+                <span className="min-w-0 flex-1 truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{person.fullName}</span>
+                <span className="text-[11px] font-semibold text-sky-700 dark:text-sky-400">Message</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   const pushMessage = (msg: Message, autoOpenAttachment: boolean = false) => {
     const targetConvId = activeConvId;
@@ -384,16 +278,29 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     }
   };
 
-  const handleSendMessage = (e: React.FormEvent) => {
+  const handleSendMessage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!inputText.trim()) return;
+    if (!inputText.trim() || !activeConversation) return;
 
     const userMsgText = inputText.trim();
+    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
+    const response = await fetch(`${API_BASE}/conversations/${activeConversation.id}/messages`, {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: userMsgText })
+    });
+    const result = await response.json();
+    if (!response.ok || !result.message) {
+      setCopiedToast(result.message || 'Message could not be sent.');
+      return;
+    }
+
     const newMsg: Message = {
-      id: `msg-${Date.now()}`,
+      id: result.message.id,
       sender: 'You',
       text: userMsgText,
-      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      time: new Date(result.message.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isMe: true,
       replyTo: replyingToMessage ? {
         messageId: replyingToMessage.id,
@@ -409,61 +316,6 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     setReplyingToMessage(null); // Clear reply bar
     setShowEmojiPicker(false);
     setShowAttachMenu(false);
-
-    // Send to real API if it's a real conversation (not demo)
-    if (activeConvId && !activeConvId.startsWith('conv-')) {
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
-      fetch(`${API_BASE}/conversations/${activeConvId}/messages`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ content: userMsgText })
-      }).catch(() => {});
-      return; // Don't run auto-reply for real conversations
-    }
-
-    // Auto-Reply Simulator for demo conversations only
-    setIsTypingPeer(true);
-    const targetPeerName = activeConversation.name;
-    const targetConvId = activeConvId;
-
-    setTimeout(() => {
-      setIsTypingPeer(false);
-
-      let peerReplyText = "Got it! I agree with this clinical approach. Let's follow up during rounds.";
-      if (userMsgText.toLowerCase().includes('ecg') || userMsgText.toLowerCase().includes('heart')) {
-        peerReplyText = "I reviewed the rhythm strip. Sinus rhythm maintained with no ST deviation.";
-      } else if (userMsgText.toLowerCase().includes('research') || userMsgText.toLowerCase().includes('study')) {
-        peerReplyText = "Excellent. I will review the study protocol document and share my notes by evening.";
-      } else if (userMsgText.toLowerCase().includes('locum') || userMsgText.toLowerCase().includes('shift')) {
-        peerReplyText = "Confirmed. The casualty department credentials paperwork has been submitted.";
-      }
-
-      const peerMsg: Message = {
-        id: `peer-${Date.now()}`,
-        sender: targetPeerName,
-        text: peerReplyText,
-        time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-        isMe: false,
-        replyTo: {
-          messageId: newMsg.id,
-          sender: 'You',
-          text: newMsg.text
-        }
-      };
-
-      setConversations(prev => prev.map(conv => {
-        if (conv.id === targetConvId) {
-          return {
-            ...conv,
-            lastMessage: peerReplyText,
-            lastTime: 'Just now',
-            messages: [...conv.messages, peerMsg]
-          };
-        }
-        return conv;
-      }));
-    }, 1200);
   };
 
   // Toggle emoji reactions on any message
@@ -1668,3 +1520,4 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     </div>
   );
 };
+

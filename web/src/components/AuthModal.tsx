@@ -18,6 +18,9 @@ import {
 } from 'lucide-react';
 import { UserProfile, UserRole, StudentDiscipline } from '../types';
 import { apiService } from '../services/api';
+const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
+  ? 'http://localhost:5001/api'
+  : '/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -171,23 +174,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   const handleGoogleLogin = () => {
-    setStatusMessage("Connecting with Google Healthcare SSO...");
-    setTimeout(() => {
-      const googleUser: UserProfile = {
-        id: "usr-google-1",
-        fullName: "Dr. Google Authenticated",
-        username: "google_clinician",
-        email: "verified.doctor@gmail.com",
-        avatarUrl: "https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=150&h=150&fit=crop",
-        role: selectedRole,
-        verificationStatus: "VERIFIED",
-        badgeTitle: selectedRole === 'DOCTOR' ? "Google Verified Physician" : "Google Verified Scholar",
-        bio: "Practicing physician verified via OAuth 2.0 and medical credential registry.",
-        stats: { postsCount: 3, followersCount: 145, followingCount: 52 }
-      };
-      onLoginSuccess(googleUser);
-      onClose();
-    }, 600);
+    setStatusMessage('Google sign-in is not configured yet. Please use email and password.');
   };
 
   return (
@@ -945,7 +932,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Sending OTP...');
                 try {
-                  const res = await fetch('http://localhost:5001/api/auth/forgot-password', {
+                  const res = await fetch(`${API_BASE}/auth/request-password-reset`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), channel: recoveryChannel })
@@ -958,9 +945,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setStatusMessage(data.message || 'Failed to send OTP. Try again.');
                   }
                 } catch {
-                  // Fallback for offline demo
-                  setStatusMessage('OTP sent! (Demo mode — check console for code)');
-                  setTimeout(() => { setStatusMessage(''); setRecoveryStep(2); }, 1500);
+                  setStatusMessage('Password recovery service is unavailable. Please try again later.');
                 }
               }} className="space-y-4">
                 <div>
@@ -1010,7 +995,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Verifying OTP...');
                 try {
-                  const res = await fetch('http://localhost:5001/api/auth/verify-otp', {
+                  const res = await fetch(`${API_BASE}/auth/verify-otp`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), otp: otpCode.trim() })
@@ -1024,10 +1009,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setStatusMessage(data.message || 'Invalid OTP. Please try again.');
                   }
                 } catch {
-                  // Demo fallback
-                  setResetToken(`demo-token-${Date.now()}`);
-                  setStatusMessage('OTP verified! (Demo mode)');
-                  setTimeout(() => { setStatusMessage(''); setRecoveryStep(3); }, 1200);
+                  setStatusMessage('OTP verification service is unavailable. Please try again later.');
                 }
               }} className="space-y-4">
                 <div>
@@ -1064,7 +1046,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 }
                 setStatusMessage('Resetting password...');
                 try {
-                  const res = await fetch('http://localhost:5001/api/auth/reset-password', {
+                  const res = await fetch(`${API_BASE}/auth/reset-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ destination: emailOrPhone.trim(), resetToken, newPassword })
@@ -1077,8 +1059,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setStatusMessage(data.message || 'Reset failed. Please start over.');
                   }
                 } catch {
-                  setStatusMessage('✅ Password reset! (Demo mode) Redirecting...');
-                  setTimeout(() => { setMode('signin'); setRecoveryStep(1); setOtpCode(''); setNewPassword(''); setResetToken(''); setStatusMessage(''); }, 2000);
+                  setStatusMessage('Password reset service is unavailable. Please try again later.');
                 }
               }} className="space-y-4">
                 <div>
