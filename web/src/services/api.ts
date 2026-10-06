@@ -19,7 +19,12 @@ import {
 export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 const fetchWithAuth = (url: string, options: RequestInit = {}) => {
-  return fetch(url, { ...options, credentials: 'include' });
+  return fetch(url, { ...options, credentials: 'include' }).catch((error: unknown) => {
+    if (error instanceof TypeError) {
+      throw new Error('Unable to connect to MedMedia right now. Check your connection and try again.');
+    }
+    throw error;
+  });
 };
 
 type OpportunityCatalog = {
@@ -894,6 +899,22 @@ export const apiService = {
       const data = await res.json();
       return data.success ? data : null;
     } catch { return null; }
+  },
+
+  async submitPostReport(postId: string): Promise<{ ticketId: string; notificationStatus: string }> {
+    const res = await fetchWithAuth(`${API_BASE}/admin/report`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        subject: `Privacy report for post ${postId}`,
+        message: `A MedMedia member reported post ${postId} for review.`
+      })
+    });
+    const data = await res.json();
+    if (!res.ok || !data.success || !data.ticket?.id) {
+      throw new Error(data.message || 'Could not submit the report. Please try again.');
+    }
+    return { ticketId: data.ticket.id, notificationStatus: data.notificationStatus || 'not_configured' };
   },
 
   async getSupportTickets(): Promise<any[]> {

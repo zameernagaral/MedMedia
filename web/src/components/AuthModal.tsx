@@ -113,9 +113,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       password,
       role: selectedRole,
       verificationStatus: 'PENDING',
-      badgeTitle: selectedRole === 'DOCTOR'
-        ? `${specialization} Specialist`
-        : selectedDiscipline.replace('_', ' '),
+      badgeTitle: 'Verification pending',
       isPrivate: isPrivate,
       doctorDetails: selectedRole === 'DOCTOR' ? {
         specialization,

@@ -8,4 +8,7 @@ README.md
 **/.env*
 uploads
 backend/data
+backend/prisma/*.db
+backend/prisma/**/*.db
+**/*.db
 mobile

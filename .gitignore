@@ -22,6 +22,8 @@ build/
 .env*.local
 *.pem
 backend/prisma/dev.db
+backend/prisma/*.db
+backend/prisma/**/*.db
 /uploads/
 
 # Logs

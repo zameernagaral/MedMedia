@@ -48,6 +48,22 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
   const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
+  const [reportNotice, setReportNotice] = useState<string | null>(null);
+
+  const submitReport = async () => {
+    setShowMoreMenu(false);
+    try {
+      const result = await apiService.submitPostReport(post.id);
+      const delivery = result.notificationStatus === 'sent'
+        ? ' The support inbox was notified.'
+        : result.notificationStatus === 'failed'
+          ? ' The report was saved, but the support email could not be sent.'
+          : ' The report was saved; support email notifications are not configured yet.';
+      setReportNotice(`Report saved (ticket ${result.ticketId}).${delivery}`);
+    } catch (error) {
+      setReportNotice(error instanceof Error ? error.message : 'Could not submit the report. Please try again.');
+    }
+  };
 
   const words = post.content.trim().split(/\s+/);
   const shouldTruncate = words.length > 100;
@@ -240,14 +256,11 @@ export const PostCard: React.FC<PostCardProps> = ({
                 </button>
                 <div className="border-t border-slate-100 dark:border-slate-700 my-1"></div>
                 <button
-                  onClick={() => {
-                    alert("Clinical case submitted to MedMedia ethical moderation board.");
-                    setShowMoreMenu(false);
-                  }}
+                  onClick={() => void submitReport()}
                   className="w-full px-3.5 py-2 text-left text-xs font-medium text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 flex items-center gap-2 cursor-pointer"
                 >
                   <Flag className="w-4 h-4 text-rose-500 dark:text-rose-400" />
-                  Report Case / HIPAA
+                  Report Case / Privacy
                 </button>
                 {post.authorId === currentUser.id && onDeletePost && (
                   <>
@@ -437,6 +450,12 @@ export const PostCard: React.FC<PostCardProps> = ({
           }`} />
         </button>
       </div>
+
+      {reportNotice && (
+        <p role="status" className="px-4 pb-3 text-xs text-slate-600 dark:text-slate-300" aria-live="polite">
+          {reportNotice}
+        </p>
+      )}
 
       {/* Instagram-style "View all comments" link & quick trigger */}
       <div className="px-4 pb-3">

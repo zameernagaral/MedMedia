@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Send, CheckCircle2, LifeBuoy, AlertCircle } from 'lucide-react';
+import { X, Mail, Send, CheckCircle2, LifeBuoy } from 'lucide-react';
 import { UserProfile } from '../types';
 import { apiService } from '../services/api';
 
@@ -25,35 +25,41 @@ export const SupportModal: React.FC<SupportModalProps> = ({
   currentUser
 }) => {
   const [category, setCategory] = useState(SUPPORT_CATEGORIES[0]);
-  const [name, setName] = useState(currentUser?.fullName || '');
-  const [email, setEmail] = useState(currentUser?.email || '');
-  const [phone, setPhone] = useState('');
   const [description, setDescription] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!description.trim()) return;
+    if (!currentUser) {
+      setSubmitError('Sign in before submitting a support request.');
+      return;
+    }
 
     setIsSubmitting(true);
+    setSubmitError(null);
     try {
       const res = await apiService.submitSupportTicket({
-        subject: `Support Ticket from ${name || currentUser?.fullName || 'MedMedia User'}`,
-        message: phone ? `[Phone: ${phone}]\n${description}` : description,
+        subject: `Support request: ${category}`,
+        message: description.trim(),
         category
       });
+      if (!res?.success || !(res.ticketId || res.ticket?.id)) throw new Error('Support request could not be saved. Please try again.');
 
-      setSubmittedMessage(
-        res?.message ||
-        'Your query has been forwarded to MedMedia Support at medmedia1409@gmail.com. Our clinical engineering team will respond within 24-48 hours.'
-      );
-    } catch {
-      setSubmittedMessage(
-        'Your query has been forwarded to MedMedia Support at medmedia1409@gmail.com. Our clinical engineering team will respond within 24-48 hours.'
-      );
+      const ticketId = res.ticketId || res.ticket.id;
+      if (res.notificationStatus === 'sent') {
+        setSubmittedMessage(`Your request was saved as ticket ${ticketId}. The support inbox was notified.`);
+      } else if (res.notificationStatus === 'failed') {
+        setSubmittedMessage(`Your request was saved as ticket ${ticketId}, but the support email could not be sent. Please do not submit it again.`);
+      } else {
+        setSubmittedMessage(`Your request was saved as ticket ${ticketId}. Email notifications are not configured yet.`);
+      }
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : 'Support request could not be saved. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -61,6 +67,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({
 
   const handleClose = () => {
     setSubmittedMessage(null);
+    setSubmitError(null);
     setDescription('');
     onClose();
   };
@@ -96,11 +103,8 @@ export const SupportModal: React.FC<SupportModalProps> = ({
               <div className="w-14 h-14 mx-auto rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
                 <CheckCircle2 className="w-8 h-8" />
               </div>
-              <h4 className="text-lg font-bold text-slate-900 dark:text-white">Query Forwarded Successfully</h4>
+              <h4 className="text-lg font-bold text-slate-900 dark:text-white">Support request status</h4>
               <div className="p-4 rounded-xl bg-teal-50 dark:bg-teal-950/30 border border-teal-200/60 dark:border-teal-800/40 text-left text-xs text-teal-900 dark:text-teal-200 leading-relaxed">
-                <p className="font-semibold mb-1 flex items-center gap-1.5">
-                  <Mail className="w-4 h-4 text-teal-600 dark:text-teal-400" /> Destination: medmedia1409@gmail.com
-                </p>
                 <p>{submittedMessage}</p>
               </div>
               <button
@@ -114,12 +118,10 @@ export const SupportModal: React.FC<SupportModalProps> = ({
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2.5">
                 <Mail className="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0 mt-0.5" />
-                <span>
-                  All queries submitted here are forwarded directly to{' '}
-                  <strong className="text-teal-600 dark:text-teal-400 font-semibold">medmedia1409@gmail.com</strong>.
-                  Our verification and engineering team responds to clinical queries within 24-48 hours.
-                </span>
+                <span>Support requests are saved in MedMedia. Do not include patient names, records, or other identifying clinical information. The support mailbox may not be configured yet.</span>
               </div>
+
+              {submitError && <p role="alert" className="text-xs text-rose-700 dark:text-rose-300">{submitError}</p>}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
@@ -136,47 +138,6 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                     </option>
                   ))}
                 </select>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Your Name
-                  </label>
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    placeholder="Dr. John Doe / Student Name"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                    Email Address *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="doctor@hospital.org"
-                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">
-                  Phone / WhatsApp (Optional)
-                </label>
-                <input
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="+91 98765 43210"
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-teal-500 focus:outline-none"
-                />
               </div>
 
               <div>
@@ -207,7 +168,7 @@ export const SupportModal: React.FC<SupportModalProps> = ({
                   className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-teal-600 hover:bg-teal-700 text-white font-semibold text-xs transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Send className="w-3.5 h-3.5" />
-                  {isSubmitting ? 'Sending query...' : 'Send to medmedia1409@gmail.com'}
+                  {isSubmitting ? 'Saving request...' : 'Send support request'}
                 </button>
               </div>
             </form>

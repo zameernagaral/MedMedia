@@ -7,6 +7,7 @@ import prisma from '../data/prismaClient';
 
 import { env } from '../config/env';
 import rateLimit from 'express-rate-limit';
+import { verificationBadgeTitle } from '../utils/verification';
 
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -102,7 +103,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
         role: user.role,
         isPrivate: user.isPrivate,
         verificationStatus: user.verificationStatus,
-        badgeTitle: user.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
+        badgeTitle: verificationBadgeTitle(user.role, user.verificationStatus),
         doctorDetails: user.doctorProfile ? {
           specialization: user.doctorProfile.specialization,
           hospitalAffiliation: user.doctorProfile.hospitalAffiliation,
@@ -290,7 +291,7 @@ router.get('/me', async (req: Request, res: Response) => {
         verificationStatus: user.verificationStatus,
         bio: user.bio,
         coverPhotoUrl: user.coverPhotoUrl,
-        badgeTitle: user.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
+        badgeTitle: verificationBadgeTitle(user.role, user.verificationStatus),
         doctorDetails: user.doctorProfile ? {
           specialization: user.doctorProfile.specialization,
           hospitalAffiliation: user.doctorProfile.hospitalAffiliation,

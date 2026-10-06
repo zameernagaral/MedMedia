@@ -1,6 +1,20 @@
 import { PrismaClient } from '@prisma/client';
-declare var process: any;
+import 'dotenv/config';
 import bcrypt from 'bcryptjs';
+
+const demoSeedPassword = process.env.DEMO_SEED_PASSWORD;
+if (process.env.NODE_ENV === 'production') {
+  console.error('Demo seeding is disabled in production.');
+  process.exit(1);
+}
+if (process.env.ALLOW_DEMO_SEED !== 'true') {
+  console.error('Set ALLOW_DEMO_SEED=true to explicitly enable local demo seeding.');
+  process.exit(1);
+}
+if (!demoSeedPassword || demoSeedPassword.length < 16) {
+  console.error('Set DEMO_SEED_PASSWORD to a value of at least 16 characters.');
+  process.exit(1);
+}
 
 const prisma = new PrismaClient();
 
@@ -16,7 +30,7 @@ async function main() {
   for (const u of users) {
     const existing = await prisma.user.findUnique({ where: { username: u.username } });
     if (!existing) {
-      const passwordHash = await bcrypt.hash('password123', 10);
+      const passwordHash = await bcrypt.hash(demoSeedPassword, 12);
       await prisma.user.create({
         data: {
           id: u.id,

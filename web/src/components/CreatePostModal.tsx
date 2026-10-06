@@ -72,7 +72,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
   const [tagInput, setTagInput] = useState('#Cardiology #ClinicalCase');
   const [pollQuestion, setPollQuestion] = useState('Recommended Next Diagnostic Step:');
   const [pollOptions, setPollOptions] = useState(['CT Angiography', 'Echocardiography', 'Cardiac MRI', 'Coronary Angiogram']);
-  const [hipaaAcknowledged, setHipaaAcknowledged] = useState(false);
+  const [privacyConfirmed, setPrivacyConfirmed] = useState(false);
 
   // Story Specific State
   const [storyCaption, setStoryCaption] = useState('');
@@ -484,7 +484,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               />
             </div>
 
-            {/* HIPAA Notice */}
+            {/* Clinical privacy notice */}
             <div className="p-3 bg-amber-50 dark:bg-amber-950/50 border border-amber-200 dark:border-amber-800/80 rounded-xl flex items-start gap-2.5">
               <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400 mt-0.5 flex-shrink-0" />
               <div className="text-[11px] text-amber-900 dark:text-amber-200">
@@ -492,11 +492,11 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
                   <input
                     type="checkbox"
                     required
-                    checked={hipaaAcknowledged}
-                    onChange={(e) => setHipaaAcknowledged(e.target.checked)}
+                    checked={privacyConfirmed}
+                    onChange={(e) => setPrivacyConfirmed(e.target.checked)}
                     className="rounded text-sky-600 focus:ring-0 cursor-pointer"
                   />
-                  <span>I certify patient identifiers (names, MRN, faces) have been completely removed.</span>
+                  <span>I confirm I have permission to share this content and removed patient identifiers.</span>
                 </label>
               </div>
             </div>
@@ -513,7 +513,7 @@ export const CreatePostModal: React.FC<CreatePostModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isSubmitting || !hipaaAcknowledged || (!content.trim() && !mediaUrl)}
+                disabled={isSubmitting || !privacyConfirmed || (!content.trim() && !mediaUrl)}
                 className="px-5 py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white text-xs font-bold rounded-xl shadow-md transition flex items-center gap-1.5 cursor-pointer"
               >
                 <Send className="w-3.5 h-3.5" />

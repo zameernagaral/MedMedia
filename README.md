@@ -1,24 +1,25 @@
 # MED MEDIA - Healthcare Professional & Student Platform
 
-**MedMedia** is a dedicated, verified healthcare ecosystem specifically engineered for **Doctors** (Consultants, Specialists, Surgeons) and **Healthcare Students** (Medical/MBBS, Nursing, B.Pharm, D.Pharm, and Allied Lab Practitioners).
+**MedMedia** is a professional networking app being built for **Doctors** (Consultants, Specialists, Surgeons) and **Healthcare Students** (Medical/MBBS, Nursing, B.Pharm, D.Pharm, and Allied Lab Practitioners). Account verification is not complete for every account, and the service is not a substitute for professional clinical judgment.
 
 ---
 
 ## 📁 Project Architecture
 
 ```
-medical/
+MedMedia/
 ├── docs/                        # Complete Technical Specs & Schemas
-│   ├── ARCHITECTURE.md          # Multi-tier System Architecture, HIPAA & Ethics
-│   ├── DATABASE_SCHEMA.sql      # Production PostgreSQL relational schema (Prisma/SQL)
-│   └── API_SPECIFICATION.md     # REST endpoints & authentication protocols
+│   ├── ARCHITECTURE.md          # Historical target-state design (not as-built)
+│   ├── DATABASE_SCHEMA.sql      # Historical schema draft; runtime schema is Prisma/MySQL
+│   └── API_SPECIFICATION.md     # Historical API draft; verify against current routes
 │
 ├── backend/                     # Node.js + Express REST API Server
 │   ├── prisma/
-│   │   └── schema.prisma        # Prisma ORM schema
+│   │   ├── schema.prisma        # Current Prisma/MySQL schema
+│   │   └── migrations/          # MySQL migration history
 │   ├── src/
 │   │   ├── routes/              # auth, posts, clips, opportunities, users, search
-│   │   ├── data/mockDb.ts       # Realistic clinical seed data
+│   │   ├── data/prismaClient.ts # Prisma database client
 │   │   └── server.ts            # Express server (Port 5001)
 │   └── package.json
 │
@@ -31,10 +32,10 @@ medical/
 │   │   │   ├── PostCard.tsx     # Slides 5 & 7: Case polls, tweets, images, links (No reels)
 │   │   │   ├── MedclipsPlayer.tsx # Slide 6: Vertical video/clinical clips + side actions
 │   │   │   ├── OpportunitiesHub.tsx # Slides 8 & 9: Jobs, Research, Locum, Events, Courses
-│   │   │   ├── ProfileView.tsx  # Slides 3 & 4: Doctor & Student verified portfolios
+│   │   │   ├── ProfileView.tsx  # Doctor and student profiles (verification is pending until reviewed)
 │   │   │   ├── SearchAndNetworking.tsx # Slide 10: Multi-entity search & Alumni engine
 │   │   │   ├── AuthModal.tsx    # Slides 2, 3, 4: Doctor vs Student verification upload
-│   │   │   └── CreatePostModal.tsx # Create + modal with HIPAA consent
+│   │   │   └── CreatePostModal.tsx # Create post with clinical privacy confirmation
 │   │   ├── App.tsx
 │   │   └── main.tsx
 │   └── package.json
@@ -51,7 +52,7 @@ medical/
 
 ## 🚀 Quick Start Guide
 
-### 1. Backend Server (Port 5001)
+### 1. Start the web app and backend together
 ```powershell
 Copy-Item backend/.env.example backend/.env
 # Set DATABASE_URL to a reachable MySQL database and JWT_SECRET to a random
@@ -59,15 +60,19 @@ Copy-Item backend/.env.example backend/.env
 npm.cmd --prefix backend install
 npm.cmd --prefix backend run db:generate
 npm.cmd --prefix backend run db:migrate:dev
-npm.cmd --prefix backend run dev
+npm.cmd run dev
 ```
-Healthcheck: `http://localhost:5001/health` (database readiness: `/api/ready`)
+The root `npm.cmd run dev` command starts the API, waits for its MySQL readiness check, and then starts the web client. Open `http://localhost:3000/`.
+
+Healthcheck: `http://localhost:5001/health` (database readiness: `http://localhost:5001/api/ready`)
 Posts API: `http://localhost:5001/api/posts`
 
-### 2. Web Application (Port 3000)
+To run each service separately, use two terminals:
 ```powershell
-npm.cmd --prefix web install
-npm.cmd --prefix web run dev
+npm.cmd run backend:dev
+```
+```powershell
+npm.cmd run web:dev
 ```
 Preview production build:
 ```powershell

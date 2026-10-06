@@ -1,0 +1,76 @@
+# MedMedia production readiness audit
+
+Audit snapshot: **2026-10-07**. Based on the repository checkout and automated checks available locally. “Done” means an implementation exists; it does not mean production deployment or legal compliance was verified.
+
+## Five-line project summary
+
+1. MedMedia is a healthcare professional and student networking app for profiles, clinical posts and clips, discussions, resources, opportunities, and messaging.
+2. The web client uses React 19, TypeScript, Vite, Tailwind CSS, and React Router.
+3. The API uses Node.js 22, Express, TypeScript, Prisma, and MySQL; the mobile client is an Expo/React Native prototype.
+4. Email/password registration, login, logout/session revocation, core API routes, the responsive web UI, and MySQL migrations are implemented; backend tests and web builds are available.
+5. Mobile workflows remain demo-only; email verification/password recovery, privacy/legal readiness, and production operations are incomplete, so this checkout is not launch-ready.
+
+## Audit by category
+
+| Category | Status | Findings |
+|---|---|---|
+| 1. Core features | **Partial** | Email/password signup, login, logout, bcrypt password hashes, HttpOnly JWT cookie sessions, auth-version revocation, and basic roles exist; local web-proxy signup/login/logout was exercised. OTP/email verification, Google sign-in, and password reset are not implemented. Role checks exist but workflows are uneven. Posts, profiles, comments, clips, opportunities, resources, communities, and messaging have API routes; end-to-end CRUD coverage varies. Search and pagination are inconsistent. Upload accepts validated images/video, not PDF; production uploads require Cloudinary. |
+| 2. Backend | **Partial** | Zod validation is used on several routes, while others rely on ad hoc checks. A central error handler hides server details, but status/error formats vary. Pino HTTP logging redacts credentials; Sentry is optional. Global/auth/upload rate limits exist, but default storage is per-process memory. MySQL schema and migrations exist; CI now runs the checked-in migration chain. Some indexes exist, with no full query/index review. Seed scripts require explicit non-production opt-in and a supplied password. |
+| 3. Security and medical privacy | **Partial / release blocker** | bcrypt, JWT verification, HttpOnly/SameSite cookies, logout revocation, exact-origin CORS, Helmet, HPP, upload signature checks, secret redaction, fail-fast DB configuration, and origin checks for cookie-authenticated writes exist. `.env` is ignored and examples exist. Local SQLite files are excluded from the latest tree and Docker context, but remain in Git history pending authorization to rewrite it. Consent is a UI acknowledgement, not an auditable consent workflow. No complete privacy policy, encryption-at-rest evidence, or verified patient-data handling process is established. Unsupported HIPAA/end-to-end-encryption/credential-verification claims were removed from reviewed UI/docs; do not represent the product as compliant or credentials as verified without evidence. |
+| 4. Frontend | **Partial** | Responsive layouts, form checks, loading/error patterns, a 404 page, page titles/descriptions, Open Graph/Twitter metadata, and an SVG favicon exist. Coverage is inconsistent; keyboard/screen-reader accessibility has no audit. Public Privacy, Terms, and Contact pages identify themselves as placeholders. `robots.txt` is present, while server-generated sitemap/robots routes can be shadowed by static-file serving. Image lazy loading is only used in selected views. |
+| 5. Performance | **Partial / Missing** | One video feed uses lazy loading; other media does not consistently. No general image transformation/optimization or cache policy was found. Cloudinary can host uploads, but no CDN/transformation policy is established. Production web build succeeds but emits a large-chunk warning (roughly 688 KB JS); no deliberate route-level code splitting is configured. |
+| 6. Testing and quality | **Partial** | Backend Jest/Supertest coverage passes (5 suites / 27 tests), backend TypeScript build passes, and the web build/type check passes. The web bundle emits a large-chunk warning (~687 KB JS). No frontend unit/E2E/browser tests, lint/formatter configuration, or mobile integration tests were found. A prior mobile dependency audit reported 60 vulnerabilities (20 moderate, 38 high, 2 critical); re-run before release and use a compatibility plan. Browser/mobile production flows were not verified. |
+| 7. DevOps | **Partial** | A multi-stage Dockerfile, Railway configuration, `/health`, `/api/health`, and `/api/ready` endpoints exist. Docker Compose is absent. GitHub Actions runs backend tests, a frontend build, and checked-in migrations against CI MySQL. Environment examples exist but per-environment deployment configuration is incomplete. No documented automated DB backup/restore plan exists. Local SQLite files are excluded from Docker inputs. |
+| 8. Deployment and operations | **Partial / Unverified** | Railway is the documented target and production Docker build/start logic exists. No live production deployment, domain, HTTPS, DNS, production database, or restore drill was verified. Sentry is optional and no release alerting, analytics, or independent uptime monitor is configured/documented. Cloudinary and Redis are optional and require production setup for persistent media and distributed rate limits. |
+| 9. Legal and public pages | **Missing for launch** | About, Privacy, Terms, and Contact routes/pages exist, but Privacy, Terms, and Contact explicitly contain placeholder language. Operating entity/jurisdiction, data practices, user rights, retention, support ownership, consent records, and counsel-reviewed terms are not established. |
+| 10. Documentation | **Partial** | README includes local setup, environment guidance, scripts, and Railway deployment steps; its tree now labels historical schema/API docs and the mobile prototype accurately. The API specification still does not match implemented routes. Screenshots and a verified endpoint-by-endpoint API reference are absent. |
+
+## Prioritized work
+
+Effort estimates are engineering time, excluding external approvals, legal review, account provisioning, and deployment wait time. Suggested commit messages are provided; no commit is made by this audit itself.
+
+### P0 — before any public launch
+
+| Status | Work | Files / folders | Effort | Suggested commit message / dependency |
+|---|---|---|---:|---|
+| Done locally; history cleanup pending authorization | Stop tracking local SQLite databases; exclude all database files from Git and Docker build contexts while preserving local copies. The owner says they may contain real user/patient data. Past GitHub commits still contain the blobs and require history cleanup plus privacy incident review. | `.gitignore`, `.dockerignore`, `backend/prisma/*.db`, `backend/prisma/data/*.db`, Git history | 0.5 h, plus history remediation | `security: keep local sqlite databases out of git and images` — history rewrite/force-push is not authorized yet. |
+| Done | Fail startup when `DATABASE_URL` is absent/invalid and when production `JWT_SECRET` is absent/short; remove baked-in database credentials. Verify dev/test/prod env behavior. | `backend/src/config/env.ts`, `backend/.env.example`, backend tests | 1 h | `security: require valid database and production jwt configuration` |
+| Done | Add origin validation for unsafe requests authenticated by the HttpOnly cookie; allow configured same-origin/site origins and leave bearer-only native API requests usable. | `backend/src/middleware/csrf.ts`, `backend/src/server.ts`, `backend/tests/auth-security.test.ts` | 1–2 h | `security: protect cookie-authenticated writes from csrf` |
+| Done | Make CI apply the committed MySQL migration chain on a fresh service DB instead of `prisma db push`. | `.github/workflows/ci.yml` | 0.5 h | `ci: verify mysql migrations on a clean database` |
+| Done | Guard demo seeding against production execution and remove shared hard-coded demo passwords; require an explicit development opt-in and supplied seed password. | `backend/scripts/seed-50-fake-accounts.ts`, `backend/prisma/seed.ts`, `backend/.env.example` | 1 h | `security: make demo seeding explicit and non-production` |
+| Done locally | Start local API and web app together only after the API/database readiness check; replace browser “Failed to fetch” text with a retry-friendly connection message. Verified signup/login/HttpOnly cookie/logout through the Vite proxy using a temporary account that was removed afterward. | `scripts/dev.mjs`, `package.json`, `web/src/services/api.ts`, `README.md` | 1 h | `fix: start api and web together for working local login` |
+| Done locally | Remove unsupported HIPAA, end-to-end-encryption, and clinical verification claims until those controls are implemented and independently reviewed; retain truthful patient-privacy instructions and a clear medical-judgment disclaimer. Pending accounts now show “Verification pending.” | `web/src/components/ClinicalChatDrawer.tsx`, `web/src/components/CreatePostModal.tsx`, `backend/src/utils/verification.ts`, `backend/src/routes/auth.ts`, `backend/src/routes/users.ts`, README/docs | 1–2 h | `legal: remove unverified medical privacy claims` |
+| Implemented and unit-tested locally; provider setup and delivery unverified | Use Resend for low-volume transactional ticket alerts; saved support/report tickets trigger a rate-limited best-effort email containing only a ticket ID (never user-submitted clinical text). Configure API key, verified sender domain, and recipient inbox after buying/configuring the domain. Add an inbox/review workflow before opening support publicly. | `backend/src/services/supportEmail.ts`, `backend/src/routes/admin.ts`, `backend/src/routes/settings.ts`, `backend/src/config/env.ts`, `backend/.env.example`, `web/src/components/SupportModal.tsx`, `web/src/components/PostCard.tsx` | 2–4 h | Resend currently lists a $0 tier with 3,000 emails/month, 100/day, and 3 domains ([official pricing](https://resend.com/pricing)); limits/prices may change. Domain and inbox values remain unconfigured. |
+| Blocked on owner/legal review | Publish accurate Privacy/Terms/Contact content, define operator/jurisdiction, collection/retention/deletion/consent/incident practices, and decide whether the app may accept clinical data. India supplied as intended jurisdiction; operating entity and approved wording are still required. | `web/src/pages/PublicInfoPage.tsx`, privacy/security operations docs | 4–8 h engineering plus counsel review | India is known; operator details and approved wording are required. |
+| TODO / deployment access required | Select production domain and service owners, configure HTTPS, production MySQL/media/secrets, run migration on the target, configure backups and test restore, Sentry alerting, and independent uptime checks. | Railway/service configuration, `backend/.env.example`, deployment/runbook docs | 2–4 h plus provisioning | Railway is documented but no live service/domain/access was verified. |
+
+### P1 — soon after launch or before broader rollout
+
+| Work | Files / folders | Effort |
+|---|---|---:|
+| Implement email verification and password reset with expiring, single-use tokens, delivery, anti-enumeration responses, and tests; remove/disable dead UI flows until ready. | `backend/src/routes/auth.ts`, auth schema/models/migrations, `web/src/components/AuthModal.tsx` | 2–4 days |
+| Standardize route validation, error/status response shapes, rate-limit policy and shared Redis for multi-instance deployments. | `backend/src/routes/`, middleware, tests, Redis service config | 2–4 days |
+| Add safe PDF uploads if required, with size/type/signature checks, storage policy, malware scanning decision, and access control. | `backend/src/routes/upload.ts`, web upload components, Cloudinary policy | 1–3 days |
+| Add consistent pagination and query limits to users, search, opportunities, resources, messages and other growing lists; review schema indexes against production queries. | `backend/src/routes/`, Prisma schema/migrations, web services | 2–4 days |
+| Correct static/dynamic sitemap and robots route ordering; include the sitemap URL for the deployed canonical origin. | `backend/src/server.ts`, `web/public/robots.txt` | 0.5–1 day |
+| Build frontend unit/integration and browser E2E coverage for signup, login, posting, upload, logout, error/empty states; add mobile API/auth tests if mobile becomes a product target. | `web/`, `backend/tests/`, `.github/workflows/ci.yml`, `mobile/` | 3–6 days |
+| Upgrade and validate mobile dependencies without force-downgrading Expo; implement authenticated API, secure session storage, persisted flows, and EAS profiles before store release. | `mobile/package.json`, `mobile/src/`, `mobile/eas.json` | 1–3 weeks |
+| Add lint/format scripts and CI checks, and review dependency audit findings with compatible upgrades. | root/backend/web/mobile `package.json`, lockfiles, `.github/workflows/ci.yml` | 1–2 days |
+| Add image resizing/transforms, lazy loading outside the clip feed, deliberate browser/media cache headers, CDN configuration and JS route splitting; recheck bundle size. | `web/src/`, Vite config, upload/media service, Docker/server config | 2–4 days |
+| Align README, architecture, schema SQL, API docs, environment variables, and migration/deployment instructions with current MySQL implementation. | `README.md`, `docs/`, `backend/.env.example`, web/mobile docs | 1–3 days |
+| Perform accessibility review (keyboard, focus, labels, contrast, reduced motion) and test representative screen sizes with real browser automation. | `web/src/` | 2–4 days |
+
+### P2 — useful follow-up
+
+| Work | Files / folders | Effort |
+|---|---|---:|
+| Add Docker Compose for reproducible local MySQL/API/web development and document reset-safe local workflows. | `docker-compose.yml`, `README.md` | 0.5–1 day |
+| Add screenshots and short feature walkthroughs after browser QA. | `README.md`, `docs/screenshots/` | 0.5–1 day |
+| Add privacy-preserving analytics only after a documented purpose/consent decision. | web analytics integration and privacy policy | 1–2 days |
+| Add a documented restore drill, incident response runbook, and regular dependency/security review cadence. | `docs/operations/`, hosting configuration | 1–2 days |
+
+## Verification notes
+
+- 2026-10-07 local verification: backend TypeScript build passed; backend tests passed (5 suites / 27 tests); web TypeScript/Vite production build passed with a ~687 KB main-JS chunk warning. Signup/login/logout through the local web proxy was exercised against MySQL using a temporary account, then the account was removed.
+- MySQL migrations were validated and reported up to date locally. This turn did not access production credentials, deploy services, inspect SQLite row contents, send a real email, run browser/mobile production flows, or verify legal compliance.
+- The latest-tree SQLite removal is staged locally and local copies are preserved. History remediation, domain/inbox setup, legal review, and production hosting remain explicit dependencies.

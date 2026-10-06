@@ -66,6 +66,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
   const [ticketLoading, setTicketLoading] = useState(false);
   const [myTickets, setMyTickets] = useState<any[]>([]);
   const [ticketSubmitted, setTicketSubmitted] = useState(false);
+  const [ticketNotificationStatus, setTicketNotificationStatus] = useState('not_configured');
 
   // Account deletion state
   const [deletePassword, setDeletePassword] = useState('');
@@ -142,6 +143,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
     setTicketLoading(false);
     if (result) {
       setTicketSubmitted(true);
+      setTicketNotificationStatus(result.notificationStatus || 'not_configured');
       setMyTickets(prev => [result.ticket, ...prev]);
       setTicketSubject(''); setTicketMessage(''); setTicketCategory('general');
       setTimeout(() => setTicketSubmitted(false), 4000);
@@ -321,7 +323,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
           </div>
 
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 space-y-2">
-            <h5 className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> HIPAA & Clinical Privacy Guidelines</h5>
+            <h5 className="text-xs font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><ShieldCheck className="w-4 h-4 text-sky-500" /> Clinical Privacy Guidelines</h5>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">All clinical case images must redact patient names, hospital numbers, and visible facial identifiers before posting.</p>
             <p className="text-[11px] text-slate-500 dark:text-slate-400">By using MedMedia you agree to our <span className="text-sky-600 dark:text-sky-400 cursor-pointer font-semibold">Clinical Privacy Policy</span>.</p>
           </div>
@@ -528,7 +530,13 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
                 <CheckCircle2 className="w-10 h-10 text-emerald-500" />
                 <div>
                   <p className="text-sm font-bold text-slate-900 dark:text-white">Ticket Submitted!</p>
-                  <p className="text-xs text-slate-500 mt-1">Our team at <strong>medmedia1409@gmail.com</strong> will respond within 24 hours.</p>
+                  <p className="text-xs text-slate-500 mt-1">
+                    {ticketNotificationStatus === 'sent'
+                      ? 'Your ticket was saved and the support inbox was notified. Ticket text stays in MedMedia.'
+                      : ticketNotificationStatus === 'failed'
+                        ? 'Your ticket was saved, but the support email could not be sent. Please do not submit it again.'
+                        : 'Your ticket was saved. Support email notifications are not configured yet.'}
+                  </p>
                 </div>
               </div>
             ) : (

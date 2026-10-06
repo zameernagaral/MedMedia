@@ -4,6 +4,7 @@ import { optionalAuth, requireAuth } from '../middleware/authMiddleware';
 import { isAdminAccount } from '../middleware/role';
 import { z } from 'zod';
 import { createNotification } from '../services/notificationService';
+import { verificationBadgeTitle } from '../utils/verification';
 
 const router = Router();
 
@@ -281,7 +282,7 @@ router.get('/', async (req: Request, res: Response) => {
         verificationStatus: u.verificationStatus,
         isPrivate: u.isPrivate,
         coverPhotoUrl: u.coverPhotoUrl,
-        badgeTitle: u.role === 'DOCTOR' ? 'Verified Specialist' : 'Medical Scholar',
+        badgeTitle: verificationBadgeTitle(u.role, u.verificationStatus),
         doctorDetails: u.doctorProfile ? {
           specialization: u.doctorProfile.specialization,
           hospitalAffiliation: u.doctorProfile.hospitalAffiliation,

@@ -753,7 +753,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
           <div className="flex-1 p-4 overflow-y-auto space-y-4 bg-slate-100/60 dark:bg-slate-950">
             <div className="text-center my-1">
               <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-white/80 dark:bg-slate-900/80 backdrop-blur-xs border border-slate-200 dark:border-slate-800 px-3 py-1 rounded-full shadow-2xs">
-                🔒 HIPAA Compliant • End-to-End Clinical Encryption
+                🔒 Clinical discussion • Messages are not end-to-end encrypted
               </span>
             </div>
 
@@ -1428,7 +1428,7 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
                   </div>
                   <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-600 dark:text-slate-300 flex items-center gap-2">
                     <ShieldCheck className="w-4 h-4 text-sky-600 flex-shrink-0" />
-                    <span>Clinical Diagnostic Imagery • HIPAA De-Identified & Verified</span>
+                    <span>Before sharing, confirm permission and remove patient-identifying details.</span>
                   </div>
                 </div>
               )}
@@ -1436,43 +1436,40 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
               {/* Document / PDF Reader View */}
               {selectedAttachmentForViewer.type === 'DOC' && (
                 <div className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-md space-y-5 text-left max-w-xl mx-auto">
-                  {/* Institutional Header */}
+                  {/* Document heading */}
                   <div className="border-b border-slate-200 dark:border-slate-800 pb-4 flex items-center justify-between">
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-                          Official PDF Protocol
+                          Document preview
                         </span>
-                        <span className="text-[10px] text-slate-400">Page 1 of 3</span>
+                        <span className="text-[10px] text-slate-400">Preview only</span>
                       </div>
                       <h3 className="text-base font-bold text-slate-900 dark:text-white mt-1.5">
                         {selectedAttachmentForViewer.title}
                       </h3>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                        Document Reference: MED-DOC-{Date.now().toString().slice(-6)} • Issued: Today
-                      </p>
                     </div>
 
                     <div className="w-12 h-12 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-emerald-600">
-                      <FileCheck className="w-7 h-7" />
+                      <FileText className="w-7 h-7" />
                     </div>
                   </div>
 
-                  {/* Document Simulated Clinical Content */}
+                  {/* Document preview content */}
                   <div className="space-y-3 text-xs text-slate-800 dark:text-slate-200 leading-relaxed font-sans bg-slate-50/80 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-200/60 dark:border-slate-700/60">
                     <div className="flex items-center justify-between pb-2 border-b border-slate-200 dark:border-slate-700 text-[11px] font-bold text-slate-600 dark:text-slate-400">
-                      <span>INSTITUTION: MANIPAL ACADEMY OF HIGHER EDUCATION</span>
-                      <span className="text-emerald-600 dark:text-emerald-400">STATUS: APPROVED</span>
+                      <span>UNVERIFIED DOCUMENT PREVIEW</span>
+                      <span className="text-emerald-600 dark:text-emerald-400">NOT INDEPENDENTLY VERIFIED</span>
                     </div>
 
                     <p><strong>DOCUMENT TITLE:</strong> {selectedAttachmentForViewer.title.replace(/\.[^/.]+$/, "")}</p>
                     <p><strong>CLINICAL ABSTRACT & METHODOLOGY:</strong></p>
                     <p className="text-slate-600 dark:text-slate-300">
                       {selectedAttachmentForViewer.content || 
-                        "This clinical protocol establishes standard operating procedures for multicenter collaborative data abstraction. All patient parameters have been scrubbed of identifying information according to 45 CFR § 164.514 HIPAA safe harbor guidelines."}
+                        "MedMedia has not independently verified this document or checked it for patient-identifying information."}
                     </p>
                     <p className="text-slate-600 dark:text-slate-300">
-                      Hemodynamic recordings, pharmacotherapy schedules, and clinical telemetry logs are verified by the primary clinical investigators.
+                      This educational preview is not a clinical recommendation or a substitute for professional medical judgment.
                     </p>
                   </div>
 

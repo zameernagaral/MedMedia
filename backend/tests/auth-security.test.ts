@@ -21,6 +21,7 @@ jest.mock('../src/data/prismaClient', () => ({
 
 import prisma from '../src/data/prismaClient';
 import { env } from '../src/config/env';
+import { verificationBadgeTitle } from '../src/utils/verification';
 import app from '../src/server';
 
 const mockedPrisma = prisma as unknown as {
@@ -34,6 +35,11 @@ const mockedUser = mockedPrisma.user;
 describe('Authentication security', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+  });
+
+  it('does not label pending accounts as verified', () => {
+    expect(verificationBadgeTitle('DOCTOR', 'PENDING')).toBe('Verification pending');
+    expect(verificationBadgeTitle('STUDENT', 'VERIFIED')).toBe('Verified Medical Student');
   });
 
   it('rejects attempts to register with an elevated role', async () => {
@@ -104,6 +110,28 @@ describe('Authentication security', () => {
     expect(missing.status).toBe(401);
     expect(malformed.status).toBe(401);
     expect(expired.status).toBe(401);
+  });
+
+  it('blocks cookie-authenticated writes without an allowed browser origin', async () => {
+    const response = await request(app)
+      .post('/api/auth/verify-otp')
+      .set('Cookie', 'token=browser-session')
+      .set('Origin', 'https://attacker.example')
+      .send({});
+
+    expect(response.status).toBe(403);
+    expect(response.body.error.code).toBe('CSRF_ORIGIN_REJECTED');
+  });
+
+  it('allows cookie-authenticated writes from a configured web origin', async () => {
+    const response = await request(app)
+      .post('/api/auth/verify-otp')
+      .set('Cookie', 'token=browser-session')
+      .set('Origin', 'http://localhost:3000')
+      .send({});
+
+    // The route is not implemented yet; 501 confirms the CSRF guard passed it.
+    expect(response.status).toBe(501);
   });
 
   it('does not trust an ADMIN role claim over the database account role', async () => {

@@ -1,9 +1,11 @@
-# MedMedia - System Architecture & Technical Specification
+# MedMedia - Historical Target-State Architecture Draft
+
+> **Status:** This is a conceptual design draft, not a description of verified production controls. The current API uses MySQL; the mobile app is a prototype. The draft includes planned components and privacy safeguards that are not evidence of implementation, legal compliance, encryption at rest, end-to-end encryption, verified credentials, or approval to process patient data. Do not use it as a compliance statement or customer promise.
 
 ## 1. Executive Summary
-**MedMedia** is a dedicated professional, clinical, and social networking platform engineered exclusively for verified healthcare practitioners (Doctors, Surgeons, Specialists) and Healthcare Students (Medical/MBBS, Nursing, B.Pharm, D.Pharm, and Allied Lab Practitioners).
+**MedMedia** is being built as a professional, clinical, and social networking platform for healthcare practitioners (Doctors, Surgeons, Specialists) and Healthcare Students (Medical/MBBS, Nursing, B.Pharm, D.Pharm, and Allied Lab Practitioners).
 
-Unlike generic social networks, MedMedia implements a credential-verified tiered graph (Doctors vs. Students) designed for high-signal medical discussions, clinical case knowledge sharing, peer networking, CME courses, research collaboration, and verified medical recruitment.
+The design describes intended role and verification workflows for discussion, learning, networking, and career opportunities. These workflows are not all implemented or independently verified.
 
 ---
 
@@ -71,7 +73,7 @@ Unlike generic social networks, MedMedia implements a credential-verified tiered
 
 ---
 
-## 4. Privacy, Security & Medical Compliance (HIPAA / GDPR / Ethics)
+## 4. Planned Privacy and Medical Safety Controls (Not Implemented or Verified)
 1. **Patient De-Identification Guidelines**:
    - All clinical cases and medical imaging posted in Home Feed and Medclips must comply with HIPAA Safe Harbor de-identification (removal of 18 PHI identifiers including patient names, dates of birth, MRNs, facial features, or identifying tattoos).
    - Interactive checklist required upon case publication.

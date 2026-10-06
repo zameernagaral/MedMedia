@@ -43,8 +43,8 @@ jobs:
     - name: Generate Prisma Client
       run: npx prisma generate
       
-    - name: Push Database Schema
-      run: npx prisma db push --skip-generate
+    - name: Apply Database Migrations
+      run: npx prisma migrate deploy
       env:
         DATABASE_URL: mysql://root:rootpassword@127.0.0.1:3306/medmedia_test
 

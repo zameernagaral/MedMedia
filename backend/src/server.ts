@@ -11,6 +11,7 @@ import RedisStore from 'rate-limit-redis';
 import hpp from 'hpp';
 import prisma from './data/prismaClient';
 import { requireRole } from './middleware/role';
+import { csrfProtection } from './middleware/csrf';
 import { env } from './config/env';
 
 import authRoutes from './routes/auth';
@@ -63,6 +64,15 @@ import cookieParser from 'cookie-parser';
 
 // Middleware (support larger payloads for device image uploads)
 const corsOrigins = new Set(env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean));
+const csrfOrigins = new Set<string>();
+for (const origin of corsOrigins) {
+  try {
+    csrfOrigins.add(new URL(origin).origin);
+  } catch {
+    // Invalid origins are still rejected by CORS and are not trusted for CSRF.
+  }
+}
+if (publicSiteUrl) csrfOrigins.add(new URL(publicSiteUrl).origin);
 app.use(cors({
   origin: (origin, callback) => {
     // Native clients and server-to-server calls do not send Origin headers.
@@ -74,6 +84,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 app.use(cookieParser());
+app.use('/api/', csrfProtection(csrfOrigins));
 
 // Security Middlewares
 app.use(helmet({

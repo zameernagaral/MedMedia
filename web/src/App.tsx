@@ -925,7 +925,7 @@ const MainApp: React.FC = () => {
         </div>
       )}
 
-      {/* Support Desk Modal (medmedia1409@gmail.com) */}
+      {/* Support Desk Modal */}
       <SupportModal
         isOpen={showSupportModal}
         currentUser={currentUser}

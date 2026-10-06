@@ -4,6 +4,7 @@
   "description": "MedMedia Healthcare Professional & Student Platform (Web + Native Mobile + Backend + Docs)",
   "main": "backend/dist/server.js",
   "scripts": {
+    "dev": "node scripts/dev.mjs",
     "postinstall": "npm --prefix backend install && npm --prefix web install",
     "build": "npm --prefix backend run build && npm --prefix web run build",
     "start": "node backend/dist/server.js",
