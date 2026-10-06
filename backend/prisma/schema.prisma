@@ -102,7 +102,7 @@ model Post {
   userId        String
   user          User       @relation(fields: [userId], references: [id], onDelete: Cascade)
   postType      String     @default("TEXT")
-  content       String
+  content       String     @db.Text
   mediaUrls     String
   linkUrl       String?
   casePoll      String?
