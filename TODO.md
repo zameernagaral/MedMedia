@@ -27,7 +27,7 @@ Audit snapshot: **2026-10-07**. Based on the repository checkout and automated c
 
 ## Prioritized work
 
-Effort estimates are engineering time, excluding external approvals, legal review, account provisioning, and deployment wait time. Suggested commit messages are provided; no commit is made by this audit itself.
+Effort estimates are engineering time, excluding external approvals, legal review, account provisioning, and deployment wait time. Suggested messages label logical work items. This pass was committed as `7b3ec66` (implementation) and `cb52b24` (report update) on `origin/main`.
 
 ### P0 — before any public launch
 
