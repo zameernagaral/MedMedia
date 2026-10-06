@@ -9,30 +9,55 @@ interface CreateEventModalProps {
 
 export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onSubmit }) => {
   const [title, setTitle] = useState('');
-  const [date, setDate] = useState('');
+  const [startDate, setStartDate] = useState('');
+  const [endDate, setEndDate] = useState('');
   const [location, setLocation] = useState('');
-  const [category, setCategory] = useState('Near You');
+  const [category, setCategory] = useState('National');
   const [type, setType] = useState('Conference');
   const [description, setDescription] = useState('');
+  const [organizer, setOrganizer] = useState('');
+  const [department, setDepartment] = useState('');
+  const [creditHours, setCreditHours] = useState('');
+  const [contactPhone, setContactPhone] = useState('');
+  const [contactEmail, setContactEmail] = useState('');
+  const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const formatDate = (value: string) => new Intl.DateTimeFormat('en-GB', {
+    day: 'numeric', month: 'short', year: 'numeric', timeZone: 'UTC'
+  }).format(new Date(`${value}T00:00:00.000Z`));
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!title || !date || !location || !description) return;
+    if (!title.trim() || !startDate || !location.trim() || !description.trim()) return;
+    if (endDate && endDate < startDate) {
+      setError('End date must be on or after the start date.');
+      return;
+    }
     
     setIsSubmitting(true);
+    setError('');
     try {
       await onSubmit({
-        title,
-        date,
-        location,
+        title: title.trim(),
+        date: endDate && endDate !== startDate
+          ? `${formatDate(startDate)} - ${formatDate(endDate)}`
+          : formatDate(startDate),
+        startDate,
+        endDate: endDate || startDate,
+        location: location.trim(),
         category,
         type,
-        description
+        description: description.trim(),
+        organizer: organizer.trim() || undefined,
+        department: department.trim() || undefined,
+        creditHours: creditHours ? Number(creditHours) : undefined,
+        contactPhone: contactPhone.trim() || undefined,
+        contactEmail: contactEmail.trim() || undefined
       });
       onClose();
     } catch (error) {
-      console.error(error);
+      setError(error instanceof Error ? error.message : 'Could not publish this event. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,21 +99,37 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Date & Time *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Start date (India) *</label>
                 <div className="relative">
                   <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
-                    type="text"
-                    value={date}
-                    onChange={(e) => setDate(e.target.value)}
-                    placeholder="e.g. Oct 15-17, 2026"
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all"
                     required
                   />
                 </div>
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Location *</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">End date</label>
+                <div className="relative">
+                  <Calendar className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+                  <input
+                    type="date"
+                    value={endDate}
+                    min={startDate || undefined}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <p className="text-[11px] text-slate-500">Dates are stored as calendar dates in India and displayed without timezone shifts. Exact event hours were not provided.</p>
+
+            <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Venue / location *</label>
                 <div className="relative">
                   <MapPin className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                   <input
@@ -100,6 +141,16 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
                     required
                   />
                 </div>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Organizer</label>
+                <input value={organizer} onChange={(e) => setOrganizer(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Department</label>
+                <input value={department} onChange={(e) => setDepartment(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white" />
               </div>
             </div>
 
@@ -113,11 +164,11 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
                     onChange={(e) => setCategory(e.target.value)}
                     className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl pl-10 pr-4 py-3 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all appearance-none"
                   >
-                    <option value="Near You">Near You</option>
                     <option value="National">National</option>
                     <option value="International">International</option>
                     <option value="Online">Online</option>
                     <option value="Offline">Offline</option>
+                  <option value="Near You">Near You</option>
                   </select>
                 </div>
               </div>
@@ -137,6 +188,21 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
               </div>
             </div>
 
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Credit hours</label>
+                <input type="number" min="0" max="1000" step="1" value={creditHours} onChange={(e) => setCreditHours(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white" />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Contact phone</label>
+                <input type="tel" value={contactPhone} onChange={(e) => setContactPhone(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white" />
+              </div>
+              <div className="col-span-2">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Contact email</label>
+                <input type="email" value={contactEmail} onChange={(e) => setContactEmail(e.target.value)} className="w-full bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-3 text-sm text-slate-900 dark:text-white" />
+              </div>
+            </div>
+
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Description *</label>
               <textarea
@@ -147,6 +213,8 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
                 required
               />
             </div>
+
+            {error && <p role="alert" className="text-xs font-semibold text-rose-600">{error}</p>}
             
           </form>
         </div>
@@ -162,7 +230,7 @@ export const CreateEventModal: React.FC<CreateEventModalProps> = ({ onClose, onS
           <button
             type="submit"
             form="create-event-form"
-            disabled={isSubmitting || !title || !date || !location || !description}
+            disabled={isSubmitting || !title.trim() || !startDate || !location.trim() || !description.trim()}
             className="px-6 py-2.5 rounded-xl font-bold text-sm bg-sky-600 hover:bg-sky-700 text-white shadow-md shadow-sky-500/20 transition disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
           >
             {isSubmitting ? (

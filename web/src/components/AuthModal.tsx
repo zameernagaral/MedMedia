@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, UserRole, StudentDiscipline } from '../types';
 import { API_BASE, apiService } from '../services/api';
+import { PasswordInput } from './PasswordInput';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -373,8 +374,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     </label>
                     <div className="relative">
                       <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3" />
-                      <input
-                        type="password"
+                      <PasswordInput
                         required
                         placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                         value={password}
@@ -838,8 +838,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </div>
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                  <input
-                    type="password"
+                  <PasswordInput
                     required
                     placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
                     value={password}
@@ -1050,7 +1049,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
                 <div className="relative">
                   <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-3.5" />
-                  <input type="password" required minLength={6}
+                  <PasswordInput required minLength={6}
                     placeholder="New password (min 6 characters)"
                     value={newPassword}
                     onChange={e => setNewPassword(e.target.value)}

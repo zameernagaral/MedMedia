@@ -28,6 +28,7 @@ model User {
   sessions             DeviceSession[]
   posts                Post[]
   medclips             Medclip[]
+    researchProjects     ResearchProject[]
   jobApplications      JobApplication[]
   stories              Story[]
   communitiesOwned     Community[]
@@ -389,7 +390,9 @@ model Scholarship {
   amount      String
   deadline    String
   institution String
-  description String
+  description String   @db.Text
+  coverage    String?
+  applyLink   String?  @db.Text
   createdAt   DateTime @default(now())
 }
 
@@ -407,15 +410,23 @@ model MedicalEvent {
   id          String   @id @default(uuid())
   title       String
   date        String
+  startDate   DateTime? @db.Date
+  endDate     DateTime? @db.Date
   location    String
   category    String
   type        String
-  description String
+  description String   @db.Text
   organizer   String?
+  department  String?
+  creditHours Int?
+  contactPhone String?
+  contactEmail String?
   imageUrl    String?
   linkUrl     String?
   attendees   Int      @default(0)
   createdAt   DateTime @default(now())
+
+  @@index([startDate])
 }
 
 model Resource {
@@ -513,8 +524,14 @@ model ResearchProject {
   leadInvestigator String
   institution      String
   description      String
+  creatorId        String?
+  creator          User?    @relation(fields: [creatorId], references: [id], onDelete: SetNull)
+  hashtags         String?  @db.Text
+  requiredSkills   String?  @db.Text
   createdAt        DateTime @default(now())
   media            ProjectMedia[]
   messages         ProjectMessage[] @relation("ResearchProjectMessages")
   paper            ProjectPaper?
+
+  @@index([creatorId])
 }

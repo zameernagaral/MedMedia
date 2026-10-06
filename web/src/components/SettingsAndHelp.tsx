@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, DeviceSession } from '../types';
 import { apiService } from '../services/api';
+import { PasswordInput } from './PasswordInput';
 
 interface SettingsAndHelpProps {
   currentUser: UserProfile;
@@ -391,8 +392,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
           <div className="space-y-3">
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Current Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={currentPw}
                 onChange={e => setCurrentPw(e.target.value)}
                 placeholder="Enter your current password"
@@ -401,8 +401,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={newPw}
                 onChange={e => setNewPw(e.target.value)}
                 placeholder="Minimum 8 characters"
@@ -411,8 +410,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
             </div>
             <div>
               <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 ml-1">Confirm New Password</label>
-              <input
-                type="password"
+              <PasswordInput
                 value={confirmPw}
                 onChange={e => setConfirmPw(e.target.value)}
                 placeholder="Re-enter new password"
@@ -649,8 +647,7 @@ export const SettingsAndHelp: React.FC<SettingsAndHelpProps> = ({
                   placeholder="Type DELETE"
                   className="w-full bg-white dark:bg-slate-900 border border-rose-300 dark:border-rose-800 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500/50 transition-all"
                 />
-                <input
-                  type="password"
+                <PasswordInput
                   value={deletePassword}
                   onChange={e => setDeletePassword(e.target.value)}
                   placeholder="Enter your password to confirm"

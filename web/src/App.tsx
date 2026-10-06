@@ -195,19 +195,36 @@ const MainApp: React.FC = () => {
     setTimeout(() => setToastMessage(null), 3000);
   };
 
-  const handleToggleFollow = async (targetUserId: string, isCurrentlyFollowing: boolean) => {
+  const handleSetFollow = async (targetUserId: string, shouldFollow: boolean): Promise<boolean> => {
     try {
-      if (isCurrentlyFollowing) {
-        await apiService.unfollowUser(targetUserId);
-        setFollowingIds(prev => { const next = new Set(prev); next.delete(targetUserId); return next; });
-      } else {
-        await apiService.followUser(targetUserId);
-        setFollowingIds(prev => { const next = new Set(prev); next.add(targetUserId); return next; });
-      }
-      // Refresh suggestions after follow action
+      const result = shouldFollow
+        ? await apiService.followUser(targetUserId)
+        : await apiService.unfollowUser(targetUserId);
+      setFollowingIds(prev => {
+        const next = new Set(prev);
+        if (result.isFollowing) next.add(targetUserId);
+        else next.delete(targetUserId);
+        return next;
+      });
+      const updateFollowerCount = (profile: UserProfile) => profile.id === targetUserId
+        ? { ...profile, stats: { ...profile.stats, followersCount: result.followersCount } }
+        : profile;
+      setUsers(prev => prev.map(updateFollowerCount));
+      setSelectedProfileUser(prev => prev ? updateFollowerCount(prev) : prev);
+      setUser(prev => prev ? {
+        ...prev,
+        stats: {
+          ...prev.stats,
+          followersCount: prev.id === targetUserId ? result.followersCount : prev.stats.followersCount,
+          followingCount: result.followingCount
+        }
+      } : prev);
       apiService.getSuggestedConnections().then(s => setSuggestedConnections(s || []));
+      return true;
     } catch (error) {
-      console.error('[MedMedia] Follow toggle failed:', error);
+      setToastMessage(error instanceof Error ? error.message : 'Could not update follow status.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return false;
     }
   };
 
@@ -227,6 +244,7 @@ const MainApp: React.FC = () => {
       location: newJob.place,
       jobDescription: newJob.description,
       salaryRange: newJob.salary,
+      requiredExperienceYears: Number.parseInt(newJob.experience, 10) || 0,
       educationPreference: newJob.preferenceEducation,
       skillsRequired: newJob.skills
     });
@@ -256,26 +274,38 @@ const MainApp: React.FC = () => {
   };
 
   // Post Actions (Persisted to database)
-  const handleLikePost = (postId: string) => {
-    setPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const isLiked = !p.isLiked;
-        return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
-      }
-      return p;
-    }));
-    setSavedPosts(prev => prev.map(p => {
-      if (p.id === postId) {
-        const isLiked = !p.isLiked;
-        return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
-      }
-      return p;
-    }));
-    apiService.likePost(postId);
+  const handleLikePost = async (postId: string) => {
+    const post = posts.find(item => item.id === postId) || savedPosts.find(item => item.id === postId);
+    if (!post) return;
+    const isLiked = !Boolean(post.isLiked);
+    const adjustPost = (item: Post) => item.id === postId
+      ? { ...item, isLiked, likesCount: Math.max(0, item.likesCount + (isLiked ? 1 : -1)) }
+      : item;
+    setPosts(prev => prev.map(adjustPost));
+    setSavedPosts(prev => prev.map(adjustPost));
+
+    try {
+      const result = await apiService.likePost(postId, isLiked);
+      const applyResult = (item: Post) => item.id === postId
+        ? { ...item, isLiked: result.isLiked, likesCount: result.likesCount }
+        : item;
+      setPosts(prev => prev.map(applyResult));
+      setSavedPosts(prev => prev.map(applyResult));
+    } catch (error) {
+      const [freshPosts, freshSavedPosts] = await Promise.all([
+        apiService.getPosts(),
+        apiService.getBookmarkedPosts()
+      ]);
+      setPosts(freshPosts);
+      setSavedPosts(freshSavedPosts);
+      setToastMessage(error instanceof Error ? error.message : 'Could not update this like.');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
-  const handleSavePost = (postId: string) => {
-    const post = posts.find(item => item.id === postId);
+  const handleSavePost = async (postId: string) => {
+    const post = posts.find(item => item.id === postId) || savedPosts.find(item => item.id === postId);
+    if (!post) return;
     const wasSaved = Boolean(post?.isSaved || savedPosts.some(item => item.id === postId));
     const shouldSave = !wasSaved;
 
@@ -288,9 +318,24 @@ const MainApp: React.FC = () => {
     setSavedPosts(prev => shouldSave && post
       ? [{ ...post, isSaved: true }, ...prev.filter(item => item.id !== postId)]
       : prev.filter(item => item.id !== postId));
-    apiService.savePost(postId).then(async saved => {
-      if (saved !== shouldSave) setSavedPosts(await apiService.getBookmarkedPosts());
-    });
+    try {
+      const result = await apiService.savePost(postId, shouldSave);
+      setPosts(prev => prev.map(item => item.id === postId
+        ? { ...item, isSaved: result.isSaved, savesCount: result.savesCount }
+        : item));
+      setSavedPosts(prev => result.isSaved
+        ? [{ ...post, isSaved: true, savesCount: result.savesCount }, ...prev.filter(item => item.id !== postId)]
+        : prev.filter(item => item.id !== postId));
+    } catch (error) {
+      const [freshPosts, freshSavedPosts] = await Promise.all([
+        apiService.getPosts(),
+        apiService.getBookmarkedPosts()
+      ]);
+      setPosts(freshPosts);
+      setSavedPosts(freshSavedPosts);
+      setToastMessage(error instanceof Error ? error.message : 'Could not update saved posts.');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
   const handleVotePoll = (postId: string, optionId: string) => {
@@ -318,22 +363,37 @@ const MainApp: React.FC = () => {
   };
 
   // Medclip Actions
-  const handleLikeClip = (clipId: string) => {
-    setClips(clips.map(c => {
-      if (c.id === clipId) {
-        const isLiked = !c.isLiked;
-        return {
-          ...c,
-          isLiked,
-          likesCount: c.likesCount + (isLiked ? 1 : -1)
-        };
-      }
-      return c;
-    }));
+  const handleLikeClip = async (clipId: string) => {
+    const clip = clips.find(item => item.id === clipId);
+    if (!clip) return;
+    const isLiked = !Boolean(clip.isLiked);
+    setClips(prev => prev.map(item => item.id === clipId
+      ? { ...item, isLiked, likesCount: Math.max(0, item.likesCount + (isLiked ? 1 : -1)) }
+      : item));
+    setSavedClips(prev => prev.map(item => item.id === clipId
+      ? { ...item, isLiked, likesCount: Math.max(0, item.likesCount + (isLiked ? 1 : -1)) }
+      : item));
+    try {
+      const result = await apiService.likeClip(clipId, isLiked);
+      const applyResult = (item: Medclip) => item.id === clipId
+        ? { ...item, isLiked: result.isLiked, likesCount: result.likesCount }
+        : item;
+      setClips(prev => prev.map(applyResult));
+      setSavedClips(prev => prev.map(applyResult));
+    } catch (error) {
+      const [freshClips, freshSavedClips] = await Promise.all([
+        apiService.getClips(),
+        apiService.getSavedClips()
+      ]);
+      setClips(freshClips);
+      setSavedClips(freshSavedClips);
+      setToastMessage(error instanceof Error ? error.message : 'Could not update this reel like.');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
-  const handleSaveClip = (clipId: string) => {
-    const clip = clips.find(item => item.id === clipId);
+  const handleSaveClip = async (clipId: string) => {
+    const clip = clips.find(item => item.id === clipId) || savedClips.find(item => item.id === clipId);
     if (!clip) return;
     const shouldSave = !(clip.isSaved || savedClips.some(item => item.id === clipId));
     setClips(prev => prev.map(c => {
@@ -350,17 +410,24 @@ const MainApp: React.FC = () => {
     setSavedClips(prev => shouldSave
       ? [{ ...clip, isSaved: true }, ...prev.filter(item => item.id !== clipId)]
       : prev.filter(item => item.id !== clipId));
-    apiService.saveClip(clipId).then(async saved => {
-      if (saved === null) {
-        setClips(prev => prev.map(item => item.id === clipId ? { ...item, isSaved: !shouldSave } : item));
-        setSavedClips(await apiService.getSavedClips());
-        setToastMessage('Could not update saved reels. Please sign in and retry.');
-        setTimeout(() => setToastMessage(null), 3000);
-      } else if (saved !== shouldSave) {
-        setClips(prev => prev.map(item => item.id === clipId ? { ...item, isSaved: saved } : item));
-        setSavedClips(await apiService.getSavedClips());
-      }
-    });
+    try {
+      const result = await apiService.saveClip(clipId, shouldSave);
+      setClips(prev => prev.map(item => item.id === clipId
+        ? { ...item, isSaved: result.isSaved, savesCount: result.savesCount }
+        : item));
+      setSavedClips(prev => result.isSaved
+        ? [{ ...clip, isSaved: true, savesCount: result.savesCount }, ...prev.filter(item => item.id !== clipId)]
+        : prev.filter(item => item.id !== clipId));
+    } catch (error) {
+      const [freshClips, freshSavedClips] = await Promise.all([
+        apiService.getClips(),
+        apiService.getSavedClips()
+      ]);
+      setClips(freshClips);
+      setSavedClips(freshSavedClips);
+      setToastMessage(error instanceof Error ? error.message : 'Could not update saved reels.');
+      setTimeout(() => setToastMessage(null), 3000);
+    }
   };
 
   const handleRevokeSession = (sessionId: string) => {
@@ -606,6 +673,8 @@ const MainApp: React.FC = () => {
                           currentUser={currentUser}
                           onLike={handleLikePost}
                           onSave={handleSavePost}
+                          followingIds={followingIds}
+                          onToggleFollow={handleSetFollow}
                           onVotePoll={handleVotePoll}
                           onSelectUser={handleSelectUser}
                           onDeletePost={handleDeletePost}
@@ -624,6 +693,8 @@ const MainApp: React.FC = () => {
                     currentUser={currentUser}
                     onLikeClip={handleLikeClip}
                     onSaveClip={handleSaveClip}
+                    followingIds={followingIds}
+                    onToggleFollow={handleSetFollow}
                     onSelectUser={handleSelectUser}
                   />
                 </div>
@@ -687,21 +758,15 @@ const MainApp: React.FC = () => {
                     onLikePost={handleLikePost}
                     onSavePost={handleSavePost}
                     onSaveClip={handleSaveClip}
-                    onConnectUser={async (id, isFollowing) => {
-                      try {
-                        if (isFollowing) {
-                          await apiService.followUser(id);
-                          setFollowingIds(prev => { const next = new Set(prev); next.add(id); return next; });
-                        } else {
-                          await apiService.unfollowUser(id);
-                          setFollowingIds(prev => { const next = new Set(prev); next.delete(id); return next; });
-                        }
-                        setToastMessage(isFollowing ? 'Following user.' : 'Unfollowed user.');
-                        apiService.getSuggestedConnections().then(s => setSuggestedConnections(s || []));
-                      } catch (error) {
-                        setToastMessage(error instanceof Error ? error.message : 'Could not update follow status.');
+                    followingIds={followingIds}
+                    onToggleFollow={handleSetFollow}
+                    onConnectUser={async (id, shouldFollow) => {
+                      const changed = await handleSetFollow(id, shouldFollow);
+                      if (changed) {
+                        setToastMessage(shouldFollow ? 'Following user.' : 'Unfollowed user.');
+                        setTimeout(() => setToastMessage(null), 3000);
                       }
-                      setTimeout(() => setToastMessage(null), 3000);
+                      return changed;
                     }}
                     onOpenHelpCenter={() => setShowSupportModal(true)}
                     onOpenSupportModal={() => setShowSupportModal(true)}
@@ -746,7 +811,7 @@ const MainApp: React.FC = () => {
                           <p className="text-[10px] text-slate-500 dark:text-slate-400">{u.doctorDetails?.specialization || u.studentDetails?.discipline || u.role}</p>
                         </div>
                         <button
-                          onClick={() => handleToggleFollow(u.id, followingIds.has(u.id))}
+                          onClick={() => handleSetFollow(u.id, !followingIds.has(u.id))}
                           className={`p-1.5 rounded-lg text-xs font-bold transition cursor-pointer ${
                             followingIds.has(u.id)
                               ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
@@ -999,11 +1064,10 @@ const MainApp: React.FC = () => {
           onClose={() => setShowCreateEventModal(false)}
           onSubmit={async (eventData) => {
             const newEvent = await apiService.createEvent(eventData);
-            if (newEvent) {
-              setEvents(prev => [newEvent, ...prev]);
-              setToastMessage("Event created successfully!");
-              setTimeout(() => setToastMessage(null), 3000);
-            }
+            if (!newEvent) throw new Error('Could not save this event to the database. Please try again.');
+            setEvents(prev => [...prev, newEvent].sort((a, b) => (a.startDate || '9999').localeCompare(b.startDate || '9999')));
+            setToastMessage("Event created successfully!");
+            setTimeout(() => setToastMessage(null), 3000);
           }}
         />
       )}

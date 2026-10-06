@@ -454,11 +454,17 @@ export interface MedicalEvent {
   id: string;
   title: string;
   date: string;
+  startDate?: string;
+  endDate?: string;
   location: string;
   category: string;
   type: string;
   description: string;
   organizer?: string;
+  department?: string;
+  creditHours?: number;
+  contactPhone?: string;
+  contactEmail?: string;
   imageUrl?: string;
   linkUrl?: string;
   attendees: number;

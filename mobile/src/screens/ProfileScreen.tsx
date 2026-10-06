@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   View, 
   Text, 
@@ -9,7 +9,8 @@ import {
   Image,
   Alert
 } from 'react-native';
-import { UserProfile } from '../types';
+import { Medclip, Post, UserProfile } from '../types';
+import { apiService } from '../services/api';
 
 interface ProfileScreenProps {
   currentUser: UserProfile;
@@ -17,9 +18,18 @@ interface ProfileScreenProps {
 }
 
 export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwitchUser }) => {
-  const [activeTab, setActiveTab] = useState<'posts' | 'about' | 'devices' | 'help'>('about');
-  const [isFollowing, setIsFollowing] = useState(false);
-  const [isConnected, setIsConnected] = useState(false);
+  const [activeTab, setActiveTab] = useState<'posts' | 'saved' | 'about' | 'devices' | 'help'>('about');
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [savedPosts, setSavedPosts] = useState<Post[]>([]);
+  const [savedClips, setSavedClips] = useState<Medclip[]>([]);
+
+  useEffect(() => {
+    Promise.all([apiService.getPosts(), apiService.getSavedPosts(), apiService.getSavedClips()]).then(([allPosts, saved, clips]) => {
+      setPosts(allPosts.filter(post => post.authorId === currentUser.id));
+      setSavedPosts(saved);
+      setSavedClips(clips);
+    }).catch(() => Alert.alert('Could not load profile posts', 'Check your connection and try again.'));
+  }, [currentUser.id]);
 
   const isDoctor = currentUser.role === 'DOCTOR';
 
@@ -30,7 +40,7 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
         {/* Banner */}
         <View style={[styles.banner, { backgroundColor: isDoctor ? '#0369a1' : '#065f46' }]}>
           <TouchableOpacity onPress={onSwitchUser} style={styles.switchPill}>
-            <Text style={styles.switchPillText}>Switch: Doctor ↔ Student</Text>
+            <Text style={styles.switchPillText}>Sign out</Text>
           </TouchableOpacity>
         </View>
 
@@ -39,32 +49,17 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
           <View style={styles.avatarRow}>
             <Image source={{ uri: currentUser.avatarUrl }} style={styles.avatar} />
 
-            {/* Follow | connect (Slide 3 & 4) */}
-            <View style={styles.actionRow}>
-              <TouchableOpacity 
-                onPress={() => setIsFollowing(!isFollowing)}
-                style={[styles.followBtn, isFollowing && { backgroundColor: '#f1f5f9' }]}
-              >
-                <Text style={[styles.followBtnText, isFollowing && { color: '#0f172a' }]}>
-                  {isFollowing ? 'Following' : 'Follow'}
-                </Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity 
-                onPress={() => setIsConnected(!isConnected)}
-                style={[styles.connectBtn, isConnected && { backgroundColor: '#ecfdf5', borderColor: '#a7f3d0' }]}
-              >
-                <Text style={[styles.connectBtnText, isConnected && { color: '#059669' }]}>
-                  {isConnected ? 'Connected ✓' : 'Connect'}
-                </Text>
-              </TouchableOpacity>
-            </View>
           </View>
 
           {/* Name & Username (Slide 3 Doctor username: specialization; Slide 4 Student username: medical student, etc.) */}
           <Text style={styles.fullName}>{currentUser.fullName} ✓</Text>
           <Text style={styles.username}>@{currentUser.username}</Text>
           <Text style={styles.bio}>{currentUser.bio}</Text>
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}><Text style={styles.statCount}>{currentUser.stats.postsCount}</Text><Text style={styles.statLabel}>Posts</Text></View>
+            <View style={styles.statItem}><Text style={styles.statCount}>{currentUser.stats.followersCount}</Text><Text style={styles.statLabel}>Followers</Text></View>
+            <View style={styles.statItem}><Text style={styles.statCount}>{currentUser.stats.followingCount}</Text><Text style={styles.statLabel}>Following</Text></View>
+          </View>
 
           {/* Verification Badge */}
           <View style={styles.badgeBox}>
@@ -84,7 +79,11 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
               onPress={() => setActiveTab('posts')}
               style={[styles.subtabBtn, activeTab === 'posts' && styles.subtabBtnActive]}
             >
-              <Text style={[styles.subtabText, activeTab === 'posts' && styles.subtabTextActive]}>Posts (2)</Text>
+              <Text style={[styles.subtabText, activeTab === 'posts' && styles.subtabTextActive]}>Posts ({posts.length})</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setActiveTab('saved')} style={[styles.subtabBtn, activeTab === 'saved' && styles.subtabBtnActive]}>
+              <Text style={[styles.subtabText, activeTab === 'saved' && styles.subtabTextActive]}>Saved ({savedPosts.length + savedClips.length})</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -113,10 +112,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
                 // Slide 3: Doctor: Qualifications, Hospital, Location, Experience, Interests, Research
                 <>
                   <Text style={styles.fieldLabel}>QUALIFICATIONS</Text>
-                  <Text style={styles.fieldValue}>MBBS (AIIMS), MD Internal Medicine, DM Cardiology (PGI)</Text>
+                  <Text style={styles.fieldValue}>{currentUser.specialization || 'Specialization not added'}</Text>
 
                   <Text style={styles.fieldLabel}>HOSPITAL AFFILIATION</Text>
-                  <Text style={styles.fieldValue}>Apollo Hospitals, Bannerghatta Road</Text>
+                  <Text style={styles.fieldValue}>{currentUser.hospital || 'Hospital not added'}</Text>
 
                   <Text style={styles.fieldLabel}>LOCATION</Text>
                   <Text style={styles.fieldValue}>Bangalore, Karnataka, India</Text>
@@ -135,10 +134,10 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
                 // Slide 4: Student: College, Year, Interests, Future specialty, Research interests, Verification badge
                 <>
                   <Text style={styles.fieldLabel}>COLLEGE / UNIVERSITY</Text>
-                  <Text style={styles.fieldValue}>Kempegowda Institute of Medical Sciences (KIMS)</Text>
+                  <Text style={styles.fieldValue}>{currentUser.collegeName || 'College not added'}</Text>
 
                   <Text style={styles.fieldLabel}>CURRENT ACADEMIC YEAR</Text>
-                  <Text style={styles.fieldValue}>Final Year MBBS (Phase III)</Text>
+                  <Text style={styles.fieldValue}>Academic year {currentUser.academicYear || 1}</Text>
 
                   <Text style={styles.fieldLabel}>INTERESTS</Text>
                   <Text style={styles.fieldValue}>Cardiothoracic Surgery, POCUS, Bedside Clinical Semiology</Text>
@@ -155,10 +154,31 @@ export const ProfileScreen: React.FC<ProfileScreenProps> = ({ currentUser, onSwi
 
           {/* POSTS TAB (Slide 3 & 4) */}
           {activeTab === 'posts' && (
-            <View style={styles.detailCard}>
-              <Text style={{ fontSize: 13, color: '#475569', lineHeight: 18 }}>
-                Published cases and discussions will be indexed here.
-              </Text>
+            <View style={styles.contentList}>
+              {posts.length === 0 ? <Text style={styles.emptyText}>You have not published any posts yet.</Text> : posts.map(post => (
+                <View key={post.id} style={styles.detailCard}>
+                  <Text style={styles.fieldValue}>{post.content}</Text>
+                  <Text style={styles.postMeta}>{post.likesCount} likes · {post.commentsCount} comments</Text>
+                </View>
+              ))}
+            </View>
+          )}
+
+          {activeTab === 'saved' && (
+            <View style={styles.contentList}>
+              {savedPosts.length + savedClips.length === 0 ? <Text style={styles.emptyText}>No saved posts or reels yet.</Text> : null}
+              {savedPosts.map(post => (
+                <View key={post.id} style={styles.detailCard}>
+                  <Text style={styles.fieldLabel}>{post.authorName}</Text>
+                  <Text style={styles.fieldValue}>{post.content}</Text>
+                </View>
+              ))}
+              {savedClips.map(clip => (
+                <View key={clip.id} style={styles.detailCard}>
+                  <Text style={styles.fieldLabel}>{clip.authorName} · Saved reel</Text>
+                  <Text style={styles.fieldValue}>{clip.caption}</Text>
+                </View>
+              ))}
             </View>
           )}
 
@@ -207,6 +227,10 @@ const styles = StyleSheet.create({
   profileHeader: { backgroundColor: '#ffffff', paddingHorizontal: 16, paddingBottom: 12, borderBottomWidth: 1, borderColor: '#e2e8f0' },
   avatarRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: -40, marginBottom: 10 },
   avatar: { width: 80, height: 80, borderRadius: 40, borderWidth: 3, borderColor: '#ffffff' },
+  statsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 12, borderBottomWidth: 1, borderColor: '#f1f5f9', marginBottom: 6 },
+  statItem: { alignItems: 'center' },
+  statCount: { fontSize: 14, fontWeight: 'bold', color: '#0f172a' },
+  statLabel: { fontSize: 10, color: '#64748b', marginTop: 2 },
   actionRow: { flexDirection: 'row', gap: 8 },
   followBtn: { backgroundColor: '#0284c7', paddingHorizontal: 14, paddingVertical: 8, borderRadius: 16 },
   followBtnText: { color: '#ffffff', fontSize: 12, fontWeight: 'bold' },
@@ -224,6 +248,9 @@ const styles = StyleSheet.create({
   subtabTextActive: { color: '#0284c7', fontWeight: 'bold' },
   tabContent: { padding: 14 },
   detailCard: { backgroundColor: '#ffffff', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#e2e8f0' },
+  contentList: { gap: 10 },
+  emptyText: { fontSize: 12, color: '#64748b', textAlign: 'center', padding: 18 },
+  postMeta: { fontSize: 10, color: '#64748b', marginTop: 8 },
   fieldLabel: { fontSize: 10, fontWeight: 'bold', color: '#94a3b8', marginTop: 10, marginBottom: 2 },
   fieldValue: { fontSize: 12, color: '#1e293b', fontWeight: '500', lineHeight: 18 },
   deviceRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingVertical: 10, borderBottomWidth: 1, borderColor: '#f1f5f9' },

@@ -16,26 +16,48 @@ const createCommunitySchema = z.object({
 });
 
 const createJobSchema = z.object({
-  title: z.string().min(1),
-  category: z.string(),
-  employmentType: z.string(),
-  companyName: z.string(),
-  location: z.string(),
-  jobDescription: z.string(),
-  requiredExperienceYears: z.number().int().nonnegative().optional(),
-  salaryRange: z.string().optional(),
-  educationPreference: z.string(),
-  skillsRequired: z.array(z.string())
-});
+  title: z.string().trim().min(1).max(191),
+  category: z.string().trim().min(1).max(100),
+  employmentType: z.string().trim().min(1).max(100),
+  companyName: z.string().trim().min(1).max(191),
+  location: z.string().trim().min(1).max(191),
+  jobDescription: z.string().trim().min(1).max(5000),
+  requiredExperienceYears: z.number().int().min(0).max(80).optional(),
+  salaryRange: z.string().trim().max(191).optional(),
+  educationPreference: z.string().trim().min(1).max(191),
+  skillsRequired: z.array(z.string().trim().min(1).max(120)).max(50)
+}).strict();
+
+const createScholarshipSchema = z.object({
+  title: z.string().trim().min(1).max(191),
+  amount: z.string().trim().min(1).max(191),
+  deadline: z.string().trim().min(1).max(120),
+  institution: z.string().trim().min(1).max(191),
+  description: z.string().trim().min(1).max(5000),
+  coverage: z.string().trim().max(191).optional(),
+  applyLink: z.string().url().optional()
+}).strict();
+
+const createResearchSchema = z.object({
+  title: z.string().trim().min(1).max(191),
+  institution: z.string().trim().min(1).max(191),
+  description: z.string().trim().min(1).max(5000),
+  hashtags: z.array(z.string().trim().min(1).max(80)).max(30).default([]),
+  requiredSkills: z.array(z.string().trim().min(1).max(120)).max(50).default([])
+}).strict();
 
 // GET /api/opportunities (Overview)
 router.get('/', async (req: Request, res: Response) => {
   try {
     const jobs = await prisma.job.findMany({ take: 10, orderBy: { createdAt: 'desc' } });
     const communities = await prisma.community.findMany({ take: 10, orderBy: { createdAt: 'desc' } });
-    const researchProjects = await prisma.researchProject.findMany({ take: 10 });
+    const researchProjects = await prisma.researchProject.findMany({
+      take: 50,
+      orderBy: { createdAt: 'desc' },
+      include: { creator: { select: { id: true, fullName: true, avatarUrl: true, role: true } } }
+    });
     const locumGigs = await prisma.locumGig.findMany({ take: 10 });
-    const scholarships = await prisma.scholarship.findMany({ take: 10 });
+    const scholarships = await prisma.scholarship.findMany({ orderBy: { createdAt: 'desc' } });
     const courses = await prisma.course.findMany({ take: 10 });
 
     const opportunities = [
@@ -207,7 +229,7 @@ router.get('/jobs', async (req: Request, res: Response) => {
   }
 });
 
-router.post('/jobs', requireAuth, requireRole('INSTITUTION'), async (req: Request, res: Response) => {
+router.post('/jobs', requireAuth, requireRole('ADMIN'), async (req: Request, res: Response) => {
   try {
     const data = createJobSchema.parse(req.body);
     
@@ -222,6 +244,44 @@ router.post('/jobs', requireAuth, requireRole('INSTITUTION'), async (req: Reques
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: (error as any).errors });
     res.status(500).json({ success: false });
+  }
+});
+
+router.post('/scholarships', requireAuth, requireRole('ADMIN'), async (req: Request, res: Response) => {
+  try {
+    const data = createScholarshipSchema.parse(req.body);
+    const scholarship = await prisma.scholarship.create({ data });
+    res.status(201).json({ success: true, scholarship });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
+    res.status(500).json({ success: false, message: 'Failed to create scholarship' });
+  }
+});
+
+router.post('/research', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const data = createResearchSchema.parse(req.body);
+    const creatorId = (req as any).user.userId as string;
+    const account = await prisma.user.findUnique({ where: { id: creatorId }, select: { fullName: true } });
+    if (!account) return res.status(401).json({ success: false, message: 'Unauthenticated' });
+    const project = await prisma.researchProject.create({
+      data: {
+        title: data.title,
+        field: data.hashtags[0] || 'General Medicine',
+        phase: 'RECRUITING',
+        leadInvestigator: account.fullName,
+        institution: data.institution,
+        description: data.description,
+        creatorId,
+        hashtags: JSON.stringify(data.hashtags),
+        requiredSkills: JSON.stringify(data.requiredSkills)
+      },
+      include: { creator: { select: { id: true, fullName: true, avatarUrl: true, role: true } } }
+    });
+    res.status(201).json({ success: true, project });
+  } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
+    res.status(500).json({ success: false, message: 'Failed to publish research project' });
   }
 });
 

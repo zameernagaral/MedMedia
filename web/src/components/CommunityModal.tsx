@@ -286,7 +286,6 @@ export const CommunityModal: React.FC<CommunityModalProps> = ({
                 style={{ width: `${pct}%` }}
               />
             </div>
-            <span className="text-[10px] text-slate-400 whitespace-nowrap">{pct}% full</span>
           </div>
         </div>
 

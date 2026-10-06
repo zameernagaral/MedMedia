@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   View, 
   Text, 
@@ -8,7 +8,8 @@ import {
   StyleSheet, 
   SafeAreaView, 
   TextInput,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
 } from 'react-native';
 import { Post, UserProfile } from '../types';
 import { apiService } from '../services/api';
@@ -18,22 +19,36 @@ interface HomeScreenProps {
   onOpenCreate: () => void;
   onOpenNotifications: () => void;
   onOpenMessages: () => void;
+  onFollowCountChange: (followingCount: number) => void;
 }
 
 export const HomeScreen: React.FC<HomeScreenProps> = ({
   currentUser,
   onOpenCreate,
   onOpenNotifications,
-  onOpenMessages
+  onOpenMessages,
+  onFollowCountChange
 }) => {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const actionLocks = useRef(new Set<string>());
+
+  const refreshPostData = async () => {
+    const [loadedPosts, loadedFollows, loadedSavedPosts] = await Promise.all([
+      apiService.getPosts(),
+      apiService.getFollowingIds(),
+      apiService.getSavedPosts()
+    ]);
+    const savedIds = new Set(loadedSavedPosts.map(post => post.id));
+    setPosts(loadedPosts.map(post => ({ ...post, isSaved: savedIds.has(post.id) })));
+    setFollowingIds(new Set(loadedFollows));
+  };
 
   React.useEffect(() => {
     const fetchPosts = async () => {
       try {
-        const data = await apiService.getPosts();
-        setPosts(data);
+        await refreshPostData();
       } catch (error) {
         console.warn('Could not load posts from backend, ensure API is running:', error);
       } finally {
@@ -43,14 +58,69 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
     fetchPosts();
   }, []);
 
-  const toggleLike = (id: string) => {
-    setPosts(posts.map(p => {
-      if (p.id === id) {
-        const isLiked = !p.isLiked;
-        return { ...p, isLiked, likesCount: p.likesCount + (isLiked ? 1 : -1) };
-      }
-      return p;
-    }));
+  const toggleLike = async (id: string) => {
+    const post = posts.find(item => item.id === id);
+    if (!post || actionLocks.current.has(`like:${id}`)) return;
+    const shouldLike = !post.isLiked;
+    actionLocks.current.add(`like:${id}`);
+    setPosts(previous => previous.map(item => item.id === id
+      ? { ...item, isLiked: shouldLike, likesCount: Math.max(0, item.likesCount + (shouldLike ? 1 : -1)) }
+      : item));
+    try {
+      const result = await apiService.setPostLike(id, shouldLike);
+      setPosts(previous => previous.map(item => item.id === id
+        ? { ...item, isLiked: result.isLiked, likesCount: result.likesCount }
+        : item));
+    } catch {
+      Alert.alert('Like not saved', 'Check your connection and try again.');
+      await refreshPostData().catch(() => undefined);
+    } finally {
+      actionLocks.current.delete(`like:${id}`);
+    }
+  };
+
+  const toggleSave = async (id: string) => {
+    const post = posts.find(item => item.id === id);
+    if (!post || actionLocks.current.has(`save:${id}`)) return;
+    const shouldSave = !post.isSaved;
+    actionLocks.current.add(`save:${id}`);
+    setPosts(previous => previous.map(item => item.id === id
+      ? { ...item, isSaved: shouldSave, savesCount: Math.max(0, item.savesCount + (shouldSave ? 1 : -1)) }
+      : item));
+    try {
+      const result = await apiService.setPostSaved(id, shouldSave);
+      setPosts(previous => previous.map(item => item.id === id
+        ? { ...item, isSaved: result.isSaved, savesCount: result.savesCount }
+        : item));
+    } catch {
+      Alert.alert('Save not updated', 'Check your connection and try again.');
+      await refreshPostData().catch(() => undefined);
+    } finally {
+      actionLocks.current.delete(`save:${id}`);
+    }
+  };
+
+  const toggleFollow = async (authorId: string) => {
+    if (!authorId || authorId === currentUser.id || actionLocks.current.has(`follow:${authorId}`)) return;
+    const shouldFollow = !followingIds.has(authorId);
+    actionLocks.current.add(`follow:${authorId}`);
+    try {
+      const result = shouldFollow
+        ? await apiService.followUser(authorId)
+        : await apiService.unfollowUser(authorId);
+      setFollowingIds(previous => {
+        const next = new Set(previous);
+        if (result.isFollowing) next.add(authorId);
+        else next.delete(authorId);
+        return next;
+      });
+      onFollowCountChange(result.followingCount);
+    } catch {
+      Alert.alert('Follow not updated', 'Check your connection and try again.');
+      await apiService.getFollowingIds().then(ids => setFollowingIds(new Set(ids))).catch(() => undefined);
+    } finally {
+      actionLocks.current.delete(`follow:${authorId}`);
+    }
   };
 
   return (
@@ -111,6 +181,8 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
         <View style={styles.feedSection}>
           <Text style={styles.feedHeader}>Clinical Discussions & Feed</Text>
 
+          {loading && <ActivityIndicator size="small" color="#0284c7" />}
+          {!loading && posts.length === 0 && <Text style={styles.emptyText}>No posts yet. Follow clinicians or publish a research discussion.</Text>}
           {posts.map((post) => (
             <View key={post.id} style={styles.postCard}>
               
@@ -127,9 +199,11 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </View>
                 </View>
 
-                <TouchableOpacity style={styles.followBtn}>
-                  <Text style={styles.followBtnText}>Follow</Text>
-                </TouchableOpacity>
+                {post.authorId !== currentUser.id && (
+                  <TouchableOpacity style={styles.followBtn} onPress={() => toggleFollow(post.authorId)}>
+                    <Text style={styles.followBtnText}>{followingIds.has(post.authorId) ? 'Following' : 'Follow'}</Text>
+                  </TouchableOpacity>
+                )}
               </View>
 
               {/* Content */}
@@ -170,7 +244,7 @@ export const HomeScreen: React.FC<HomeScreenProps> = ({
                   </TouchableOpacity>
                 </View>
 
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => toggleSave(post.id)} accessibilityLabel={post.isSaved ? 'Remove saved post' : 'Save post'}>
                   <Text style={styles.actionIcon}>🔖</Text>
                 </TouchableOpacity>
               </View>
@@ -238,6 +312,7 @@ const styles = StyleSheet.create({
   pollOption: { backgroundColor: '#ffffff', borderWidth: 1, borderColor: '#cbd5e1', padding: 10, borderRadius: 10, marginBottom: 6, flexDirection: 'row', justifyContent: 'space-between' },
   pollOptionText: { fontSize: 12, color: '#334155', fontWeight: '500' },
   pollVoteCount: { fontSize: 11, color: '#64748b', fontWeight: 'bold' },
+  emptyText: { fontSize: 12, color: '#64748b', textAlign: 'center', paddingVertical: 28 },
   postFooter: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingTop: 8, borderTopWidth: 1, borderColor: '#f1f5f9' },
   actionLeft: { flexDirection: 'row', alignItems: 'center', gap: 18 },
   actionItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },

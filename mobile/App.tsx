@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Modal, Alert } from 'react-native';
+import { ActivityIndicator, StyleSheet, View, Text, TouchableOpacity, SafeAreaView, Alert } from 'react-native';
 import { HomeScreen } from './src/screens/HomeScreen';
 import { MedclipsScreen } from './src/screens/MedclipsScreen';
 import { SearchScreen } from './src/screens/SearchScreen';
@@ -8,60 +8,48 @@ import { OpportunitiesScreen } from './src/screens/OpportunitiesScreen';
 import { ProfileScreen } from './src/screens/ProfileScreen';
 import { AuthScreen } from './src/screens/AuthScreen';
 import { UserProfile } from './src/types';
+import { apiService } from './src/services/api';
 
 export default function App() {
   const [currentTab, setCurrentTab] = useState<'home' | 'medclips' | 'search' | 'opportunities' | 'profile'>('home');
-  const [currentUser, setCurrentUser] = useState<UserProfile>({
-    id: 'doc-1',
-    fullName: 'Dr. Arvind Ramesh, MD, DM',
-    username: 'cardio_ramesh',
-    email: 'dr.ramesh@apollohospitals.org',
-    avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop',
-    role: 'DOCTOR',
-    verificationStatus: 'VERIFIED',
-    badgeTitle: 'Board Certified Interventional Cardiologist',
-    bio: 'Senior Consultant Interventional Cardiologist @ Apollo Heart Institute. Specializing in complex CTO and TAVR.',
-    specialization: 'Interventional Cardiology',
-    hospital: 'Apollo Hospitals, Bangalore'
-  });
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [isResolvingSession, setIsResolvingSession] = useState(true);
 
-  const [showAuthModal, setShowAuthModal] = useState(false);
+  useEffect(() => {
+    apiService.getCurrentUser()
+      .then(setCurrentUser)
+      .catch(() => setCurrentUser(null))
+      .finally(() => setIsResolvingSession(false));
+  }, []);
 
-  // Persona switch helper for testing tiered permissions
-  const togglePersona = () => {
-    if (currentUser.role === 'DOCTOR') {
-      setCurrentUser({
-        id: 'stu-1',
-        fullName: 'Rohan Verma',
-        username: 'medical student',
-        email: 'rohan.v@kims.edu',
-        avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
-        role: 'STUDENT',
-        verificationStatus: 'VERIFIED',
-        badgeTitle: 'Verified Medical Student (MBBS)',
-        bio: 'Final Year MBBS Student at Kempegowda Institute of Medical Sciences. Aspiring Cardiothoracic Surgeon.',
-        discipline: 'MEDICAL_STUDENT',
-        collegeName: 'Kempegowda Institute of Medical Sciences',
-        academicYear: 4
-      });
-      Alert.alert("Persona Switched", "Now viewing as Student (Rohan Verma, MBBS 4th Year).");
-    } else {
-      setCurrentUser({
-        id: 'doc-1',
-        fullName: 'Dr. Arvind Ramesh, MD, DM',
-        username: 'cardio_ramesh',
-        email: 'dr.ramesh@apollohospitals.org',
-        avatarUrl: 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop',
-        role: 'DOCTOR',
-        verificationStatus: 'VERIFIED',
-        badgeTitle: 'Board Certified Interventional Cardiologist',
-        bio: 'Senior Consultant Interventional Cardiologist @ Apollo Heart Institute.',
-        specialization: 'Interventional Cardiology',
-        hospital: 'Apollo Hospitals, Bangalore'
-      });
-      Alert.alert("Persona Switched", "Now viewing as Doctor (Dr. Arvind Ramesh, Interventional Cardiology).");
+  const handleLogout = async () => {
+    try {
+      await apiService.logout();
+    } catch {
+      // Clear the local screen even if the server session has already expired.
     }
+    setCurrentUser(null);
   };
+
+  const updateFollowingCount = (followingCount: number) => {
+    setCurrentUser(previous => previous ? {
+      ...previous,
+      stats: { ...previous.stats, followingCount }
+    } : previous);
+  };
+
+  if (isResolvingSession) {
+    return (
+      <SafeAreaView style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#0284c7" />
+        <Text style={styles.loadingText}>Connecting to MedMedia…</Text>
+      </SafeAreaView>
+    );
+  }
+
+  if (!currentUser) {
+    return <AuthScreen onSuccess={setCurrentUser} onCancel={() => {}} />;
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -75,11 +63,12 @@ export default function App() {
             onOpenCreate={() => Alert.alert("Create Post", "Select: Clinical Discussion, Case Poll, MedTweet, or Image.")}
             onOpenNotifications={() => Alert.alert("Notifications", "3 unread clinical alerts.")}
             onOpenMessages={() => Alert.alert("Direct Messages", "2 new clinical discussion threads.")}
+            onFollowCountChange={updateFollowingCount}
           />
         )}
 
         {currentTab === 'medclips' && (
-          <MedclipsScreen currentUser={currentUser} />
+          <MedclipsScreen currentUser={currentUser} onFollowCountChange={updateFollowingCount} />
         )}
 
         {currentTab === 'search' && (
@@ -96,7 +85,7 @@ export default function App() {
         {currentTab === 'profile' && (
           <ProfileScreen
             currentUser={currentUser}
-            onSwitchUser={togglePersona}
+            onSwitchUser={handleLogout}
           />
         )}
       </View>
@@ -126,23 +115,14 @@ export default function App() {
         })}
       </View>
 
-      {/* Auth / Verification Modal */}
-      <Modal visible={showAuthModal} animationType="slide">
-        <AuthScreen
-          onSuccess={(u) => {
-            setCurrentUser(u);
-            setShowAuthModal(false);
-          }}
-          onCancel={() => setShowAuthModal(false)}
-        />
-      </Modal>
-
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#ffffff' },
+  loadingContainer: { flex: 1, backgroundColor: '#ffffff', alignItems: 'center', justifyContent: 'center', gap: 12 },
+  loadingText: { fontSize: 13, color: '#64748b' },
   screenContainer: { flex: 1 },
   bottomNav: {
     height: 64,

@@ -7,9 +7,11 @@ import {
   StyleSheet, 
   SafeAreaView, 
   ScrollView,
-  Alert
+  Alert,
+  ActivityIndicator
 } from 'react-native';
 import { UserProfile, UserRole, StudentDiscipline } from '../types';
+import { apiService } from '../services/api';
 
 interface AuthScreenProps {
   onSuccess: (user: UserProfile) => void;
@@ -21,30 +23,52 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onCancel }) =
   const [selectedRole, setSelectedRole] = useState<UserRole>('DOCTOR');
   const [selectedDiscipline, setSelectedDiscipline] = useState<StudentDiscipline>('MEDICAL_STUDENT');
   const [fullName, setFullName] = useState('');
+  const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [identifier, setIdentifier] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [specialization, setSpecialization] = useState('Cardiology');
   const [regNumber, setRegNumber] = useState('');
   const [collegeName, setCollegeName] = useState('');
   const [documentUploaded, setDocumentUploaded] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = () => {
-    const newUser: UserProfile = {
-      id: `usr-${Date.now()}`,
-      fullName: fullName || (selectedRole === 'DOCTOR' ? 'Dr. Sarah Jenkins' : 'Alex Morgan'),
-      username: selectedRole === 'DOCTOR' ? specialization.toLowerCase() : selectedDiscipline.toLowerCase(),
-      email: identifier.includes('@') ? identifier : `${identifier}@medmedia.health`,
-      avatarUrl: selectedRole === 'DOCTOR' 
-        ? 'https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=150&h=150&fit=crop'
-        : 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop',
-      role: selectedRole,
-      verificationStatus: 'VERIFIED',
-      badgeTitle: selectedRole === 'DOCTOR' ? 'Verified Physician' : 'Verified Medical Scholar',
-      bio: selectedRole === 'DOCTOR' ? `Physician specializing in ${specialization}` : `Healthcare scholar at ${collegeName || 'Medical College'}`
-    };
+  const handleSubmit = async () => {
+    if ((mode === 'signin' && !identifier.trim()) || !password) {
+      Alert.alert('Missing details', mode === 'signin' ? 'Enter your email or phone and password.' : 'Enter a password.');
+      return;
+    }
+    if (mode === 'signup' && (!fullName.trim() || !username.trim() || !email.trim())) {
+      Alert.alert('Missing details', 'Enter your full name, username, and email to create an account.');
+      return;
+    }
 
-    Alert.alert("Verified", "Your credentials have been authenticated.");
-    onSuccess(newUser);
+    setIsSubmitting(true);
+    try {
+      const user = mode === 'signin'
+        ? await apiService.login(identifier.trim(), password)
+        : await apiService.register({
+            fullName: fullName.trim(),
+            username: username.trim(),
+            email: email.trim(),
+            phoneNumber: identifier.includes('@') ? undefined : identifier.trim() || undefined,
+            password,
+            role: selectedRole,
+            doctorDetails: selectedRole === 'DOCTOR'
+              ? { specialization: specialization.trim(), medicalCouncilRegNumber: regNumber.trim() || undefined }
+              : undefined,
+            studentDetails: selectedRole === 'STUDENT'
+              ? { discipline: selectedDiscipline, collegeName: collegeName.trim() || undefined }
+              : undefined
+          });
+      onSuccess(user);
+    } catch (error: any) {
+      const message = error?.response?.data?.message || error?.message || 'Could not connect to MedMedia.';
+      Alert.alert(mode === 'signin' ? 'Sign in failed' : 'Registration failed', message);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -113,6 +137,23 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onCancel }) =
                 onChangeText={setFullName}
                 style={styles.input}
               />
+              <Text style={styles.label}>USERNAME</Text>
+              <TextInput
+                placeholder="Choose a unique username"
+                autoCapitalize="none"
+                value={username}
+                onChangeText={setUsername}
+                style={styles.input}
+              />
+              <Text style={styles.label}>EMAIL ADDRESS</Text>
+              <TextInput
+                placeholder="you@example.com"
+                autoCapitalize="none"
+                keyboardType="email-address"
+                value={email}
+                onChangeText={setEmail}
+                style={styles.input}
+              />
             </>
           )}
 
@@ -125,13 +166,28 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onCancel }) =
           />
 
           <Text style={styles.label}>PASSWORD</Text>
+          <View style={styles.passwordInputWrap}>
           <TextInput
             placeholder="••••••••••••"
-            secureTextEntry
+            secureTextEntry={!showPassword}
             value={password}
             onChangeText={setPassword}
-            style={styles.input}
+            style={[styles.input, styles.passwordInput]}
           />
+            <TouchableOpacity
+              onPress={() => setShowPassword(visible => !visible)}
+              accessibilityRole="button"
+              accessibilityLabel={showPassword ? 'Hide password' : 'Show password'}
+              accessibilityState={{ selected: showPassword }}
+              hitSlop={8}
+              style={styles.passwordVisibilityButton}
+            >
+              <View style={styles.eyeIcon}>
+                <View style={styles.eyePupil} />
+                {showPassword && <View style={styles.eyeSlash} />}
+              </View>
+            </TouchableOpacity>
+          </View>
 
           {/* DOCTOR VERIFICATION DETAILS (Slide 3) */}
           {mode === 'signup' && selectedRole === 'DOCTOR' && (
@@ -201,10 +257,10 @@ export const AuthScreen: React.FC<AuthScreenProps> = ({ onSuccess, onCancel }) =
           )}
 
           {/* Submit */}
-          <TouchableOpacity onPress={handleSubmit} style={styles.submitBtn}>
-            <Text style={styles.submitBtnText}>
-              {mode === 'signup' ? `Submit ${selectedRole} Verification` : 'Sign In'}
-            </Text>
+          <TouchableOpacity disabled={isSubmitting} onPress={handleSubmit} style={[styles.submitBtn, isSubmitting && { opacity: 0.7 }]}>
+            {isSubmitting
+              ? <ActivityIndicator color="#ffffff" />
+              : <Text style={styles.submitBtnText}>{mode === 'signup' ? `Create ${selectedRole} Account` : 'Sign In'}</Text>}
           </TouchableOpacity>
 
           {/* Slide 2: Google login */}
@@ -239,6 +295,12 @@ const styles = StyleSheet.create({
   card: { backgroundColor: '#ffffff', borderRadius: 18, padding: 16, marginBottom: 14, borderWidth: 1, borderColor: '#e2e8f0' },
   label: { fontSize: 10, fontWeight: 'bold', color: '#64748b', marginBottom: 4, marginTop: 10 },
   input: { backgroundColor: '#f8fafc', borderWidth: 1, borderColor: '#cbd5e1', borderRadius: 10, padding: 10, fontSize: 12, color: '#0f172a' },
+  passwordInputWrap: { position: 'relative' },
+  passwordInput: { paddingRight: 42 },
+  passwordVisibilityButton: { position: 'absolute', right: 0, top: 0, bottom: 0, width: 40, alignItems: 'center', justifyContent: 'center' },
+  eyeIcon: { width: 18, height: 12, borderWidth: 1.5, borderColor: '#64748b', borderRadius: 9, alignItems: 'center', justifyContent: 'center' },
+  eyePupil: { width: 5, height: 5, borderRadius: 3, backgroundColor: '#64748b' },
+  eyeSlash: { position: 'absolute', left: -2, top: 5, width: 20, height: 1.5, backgroundColor: '#64748b', transform: [{ rotate: '45deg' }] },
   roleGrid: { flexDirection: 'row', gap: 10, marginTop: 4 },
   roleCard: { flex: 1, backgroundColor: '#f8fafc', borderWidth: 1.5, borderColor: '#e2e8f0', borderRadius: 14, padding: 12, alignItems: 'center' },
   roleCardActive: { borderColor: '#0284c7', backgroundColor: '#f0f9ff' },

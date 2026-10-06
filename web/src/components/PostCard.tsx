@@ -27,6 +27,8 @@ interface PostCardProps {
   currentUser: UserProfile;
   onLike: (postId: string) => void;
   onSave: (postId: string) => void;
+  followingIds: Set<string>;
+  onToggleFollow: (userId: string, shouldFollow: boolean) => Promise<boolean>;
   onVotePoll?: (postId: string, optionId: string) => void;
   onSelectUser?: (userId: string) => void;
   onDeletePost?: (postId: string) => void;
@@ -37,6 +39,8 @@ export const PostCard: React.FC<PostCardProps> = ({
   currentUser,
   onLike,
   onSave,
+  followingIds,
+  onToggleFollow,
   onVotePoll,
   onSelectUser,
   onDeletePost
@@ -47,7 +51,7 @@ export const PostCard: React.FC<PostCardProps> = ({
   const [shareCount, setShareCount] = useState(post.sharesCount || 0);
   const [shareStatus, setShareStatus] = useState<'copied' | 'shared' | null>(null);
   const [showFullContent, setShowFullContent] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(post.isFollowing || false);
+  const isFollowing = followingIds.has(post.authorId);
   const [reportNotice, setReportNotice] = useState<string | null>(null);
 
   const submitReport = async () => {
@@ -195,16 +199,7 @@ export const PostCard: React.FC<PostCardProps> = ({
         <div className="flex items-center gap-2">
           {post.authorId !== currentUser.id && (
             <button
-              onClick={async () => {
-                const nextFollowing = !isFollowing;
-                setIsFollowing(nextFollowing);
-                try {
-                  if (nextFollowing) await apiService.followUser(post.authorId);
-                  else await apiService.unfollowUser(post.authorId);
-                } catch {
-                  setIsFollowing(!nextFollowing);
-                }
-              }}
+              onClick={() => onToggleFollow(post.authorId, !isFollowing)}
               className={`text-xs font-semibold px-3 py-1.5 rounded-full transition flex items-center gap-1 cursor-pointer ${
                 isFollowing
                   ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'

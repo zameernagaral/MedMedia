@@ -43,8 +43,10 @@ interface ProfileViewProps {
   onRevokeSession: (sessionId: string) => void;
   onLikePost: (postId: string) => void;
   onSavePost: (postId: string) => void;
+  followingIds: Set<string>;
+  onToggleFollow: (userId: string, shouldFollow: boolean) => Promise<boolean>;
   onSaveClip?: (clipId: string) => void;
-  onConnectUser: (userId: string, isFollowing: boolean) => void;
+  onConnectUser: (userId: string, shouldFollow: boolean) => Promise<boolean>;
   onOpenHelpCenter?: () => void;
   onOpenSupportModal?: () => void;
   onRequestMentorship?: (professor: UserProfile) => void;
@@ -72,6 +74,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onRevokeSession,
   onLikePost,
   onSavePost,
+  followingIds,
+  onToggleFollow,
   onSaveClip,
   onConnectUser,
   onOpenHelpCenter,
@@ -83,7 +87,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'posts' | 'reels' | 'saved' | 'about' | 'settings_help'>('posts');
   const [isConnected, setIsConnected] = useState(false);
-  const [isFollowing, setIsFollowing] = useState(Boolean((user as UserProfile & { isFollowing?: boolean }).isFollowing));
+  const isFollowing = followingIds.has(user.id);
   const [coverPhoto, setCoverPhoto] = useState(user.coverPhotoUrl || '');
   const [isPrivateAccount, setIsPrivateAccount] = useState(Boolean(user.isPrivate));
   const [showBannerModal, setShowBannerModal] = useState(false);
@@ -201,11 +205,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <>
                   {/* Follow only — Connections removed, platform uses Followers/Following model */}
                   <button
-                    onClick={() => {
-                      const nextFollowing = !isFollowing;
-                      setIsFollowing(nextFollowing);
-                      onConnectUser(user.id, nextFollowing);
-                    }}
+                    onClick={() => onConnectUser(user.id, !isFollowing)}
                     className={`px-4 py-2 rounded-xl text-xs font-bold transition flex items-center gap-1.5 cursor-pointer ${
                       isFollowing
                         ? 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700'
@@ -308,7 +308,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <span className="font-bold text-slate-900 dark:text-white text-sm">
-                {user.stats.followersCount + (isFollowing ? 1 : 0)}
+                {user.stats.followersCount}
               </span>
               <span className="text-slate-500 dark:text-slate-400 ml-1">Followers</span>
             </div>
@@ -387,7 +387,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 Follow @{user.username} to view their clinical cases, pearls, research notes, and medical discussions.
               </p>
               <button
-                onClick={() => setIsFollowing(true)}
+                onClick={() => onConnectUser(user.id, true)}
                 className="mt-5 px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition shadow-sm"
               >
                 Follow to View Clinical Cases
@@ -405,6 +405,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 currentUser={currentUser}
                 onLike={onLikePost}
                 onSave={onSavePost}
+                followingIds={followingIds}
+                onToggleFollow={onToggleFollow}
               />
             ))
           )}
@@ -423,7 +425,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 Follow @{user.username} to view their reels.
               </p>
               <button
-                onClick={() => setIsFollowing(true)}
+                onClick={() => onConnectUser(user.id, true)}
                 className="mt-5 px-6 py-2.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs transition shadow-sm"
               >
                 Follow to View Reels
@@ -467,6 +469,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 currentUser={currentUser}
                 onLike={onLikePost}
                 onSave={onSavePost}
+                followingIds={followingIds}
+                onToggleFollow={onToggleFollow}
               />
             )) : (
               <p className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 text-center text-xs text-slate-500 dark:text-slate-400">

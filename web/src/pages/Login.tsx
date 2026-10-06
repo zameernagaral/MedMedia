@@ -3,6 +3,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
 import { HeartPulse, Mail, Lock } from 'lucide-react';
+import { PasswordInput } from '../components/PasswordInput';
 
 export const Login: React.FC = () => {
   const [email, setEmail] = useState('');
@@ -53,7 +54,7 @@ export const Login: React.FC = () => {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Lock className="h-5 w-5 text-slate-400" />
                 </div>
-                <input type="password" required value={password} onChange={e => setPassword(e.target.value)} className="focus:ring-teal-500 focus:border-teal-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border" />
+                <PasswordInput required value={password} onChange={e => setPassword(e.target.value)} className="focus:ring-teal-500 focus:border-teal-500 block w-full pl-10 sm:text-sm border-slate-300 rounded-md py-2 border" />
               </div>
             </div>
 

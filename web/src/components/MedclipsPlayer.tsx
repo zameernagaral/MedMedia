@@ -26,6 +26,8 @@ interface MedclipsPlayerProps {
   currentUser: UserProfile;
   onLikeClip: (clipId: string) => void;
   onSaveClip: (clipId: string) => void;
+  followingIds: Set<string>;
+  onToggleFollow: (userId: string, shouldFollow: boolean) => Promise<boolean>;
   onSelectUser?: (userId: string) => void;
 }
 
@@ -34,6 +36,8 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
   currentUser,
   onLikeClip,
   onSaveClip,
+  followingIds,
+  onToggleFollow,
   onSelectUser
 }) => {
   // Tabs: Following (with green dot, default), Clinical Updates, Social Updates
@@ -49,14 +53,6 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     "Crucial pearl on using the wrist rather than finger flexion to set the knot.",
     "This should be mandatory viewing for all incoming surgical interns!"
   ]);
-  const [followingMap, setFollowingMap] = useState<Record<string, boolean>>({
-    "clip-1": true,
-    "clip-2": true,
-    "clip-4": true,
-    "clip-5": true,
-    "clip-7": true,
-    "clip-8": true
-  });
   const [toastMessage, setToastMessage] = useState<string>('');
   const [showHeartAnimation, setShowHeartAnimation] = useState(false);
 
@@ -67,7 +63,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
   const filteredClips = clips.filter(c => {
     if (activeCategory === 'following') {
-      return c.isFollowing || followingMap[c.id];
+      return c.isFollowing || followingIds.has(c.authorId);
     }
     if (activeCategory === 'clinical updates') {
       return c.clinicalCategory?.toLowerCase().includes('clinical') || c.tags?.some(t => t.toLowerCase().includes('clinical') || t.toLowerCase().includes('surgery') || t.toLowerCase().includes('cardio'));
@@ -80,7 +76,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
   // Fallback to all clips ONLY for the 'following' tab. 
   // For 'social updates' or 'clinical updates', an empty list means NO clips.
-  const activeClipList = (filteredClips.length === 0 && activeCategory === 'following') ? clips : filteredClips;
+  const activeClipList = filteredClips;
   const currentClip = activeClipList[currentIndex];
 
   const showToast = (msg: string) => {
@@ -156,12 +152,11 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     setTimeout(() => setShowHeartAnimation(false), 800);
   };
 
-  const toggleFollow = (clipId: string) => {
-    setFollowingMap(prev => {
-      const nextState = !prev[clipId];
-      showToast(nextState ? `Following ${currentClip.authorName}` : `Unfollowed ${currentClip.authorName}`);
-      return { ...prev, [clipId]: nextState };
-    });
+  const toggleFollow = async (userId: string) => {
+    const shouldFollow = !followingIds.has(userId);
+    if (await onToggleFollow(userId, shouldFollow)) {
+      showToast(shouldFollow ? `Following ${currentClip.authorName}` : `Unfollowed ${currentClip.authorName}`);
+    }
   };
 
   const handleAddComment = (e: React.FormEvent) => {
@@ -215,7 +210,7 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
     );
   }
 
-  const isFollowedReel = currentClip.isFollowing || followingMap[currentClip.id];
+  const isFollowedReel = followingIds.has(currentClip.authorId);
 
   return (
     <div 
@@ -443,14 +438,14 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
           {currentClip.authorId !== currentUser.id && (
             <button
-              onClick={() => toggleFollow(currentClip.id)}
+              onClick={() => toggleFollow(currentClip.authorId)}
               className={`ml-2 text-[11px] font-bold px-3 py-1 rounded-full transition flex items-center gap-1 cursor-pointer ${
-                followingMap[currentClip.id]
+                isFollowedReel
                   ? 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
                   : 'bg-sky-500 hover:bg-sky-600 text-white shadow-sm'
               }`}
             >
-              {followingMap[currentClip.id] ? (
+              {isFollowedReel ? (
                 <>
                   <UserCheck className="w-3 h-3" />
                   Following
@@ -505,9 +500,11 @@ export const MedclipsPlayer: React.FC<MedclipsPlayerProps> = ({
 
           <div className="py-2 space-y-1">
             <button
-              onClick={() => {
+              onClick={async () => {
                 setShowMoreDrawer(false);
-                showToast(`Started following ${currentClip.authorName}`);
+                if (!followingIds.has(currentClip.authorId) && await onToggleFollow(currentClip.authorId, true)) {
+                  showToast(`Started following ${currentClip.authorName}`);
+                }
               }}
               className="w-full py-2.5 px-3 flex items-center gap-3 text-left text-xs font-semibold text-white hover:bg-slate-800 rounded-xl transition cursor-pointer"
             >

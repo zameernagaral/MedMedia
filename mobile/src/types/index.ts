@@ -1,4 +1,4 @@
-export type UserRole = 'DOCTOR' | 'STUDENT';
+export type UserRole = 'DOCTOR' | 'STUDENT' | 'INSTITUTION' | 'ADMIN';
 export type VerificationStatus = 'VERIFIED' | 'PENDING' | 'UNVERIFIED';
 export type StudentDiscipline = 'MEDICAL_STUDENT' | 'NURSING' | 'B_PHARM' | 'D_PHARM' | 'LAB_PRACTITIONER';
 
@@ -17,10 +17,12 @@ export interface UserProfile {
   discipline?: StudentDiscipline;
   collegeName?: string;
   academicYear?: number;
+  stats: { postsCount: number; followersCount: number; followingCount: number };
 }
 
 export interface Post {
   id: string;
+  authorId: string;
   authorName: string;
   authorUsername: string;
   authorAvatar: string;
@@ -42,16 +44,21 @@ export interface Post {
 
 export interface Medclip {
   id: string;
+  authorId: string;
   authorName: string;
   authorSpecialty: string;
   authorAvatar: string;
   caption: string;
-  category: 'clinical updates' | 'social update' | 'following';
+  category: string;
+  videoUrl: string;
+  thumbnailUrl: string;
   tags: string[];
   likesCount: number;
   commentsCount: number;
+  savesCount: number;
   isLiked?: boolean;
   isSaved?: boolean;
+  createdAt?: string;
 }
 
 export interface Job {

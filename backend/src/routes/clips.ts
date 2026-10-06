@@ -12,14 +12,17 @@ const createClipSchema = z.object({
   clipType: z.enum(["Clinical Update", "Social Update"]).optional(),
   tags: z.array(z.string()).optional()
 });
-const clipActionSchema = z.object({ action: z.enum(['like', 'save']) }).strict();
+const clipActionSchema = z.object({ action: z.enum(['like', 'save']), state: z.boolean().optional() }).strict();
 
 router.get('/saved', requireAuth, async (req: Request, res: Response) => {
   try {
     const userId = (req as any).user.userId as string;
     const bookmarks = await prisma.clipBookmark.findMany({
       where: { userId },
-      include: { clip: { include: { user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } } } },
+      include: { clip: { include: {
+        user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } },
+        likes: { where: { userId }, select: { id: true } }
+      } } },
       orderBy: { createdAt: 'desc' }
     });
     res.json({ success: true, clips: bookmarks.map(({ clip }) => ({
@@ -37,6 +40,7 @@ router.get('/saved', requireAuth, async (req: Request, res: Response) => {
       likesCount: clip.likesCount,
       commentsCount: clip.commentsCount,
       savesCount: clip.savesCount,
+      isLiked: clip.likes.length > 0,
       isSaved: true,
       createdAt: clip.createdAt.toISOString()
     })) });
@@ -117,36 +121,58 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 
 router.post('/:id/action', requireAuth, async (req: Request, res: Response) => {
   try {
-    const { action } = clipActionSchema.parse(req.body);
+    const { action, state } = clipActionSchema.parse(req.body);
     const id = req.params.id as string;
+    const userId = (req as any).user.userId as string;
+    const clip = await prisma.medclip.findUnique({
+      where: { id },
+      select: { id: true, userId: true, user: { select: { isPrivate: true } } }
+    });
+    if (!clip) return res.status(404).json({ success: false, message: 'Reel not found' });
+    if (clip.user.isPrivate && clip.userId !== userId) {
+      const followsAuthor = await prisma.follow.findUnique({
+        where: { followerId_followingId: { followerId: userId, followingId: clip.userId } }
+      });
+      if (!followsAuthor) return res.status(403).json({ success: false, message: 'You cannot interact with this private reel' });
+    }
 
     if (action === 'like') {
-      const userId = (req as any).user.userId as string;
       const result = await prisma.$transaction(async tx => {
         const existing = await tx.clipLike.findUnique({ where: { userId_clipId: { userId, clipId: id } } });
-        if (existing) {
+        const isLiked = state ?? !existing;
+        if (isLiked) {
+          await tx.clipLike.upsert({
+            where: { userId_clipId: { userId, clipId: id } },
+            create: { userId, clipId: id },
+            update: {}
+          });
+        } else if (existing) {
           await tx.clipLike.delete({ where: { id: existing.id } });
-          const updated = await tx.medclip.update({ where: { id }, data: { likesCount: { decrement: 1 } } });
-          return { isLiked: false, likesCount: Math.max(0, updated.likesCount) };
         }
-        await tx.clipLike.create({ data: { userId, clipId: id } });
-        const updated = await tx.medclip.update({ where: { id }, data: { likesCount: { increment: 1 } } });
-        return { isLiked: true, likesCount: updated.likesCount };
+        const likesCount = await tx.clipLike.count({ where: { clipId: id } });
+        await tx.medclip.update({ where: { id }, data: { likesCount } });
+        return { isLiked, likesCount };
       });
       return res.json({ success: true, ...result });
     }
 
-    const userId = (req as any).user.userId as string;
-    const existing = await prisma.clipBookmark.findUnique({ where: { userId_clipId: { userId, clipId: id } } });
-    if (existing) {
-      await prisma.clipBookmark.delete({ where: { id: existing.id } });
-      const updated = await prisma.medclip.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
-      return res.json({ success: true, isSaved: false, savesCount: Math.max(0, updated.savesCount) });
-    }
-
-    await prisma.clipBookmark.create({ data: { userId, clipId: id } });
-    const updated = await prisma.medclip.update({ where: { id }, data: { savesCount: { increment: 1 } } });
-    res.json({ success: true, isSaved: true, savesCount: updated.savesCount });
+    const result = await prisma.$transaction(async tx => {
+      const existing = await tx.clipBookmark.findUnique({ where: { userId_clipId: { userId, clipId: id } } });
+      const isSaved = state ?? !existing;
+      if (isSaved) {
+        await tx.clipBookmark.upsert({
+          where: { userId_clipId: { userId, clipId: id } },
+          create: { userId, clipId: id },
+          update: {}
+        });
+      } else if (existing) {
+        await tx.clipBookmark.delete({ where: { id: existing.id } });
+      }
+      const savesCount = await tx.clipBookmark.count({ where: { clipId: id } });
+      await tx.medclip.update({ where: { id }, data: { savesCount } });
+      return { isSaved, savesCount };
+    });
+    res.json({ success: true, ...result });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
     res.status(500).json({ success: false, message: 'Failed to update reel' });

@@ -231,15 +231,21 @@ router.post('/:id/follow', requireAuth, async (req: Request, res: Response) => {
     const target = await prisma.user.findUnique({ where: { id: followingId } });
     if (!target) return res.status(404).json({ success: false, message: 'User not found' });
 
+    const existingFollow = await prisma.follow.findUnique({
+      where: { followerId_followingId: { followerId, followingId } }
+    });
     await prisma.follow.upsert({
       where: { followerId_followingId: { followerId, followingId } },
       create: { followerId, followingId },
       update: {}
     });
-    await createNotification({ recipientId: followingId, actorId: followerId, type: 'FOLLOW', message: 'started following you' });
+    if (!existingFollow) {
+      await createNotification({ recipientId: followingId, actorId: followerId, type: 'FOLLOW', message: 'started following you' });
+    }
 
     const followersCount = await prisma.follow.count({ where: { followingId } });
-    res.status(201).json({ success: true, isFollowing: true, followersCount });
+    const followingCount = await prisma.follow.count({ where: { followerId } });
+    res.status(existingFollow ? 200 : 201).json({ success: true, isFollowing: true, followersCount, followingCount });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to follow user' });
   }
@@ -251,7 +257,8 @@ router.delete('/:id/follow', requireAuth, async (req: Request, res: Response) =>
     const followingId = req.params.id as string;
     await prisma.follow.deleteMany({ where: { followerId, followingId } });
     const followersCount = await prisma.follow.count({ where: { followingId } });
-    res.json({ success: true, isFollowing: false, followersCount });
+    const followingCount = await prisma.follow.count({ where: { followerId } });
+    res.json({ success: true, isFollowing: false, followersCount, followingCount });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Failed to unfollow user' });
   }
@@ -413,10 +420,13 @@ router.get('/me/bookmarks', requireAuth, async (req: Request, res: Response) => 
   try {
     const bookmarks = await prisma.bookmark.findMany({
       where: { userId: (req as any).user.userId },
-      include: { post: { include: { user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } } } },
+      include: { post: { include: {
+        user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } },
+        likes: { where: { userId: (req as any).user.userId }, select: { id: true } }
+      } } },
       orderBy: { createdAt: 'desc' }
     });
-    res.json({ success: true, bookmarks: bookmarks.map(item => ({ ...item.post, isSaved: true })) });
+    res.json({ success: true, bookmarks: bookmarks.map(item => ({ ...item.post, isLiked: item.post.likes.length > 0, isSaved: true })) });
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to fetch bookmarks' }); }
 });
 

@@ -251,4 +251,18 @@ describe('Authentication security', () => {
     expect(response.body.ready).toBe(true);
     expect((prisma as any).$connect).toHaveBeenCalled();
   });
+
+  it('returns JSON when authentication requests are rate limited', async () => {
+    let response = await request(app).post('/api/auth/login').send({});
+    for (let attempt = 0; attempt < 24 && response.status !== 429; attempt += 1) {
+      response = await request(app).post('/api/auth/login').send({});
+    }
+
+    expect(response.status).toBe(429);
+    expect(response.headers['content-type']).toMatch(/application\/json/);
+    expect(response.body).toEqual({
+      success: false,
+      message: 'Too many authentication attempts from this IP. Please wait 15 minutes and try again.'
+    });
+  });
 });

@@ -37,6 +37,9 @@ const feedQuerySchema = z.object({
   tag: z.string().trim().min(1).max(100).optional()
 }).strict();
 
+const postLikeStateSchema = z.object({ isLiked: z.boolean() }).strict();
+const postBookmarkStateSchema = z.object({ isSaved: z.boolean() }).strict();
+
 async function canViewPost(postId: string, viewerId?: string): Promise<boolean | null> {
   const post = await prisma.post.findUnique({
     where: { id: postId },
@@ -173,21 +176,30 @@ router.post('/:id/like', requireAuth, async (req: Request, res: Response) => {
     if (!canView) return res.status(403).json({ success: false, message: 'You cannot interact with this private post' });
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const requestedState = postLikeStateSchema.safeParse(req.body ?? {});
+    if (Object.keys(req.body ?? {}).length > 0 && !requestedState.success) {
+      return res.status(400).json({ success: false, message: 'isLiked must be a boolean' });
+    }
     const result = await prisma.$transaction(async tx => {
       const existing = await tx.postLike.findUnique({ where: { userId_postId: { userId, postId: id } } });
-      if (existing) {
+      const isLiked = requestedState.success ? requestedState.data.isLiked : !existing;
+      if (isLiked) {
+        await tx.postLike.upsert({
+          where: { userId_postId: { userId, postId: id } },
+          create: { userId, postId: id },
+          update: {}
+        });
+      } else if (existing) {
         await tx.postLike.delete({ where: { id: existing.id } });
-        const updated = await tx.post.update({ where: { id }, data: { likesCount: { decrement: 1 } } });
-        return { isLiked: false, likesCount: Math.max(0, updated.likesCount) };
       }
-      await tx.postLike.create({ data: { userId, postId: id } });
-      const updated = await tx.post.update({ where: { id }, data: { likesCount: { increment: 1 } } });
-      return { isLiked: true, likesCount: updated.likesCount };
+      const likesCount = await tx.postLike.count({ where: { postId: id } });
+      await tx.post.update({ where: { id }, data: { likesCount } });
+      return { isLiked, likesCount, wasCreated: isLiked && !existing };
     });
-    if (result.isLiked && post.userId !== userId) {
+    if (result.wasCreated && post.userId !== userId) {
       await createNotification({ recipientId: post.userId, actorId: userId, type: 'LIKE', message: 'liked your post', entityId: id });
     }
-    res.json({ success: true, ...result });
+    res.json({ success: true, isLiked: result.isLiked, likesCount: result.likesCount });
   } catch (e) { res.status(500).json({ success: false, message: 'Failed to update post like' }); }
 });
 
@@ -260,60 +272,44 @@ router.delete('/:postId/comments/:commentId', requireAuth, async (req: Request, 
   }
 });
 
-router.post('/:id/save', requireAuth, async (req: Request, res: Response) => {
+async function updatePostBookmark(req: Request, res: Response) {
   try {
     const id = req.params.id as string;
     const userId = (req as any).user.userId as string;
     const canView = await canViewPost(id, userId);
     if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
     if (!canView) return res.status(403).json({ success: false, message: 'You cannot save this private post' });
-    const post = await prisma.post.findUnique({ where: { id } });
-    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
-    if (existing) {
-      await prisma.bookmark.delete({ where: { id: existing.id } });
-      const updated = await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
-      return res.json({ success: true, isSaved: false, savesCount: Math.max(0, updated.savesCount) });
+    const requestedState = postBookmarkStateSchema.safeParse(req.body ?? {});
+    if (req.method !== 'DELETE' && Object.keys(req.body ?? {}).length > 0 && !requestedState.success) {
+      return res.status(400).json({ success: false, message: 'isSaved must be a boolean' });
     }
-    await prisma.bookmark.create({ data: { userId, postId: id } });
-    const updated = await prisma.post.update({ where: { id }, data: { savesCount: { increment: 1 } } });
-    res.json({ success: true, isSaved: true, savesCount: updated.savesCount });
-  } catch (e) { res.status(500).json({ success: false }); }
-});
+    const result = await prisma.$transaction(async tx => {
+      const existing = await tx.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
+      const isSaved = req.method === 'DELETE'
+        ? false
+        : requestedState.success ? requestedState.data.isSaved : !existing;
+      if (isSaved) {
+        await tx.bookmark.upsert({
+          where: { userId_postId: { userId, postId: id } },
+          create: { userId, postId: id },
+          update: {}
+        });
+      } else if (existing) {
+        await tx.bookmark.delete({ where: { id: existing.id } });
+      }
+      const savesCount = await tx.bookmark.count({ where: { postId: id } });
+      await tx.post.update({ where: { id }, data: { savesCount } });
+      return { isSaved, savesCount };
+    });
+    res.json({ success: true, ...result });
+  } catch (error) { res.status(500).json({ success: false, message: 'Failed to update post bookmark' }); }
+}
 
-router.post('/:id/bookmark', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.userId as string;
-    const id = req.params.id as string;
-    const canView = await canViewPost(id, userId);
-    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
-    if (!canView) return res.status(403).json({ success: false, message: 'You cannot save this private post' });
-    const post = await prisma.post.findUnique({ where: { id } });
-    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
-    if (existing) {
-      await prisma.bookmark.delete({ where: { id: existing.id } });
-      const updated = await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
-      return res.json({ success: true, isSaved: false, savesCount: Math.max(0, updated.savesCount) });
-    }
-    await prisma.bookmark.create({ data: { userId, postId: id } });
-    const updated = await prisma.post.update({ where: { id }, data: { savesCount: { increment: 1 } } });
-    res.json({ success: true, isSaved: true, savesCount: updated.savesCount });
-  } catch (error) { res.status(500).json({ success: false, message: 'Failed to bookmark post' }); }
-});
+router.post('/:id/save', requireAuth, updatePostBookmark);
+router.post('/:id/bookmark', requireAuth, updatePostBookmark);
 
 router.delete('/:id/bookmark', requireAuth, async (req: Request, res: Response) => {
-  try {
-    const userId = (req as any).user.userId as string;
-    const id = req.params.id as string;
-    const bookmark = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
-    if (bookmark) {
-      await prisma.bookmark.delete({ where: { id: bookmark.id } });
-      await prisma.post.update({ where: { id }, data: { savesCount: { decrement: 1 } } });
-    }
-    const post = await prisma.post.findUnique({ where: { id }, select: { savesCount: true } });
-    res.json({ success: true, isSaved: false, savesCount: Math.max(0, post?.savesCount || 0) });
-  } catch (error) { res.status(500).json({ success: false, message: 'Failed to remove bookmark' }); }
+  await updatePostBookmark(req, res);
 });
 
 // POST /api/posts/:id/share — increment share count and return shareable URL

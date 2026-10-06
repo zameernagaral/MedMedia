@@ -51,6 +51,7 @@ import { apiService } from '../services/api';
 import { CommunityModal } from './CommunityModal';
 import { JobDetailModal } from './JobDetailModal';
 import { ScholarshipApplyModal } from './ScholarshipApplyModal';
+import { CreateScholarshipModal } from './CreateScholarshipModal';
 import { DocHubModal, MedicalDocItem } from './DocHubModal';
 
 
@@ -93,6 +94,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   const [courses, setCourses] = useState<CourseItem[]>([]);
   const [scholarships, setScholarships] = useState<ScholarshipItem[]>([]);
   const [selectedScholarship, setSelectedScholarship] = useState<ScholarshipItem | null>(null);
+  const [showAddScholarshipModal, setShowAddScholarshipModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<MedicalDocItem | null>(null);
   const [medicalDocs, setMedicalDocs] = useState<MedicalDocItem[]>([]);
 
@@ -132,9 +134,8 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
 
   // Job Creation State
   const [showAddJobModal, setShowAddJobModal] = useState(false);
-  const canPostJobs = currentUser.role === 'ADMIN' || (
-    currentUser.role === 'INSTITUTION' && currentUser.verificationStatus === 'VERIFIED'
-  );
+  const canPostJobs = currentUser.role === 'ADMIN';
+  const canManageOpportunities = currentUser.role === 'ADMIN';
   const [newJobTitle, setNewJobTitle] = useState('');
   const [newJobCompany, setNewJobCompany] = useState('');
   const [newJobLocation, setNewJobLocation] = useState('');
@@ -142,6 +143,9 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
   const [newJobCategory, setNewJobCategory] = useState('Doctor jobs');
   const [newJobSalary, setNewJobSalary] = useState('');
   const [newJobSkills, setNewJobSkills] = useState('');
+  const [newJobDescription, setNewJobDescription] = useState('');
+  const [newJobEducation, setNewJobEducation] = useState('Relevant medical degree');
+  const [newJobExperience, setNewJobExperience] = useState('0');
 
   // Research Workspace & Approval State
   const [selectedResearchProject, setSelectedResearchProject] = useState<ResearchProject | null>(null);
@@ -290,9 +294,9 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       category: newJobCategory as any,
       salary: newJobSalary.trim() || 'Not specified',
       skills: newJobSkills.split(',').map(s => s.trim()).filter(Boolean),
-      experience: 'Any',
-      description: 'Role created via interface.',
-      preferenceEducation: 'Relevant Medical Degree',
+      experience: Number(newJobExperience) > 0 ? `${newJobExperience} years` : 'Any',
+      description: newJobDescription.trim(),
+      preferenceEducation: newJobEducation.trim(),
       postedAt: 'Just now'
     };
 
@@ -305,6 +309,27 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
     setNewJobLocation('');
     setNewJobSalary('');
     setNewJobSkills('');
+    setNewJobDescription('');
+    setNewJobEducation('Relevant medical degree');
+    setNewJobExperience('0');
+  };
+
+  const handleCreateScholarship = async (scholarship: {
+    title: string;
+    amount: string;
+    deadline: string;
+    institution: string;
+    description: string;
+    coverage?: string;
+    applyLink?: string;
+  }) => {
+    const result = await apiService.createScholarship(scholarship);
+    if (!result.success || !result.scholarship) {
+      throw new Error(result.message || 'Unable to add this scholarship.');
+    }
+    setScholarships(prev => [result.scholarship!, ...prev]);
+    setShowAddScholarshipModal(false);
+    showToast('Scholarship saved to the database.');
   };
 
   // Research Project: Submit Add
@@ -315,8 +340,6 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
     const tagsArray = newResearchTags.split(' ').map(t => t.trim()).filter(Boolean);
     const created = await apiService.createResearchProject({
       title: newResearchTitle.trim(),
-      leadDoctorName: currentUser.fullName,
-      leadDoctorAvatar: currentUser.avatarUrl,
       institution: currentUser.doctorDetails?.hospitalAffiliation || currentUser.studentDetails?.collegeName || 'National Medical Center',
       description: newResearchDesc.trim(),
       hashtags: tagsArray,
@@ -330,6 +353,8 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       setNewResearchTitle('');
       setNewResearchDesc('');
       showToast("Research project registered with algorithmic specialty hashtags!");
+    } else {
+      showToast('Research project could not be saved. Please check your connection and try again.');
     }
   };
 
@@ -747,7 +772,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                             />
                           </div>
                           <span className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 whitespace-nowrap">
-                            {c.membersCount.toLocaleString()} / 10,000 members ({pct}%)
+                            {c.membersCount.toLocaleString()} / 10,000 members
                           </span>
                         </div>
                       </div>
@@ -801,7 +826,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   onClick={() => setShowAddJobModal(true)}
                   className="px-4 py-1.5 bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold rounded-xl transition shadow-sm cursor-pointer"
                 >
-                  + Post a Job
+                  + Add Job
                 </button>
               )}
             </div>
@@ -945,12 +970,14 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   Discover and register for upcoming medical events worldwide.
                 </p>
               </div>
-              <button
-                onClick={onOpenCreateEvent}
-                className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
-              >
-                + Post Event
-              </button>
+              {canManageOpportunities && (
+                <button
+                  onClick={onOpenCreateEvent}
+                  className="px-4 py-2 bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs rounded-xl shadow-xs transition cursor-pointer shrink-0"
+                >
+                  + Add Event
+                </button>
+              )}
             </div>
 
             <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-2">
@@ -979,13 +1006,21 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {events.filter(e => e.category === eventsFilter || eventsFilter === 'Near You').map(e => (
+              {events.filter(e => e.category === eventsFilter || eventsFilter === 'Near You').map(e => {
+                const indiaToday = new Intl.DateTimeFormat('en-CA', {
+                  timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+                }).format(new Date());
+                const eventHasEnded = Boolean(e.endDate && e.endDate < indiaToday);
+                const eventStatus = e.endDate ? (eventHasEnded ? 'Past event' : 'Upcoming') : 'Date TBA';
+                return (
                 <div key={e.id} className="bg-white dark:bg-slate-900 rounded-3xl p-5 border border-slate-200 dark:border-slate-800 hover:border-sky-300 dark:hover:border-sky-700 transition">
                   <div className="flex justify-between items-start mb-3">
                     <span className="text-[10px] uppercase tracking-wider font-bold text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2 py-0.5 rounded-lg border border-sky-100 dark:border-sky-900">
                       {e.type}
                     </span>
-                    <span className="text-xs font-bold text-slate-500">{e.attendees} attending</span>
+                    <span className={`text-[10px] font-bold ${eventHasEnded ? 'text-slate-400' : 'text-emerald-600 dark:text-emerald-400'}`}>
+                      {eventStatus}
+                    </span>
                   </div>
                   <h4 className="text-sm font-bold text-slate-900 dark:text-white mb-2">{e.title}</h4>
                   <p className="text-xs text-slate-600 dark:text-slate-400 mb-4 line-clamp-2">{e.description}</p>
@@ -999,13 +1034,22 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                       <MapPin className="w-3.5 h-3.5 shrink-0" />
                       {e.location}
                     </div>
+                    {e.organizer && <div className="text-[11px] text-slate-500 dark:text-slate-400">Organized by {e.organizer}</div>}
+                    {(e.department || e.creditHours != null) && (
+                      <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                        {[e.department, e.creditHours != null ? `${e.creditHours} credit hours` : undefined].filter(Boolean).join(' · ')}
+                      </div>
+                    )}
+                    {e.contactPhone && <a href={`tel:${e.contactPhone}`} className="block text-[11px] text-sky-700 dark:text-sky-400">Phone: {e.contactPhone}</a>}
+                    {e.contactEmail && <a href={`mailto:${e.contactEmail}`} className="block text-[11px] text-sky-700 dark:text-sky-400 break-all">Email: {e.contactEmail}</a>}
                   </div>
                   
                   <button className="w-full py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold rounded-xl transition">
                     Register / Learn More
                   </button>
                 </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </div>
@@ -1581,7 +1625,8 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       {/* ========================================================================= */}
       {activeTab === 'scholarships' && (
         <div className="space-y-4">
-          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs">
+          <div className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 shadow-xs flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div>
             <h3 className="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">
               <Award className="w-4 h-4 text-amber-500" />
               Buddy4Study Medical & Healthcare Grants
@@ -1589,6 +1634,12 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Verified national & international scholarships for MBBS, MD, MS, BDS, Nursing & Allied Scholars.
             </p>
+            </div>
+            {canManageOpportunities && (
+              <button onClick={() => setShowAddScholarshipModal(true)} className="px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl shadow-sm transition shrink-0">
+                + Add Scholarship
+              </button>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
@@ -1603,18 +1654,21 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                 </p>
               </div>
             ) : (
-              scholarships.map((s) => (
+              scholarships.map((s) => {
+                const deadlineTimestamp = Date.parse(s.deadline);
+                const isExpired = Number.isFinite(deadlineTimestamp) && deadlineTimestamp < Date.now();
+                return (
                 <div
                   key={s.id}
-                  onClick={() => setSelectedScholarship(s)}
-                  className="bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover:shadow-md hover:border-amber-400 transition cursor-pointer flex flex-col justify-between group"
+                  onClick={() => { if (!isExpired) setSelectedScholarship(s); }}
+                  className={`bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 rounded-2xl p-4 shadow-xs flex flex-col justify-between group ${isExpired ? 'opacity-70 cursor-not-allowed' : 'hover:shadow-md hover:border-amber-400 transition cursor-pointer'}`}
                 >
                   <div>
                     <div className="flex items-center justify-between mb-1">
                       <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-200">
                         {s.coverage || 'Scholarship'}
                       </span>
-                      <span className="text-[10px] font-semibold text-rose-500 font-bold">{s.deadline}</span>
+                      <span className={`text-[10px] font-bold ${isExpired ? 'text-slate-500' : 'text-rose-500'}`}>{isExpired ? 'Closed · ' : ''}{s.deadline}</span>
                     </div>
 
                     <h4 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white group-hover:text-amber-600 transition">
@@ -1627,11 +1681,12 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                   <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-xs">
                     <span className="text-slate-400 text-[11px]">{s.provider}</span>
                     <span className="text-amber-600 font-bold flex items-center gap-1 group-hover:translate-x-0.5 transition">
-                      Apply for Aid →
+                      {isExpired ? "Applications closed" : "Apply for Aid"}
                     </span>
                   </div>
                 </div>
-              ))
+                );
+              })
             )}
           </div>
         </div>
@@ -2164,7 +2219,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       {/* Create Job Modal */}
       {showAddJobModal && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-slate-900/60 backdrop-blur-sm p-4">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-md rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-md max-h-[90vh] rounded-3xl shadow-xl overflow-hidden animate-in zoom-in-95 duration-200">
             <div className="p-4 border-b border-slate-100 dark:border-slate-800 flex justify-between items-center">
               <h3 className="font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 <Briefcase className="w-5 h-5 text-sky-600" />
@@ -2172,7 +2227,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
               </h3>
               <button onClick={() => setShowAddJobModal(false)} className="text-slate-400 hover:text-slate-600">✕</button>
             </div>
-            <form onSubmit={handleCreateJob} className="p-5 space-y-4">
+            <form onSubmit={handleCreateJob} className="p-5 space-y-4 max-h-[calc(90vh-64px)] overflow-y-auto">
               <div>
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Job Title</label>
                 <input
@@ -2261,6 +2316,22 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
                 />
               </div>
 
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Experience (years)</label>
+                  <input type="number" min="0" max="80" value={newJobExperience} onChange={e => setNewJobExperience(e.target.value)} className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Education preference *</label>
+                  <input required maxLength={191} value={newJobEducation} onChange={e => setNewJobEducation(e.target.value)} className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white" />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">Job description *</label>
+                <textarea required maxLength={5000} rows={4} value={newJobDescription} onChange={e => setNewJobDescription(e.target.value)} className="w-full text-xs p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white resize-y" />
+              </div>
+
               <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
@@ -2302,6 +2373,12 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       )}
 
       {/* Buddy4Study Scholarship Application Modal */}
+      {showAddScholarshipModal && (
+        <CreateScholarshipModal
+          onClose={() => setShowAddScholarshipModal(false)}
+          onSubmit={handleCreateScholarship}
+        />
+      )}
       <ScholarshipApplyModal
         isOpen={!!selectedScholarship}
         scholarship={selectedScholarship}

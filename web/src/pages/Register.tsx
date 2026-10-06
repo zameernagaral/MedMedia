@@ -2,15 +2,23 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { apiService } from '../services/api';
-import { HeartPulse, Mail, Lock, User } from 'lucide-react';
+import { HeartPulse } from 'lucide-react';
+import { PasswordInput } from '../components/PasswordInput';
 
 export const Register: React.FC = () => {
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [password, setPassword] = useState('');
   const [role, setRole] = useState('STUDENT');
+  const [collegeName, setCollegeName] = useState('');
+  const [academicYear, setAcademicYear] = useState('1');
+  const [specialization, setSpecialization] = useState('');
+  const [hospitalAffiliation, setHospitalAffiliation] = useState('');
+  const [medicalCouncilRegNumber, setMedicalCouncilRegNumber] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
@@ -20,13 +28,33 @@ export const Register: React.FC = () => {
       setError('Password must be at least 8 characters long.');
       return;
     }
+    setError('');
+    setIsSubmitting(true);
     try {
-      const user = await apiService.registerUser({ email, password, fullName, username, role });
+      const user = await apiService.registerUser({
+        email: email.trim(),
+        password,
+        fullName: fullName.trim(),
+        username: username.trim(),
+        phoneNumber: phoneNumber.trim() || undefined,
+        role,
+        studentDetails: role === 'STUDENT' ? {
+          collegeName: collegeName.trim() || undefined,
+          academicYear: Number(academicYear) || 1
+        } : undefined,
+        doctorDetails: role === 'DOCTOR' ? {
+          specialization: specialization.trim() || undefined,
+          hospitalAffiliation: hospitalAffiliation.trim() || undefined,
+          medicalCouncilRegNumber: medicalCouncilRegNumber.trim() || undefined
+        } : undefined
+      });
       localStorage.setItem('medmedia_theme_prompt_pending', 'true');
       login('', user);
       navigate('/');
     } catch (err: any) {
       setError(err.message || 'Registration failed');
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -58,8 +86,12 @@ export const Register: React.FC = () => {
               <input type="email" required value={email} onChange={e => setEmail(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
             </div>
             <div>
+              <label className="block text-sm font-medium text-slate-700">Phone (optional)</label>
+              <input type="tel" autoComplete="tel" value={phoneNumber} onChange={e => setPhoneNumber(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+            </div>
+            <div>
               <label className="block text-sm font-medium text-slate-700">Password</label>
-              <input type="password" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+              <PasswordInput containerClassName="mt-1" required minLength={8} value={password} onChange={e => setPassword(e.target.value)} className="block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
             </div>
             <div>
               <label className="block text-sm font-medium text-slate-700">I am a...</label>
@@ -70,8 +102,38 @@ export const Register: React.FC = () => {
               </select>
             </div>
 
-            <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700">
-              Register
+            {role === 'STUDENT' && (
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">College (optional)</label>
+                  <input value={collegeName} onChange={e => setCollegeName(e.target.value)} maxLength={160} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Academic year</label>
+                  <input type="number" min="1" max="20" value={academicYear} onChange={e => setAcademicYear(e.target.value)} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+                </div>
+              </div>
+            )}
+
+            {role === 'DOCTOR' && (
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Specialization (optional)</label>
+                  <input value={specialization} onChange={e => setSpecialization(e.target.value)} maxLength={120} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Hospital / institution (optional)</label>
+                  <input value={hospitalAffiliation} onChange={e => setHospitalAffiliation(e.target.value)} maxLength={160} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-slate-700">Medical council registration (optional)</label>
+                  <input value={medicalCouncilRegNumber} onChange={e => setMedicalCouncilRegNumber(e.target.value)} maxLength={100} className="mt-1 block w-full sm:text-sm border-slate-300 rounded-md py-2 px-3 border" />
+                </div>
+              </div>
+            )}
+
+            <button type="submit" disabled={isSubmitting} className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-teal-600 hover:bg-teal-700 disabled:opacity-60 disabled:cursor-wait">
+              {isSubmitting ? 'Saving account…' : 'Register'}
             </button>
           </form>
           

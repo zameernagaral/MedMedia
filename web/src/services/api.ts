@@ -27,11 +27,62 @@ const fetchWithAuth = (url: string, options: RequestInit = {}) => {
   });
 };
 
+const readAuthResponse = async (response: Response): Promise<Record<string, any>> => {
+  const body = await response.text();
+  if (!body.trim()) return {};
+
+  try {
+    const parsed: unknown = JSON.parse(body);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed)
+      ? parsed as Record<string, any>
+      : {};
+  } catch {
+    if (response.status === 429) {
+      return { message: 'Too many authentication attempts. Please wait 15 minutes and try again.' };
+    }
+
+    const message = body.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+    return {
+      message: message.slice(0, 240) || `The server returned an invalid response (HTTP ${response.status}).`
+    };
+  }
+};
+
 type OpportunityCatalog = {
   researchProjects: ResearchProject[];
   locumGigs: LocumGig[];
   scholarships: ScholarshipItem[];
   courses: CourseItem[];
+};
+
+const parseStringArray = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.filter((item): item is string => typeof item === 'string');
+  if (typeof value !== 'string') return [];
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+};
+
+const mapResearchProject = (project: any): ResearchProject => {
+  const tags = parseStringArray(project.hashtags || project.tags);
+  const creatorName = project.creator?.fullName || project.creatorName || project.leadInvestigator || project.leadDoctorName || 'MedMedia member';
+  const creatorAvatar = project.creator?.avatarUrl || project.creatorAvatar || project.leadDoctorAvatar || '';
+  return {
+    ...project,
+    creatorId: project.creatorId || project.creator?.id || '',
+    institution: project.institution || project.instituteName || '',
+    leadDoctorName: project.leadInvestigator || creatorName,
+    creatorName,
+    creatorAvatar,
+    leadDoctorAvatar: creatorAvatar,
+    hashtags: tags,
+    tags,
+    requiredSkills: parseStringArray(project.requiredSkills),
+    collaboratorCount: project.collaboratorCount || 0
+  };
 };
 
 const fetchOpportunityCatalog = async (): Promise<OpportunityCatalog> => {
@@ -40,9 +91,22 @@ const fetchOpportunityCatalog = async (): Promise<OpportunityCatalog> => {
     if (!res.ok) throw new Error('API error');
     const data = await res.json();
     return {
-      researchProjects: data.researchProjects || [],
+      researchProjects: (data.researchProjects || []).map(mapResearchProject),
       locumGigs: data.locumGigs || [],
-      scholarships: data.scholarships || [],
+      scholarships: (data.scholarships || []).map((item: any): ScholarshipItem => ({
+        id: item.id,
+        title: item.title,
+        name: item.title,
+        organization: item.institution,
+        provider: item.institution,
+        logoUrl: '',
+        fundingAmount: item.amount,
+        coverage: item.coverage || undefined,
+        description: item.description,
+        deadline: item.deadline,
+        applyLink: item.applyLink || undefined,
+        link: item.applyLink || undefined
+      })),
       courses: data.courses || []
     };
   } catch {
@@ -115,7 +179,7 @@ export const apiService = {
         commentsCount: post.commentsCount || 0,
         savesCount: post.savesCount || 0,
         sharesCount: post.sharesCount || 0,
-        isLiked: false,
+        isLiked: Boolean(post.isLiked),
         isSaved: true,
         createdAt: post.createdAt ? new Date(post.createdAt).toISOString() : ''
       }));
@@ -150,7 +214,7 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(userData)
     });
-    const data = await res.json();
+    const data = await readAuthResponse(res);
     if (!res.ok || !data.user) throw new Error(data.message || 'Registration failed');
     const savedUser = data.user as UserProfile;
 
@@ -163,7 +227,7 @@ export const apiService = {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ identifier: identifier.trim(), password })
     });
-    const data = await res.json();
+    const data = await readAuthResponse(res);
     if (!res.ok || !data.user) throw new Error(data.message || 'Login failed');
     return data.user;
   },
@@ -232,6 +296,7 @@ export const apiService = {
         commentsCount: clip.commentsCount || 0,
         savesCount: clip.savesCount || 0,
         sharesCount: clip.sharesCount || 0,
+        isLiked: Boolean(clip.isLiked),
         isSaved: true,
         createdAt: clip.createdAt
       }));
@@ -240,19 +305,30 @@ export const apiService = {
     }
   },
 
-  async saveClip(clipId: string): Promise<boolean | null> {
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/clips/${clipId}/action`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'save' })
-      });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return typeof data.isSaved === 'boolean' ? data.isSaved : null;
-    } catch {
-      return null;
+  async likeClip(clipId: string, isLiked: boolean): Promise<{ isLiked: boolean; likesCount: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/clips/${clipId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'like', state: isLiked })
+    });
+    const data = await res.json();
+    if (!res.ok || typeof data.isLiked !== 'boolean' || typeof data.likesCount !== 'number') {
+      throw new Error(data.message || 'Could not update reel like. Please try again.');
     }
+    return { isLiked: data.isLiked, likesCount: data.likesCount };
+  },
+
+  async saveClip(clipId: string, isSaved: boolean): Promise<{ isSaved: boolean; savesCount: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/clips/${clipId}/action`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'save', state: isSaved })
+    });
+    const data = await res.json();
+    if (!res.ok || typeof data.isSaved !== 'boolean' || typeof data.savesCount !== 'number') {
+      throw new Error(data.message || 'Could not update saved reels. Please try again.');
+    }
+    return { isSaved: data.isSaved, savesCount: data.savesCount };
   },
 
   async deleteJob(jobId: string): Promise<boolean> {
@@ -279,24 +355,30 @@ export const apiService = {
     return fetchOpportunityCatalog();
   },
 
-  async likePost(postId: string): Promise<boolean> {
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/like`, { method: 'POST' });
-      const data = await res.json();
-      return data.isLiked;
-    } catch {
-      return false;
+  async likePost(postId: string, isLiked: boolean): Promise<{ isLiked: boolean; likesCount: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/like`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isLiked })
+    });
+    const data = await res.json();
+    if (!res.ok || typeof data.isLiked !== 'boolean' || typeof data.likesCount !== 'number') {
+      throw new Error(data.message || 'Could not update post like. Please try again.');
     }
+    return { isLiked: data.isLiked, likesCount: data.likesCount };
   },
 
-  async savePost(postId: string): Promise<boolean> {
-    try {
-      const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/bookmark`, { method: 'POST' });
-      const data = await res.json();
-      return data.isSaved;
-    } catch {
-      return false;
+  async savePost(postId: string, isSaved: boolean): Promise<{ isSaved: boolean; savesCount: number }> {
+    const res = await fetchWithAuth(`${API_BASE}/posts/${postId}/bookmark`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ isSaved })
+    });
+    const data = await res.json();
+    if (!res.ok || typeof data.isSaved !== 'boolean' || typeof data.savesCount !== 'number') {
+      throw new Error(data.message || 'Could not update saved posts. Please try again.');
     }
+    return { isSaved: data.isSaved, savesCount: data.savesCount };
   },
 
   async getPostComments(postId: string): Promise<any[]> {
@@ -325,18 +407,20 @@ export const apiService = {
     }
   },
 
-  async followUser(userId: string): Promise<boolean> {
+  async followUser(userId: string): Promise<{ isFollowing: boolean; followersCount: number; followingCount: number }> {
     const res = await fetchWithAuth(`${API_BASE}/users/${userId}/follow`, { method: 'POST' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to follow user');
-    return Boolean(data.isFollowing);
+    if (typeof data.isFollowing !== 'boolean') throw new Error('The server returned an invalid follow status.');
+    return { isFollowing: data.isFollowing, followersCount: data.followersCount, followingCount: data.followingCount };
   },
 
-  async unfollowUser(userId: string): Promise<boolean> {
+  async unfollowUser(userId: string): Promise<{ isFollowing: boolean; followersCount: number; followingCount: number }> {
     const res = await fetchWithAuth(`${API_BASE}/users/${userId}/follow`, { method: 'DELETE' });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'Failed to unfollow user');
-    return Boolean(data.isFollowing);
+    if (typeof data.isFollowing !== 'boolean') throw new Error('The server returned an invalid follow status.');
+    return { isFollowing: data.isFollowing, followersCount: data.followersCount, followingCount: data.followingCount };
   },
 
   async votePoll(postId: string, optionId: string): Promise<any> {
@@ -546,7 +630,7 @@ export const apiService = {
       });
       if (res.ok) {
         const data = await res.json();
-        return data.project;
+        return data.project ? mapResearchProject(data.project) : null;
       }
     } catch {}
     return null;
@@ -700,6 +784,7 @@ export const apiService = {
     location: string;
     jobDescription: string;
     salaryRange: string;
+    requiredExperienceYears?: number;
     educationPreference: string;
     skillsRequired: string[];
   }): Promise<{ success: boolean; job?: Job; message?: string }> {
@@ -741,6 +826,59 @@ export const apiService = {
       };
     } catch {
       return { success: false, message: 'Failed to post job.' };
+    }
+  },
+
+  async createScholarship(scholarship: {
+    title: string;
+    amount: string;
+    deadline: string;
+    institution: string;
+    description: string;
+    coverage?: string;
+    applyLink?: string;
+  }): Promise<{ success: boolean; scholarship?: ScholarshipItem; message?: string }> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/opportunities/scholarships`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: scholarship.title,
+          amount: scholarship.amount,
+          deadline: scholarship.deadline,
+          institution: scholarship.institution,
+          description: scholarship.description,
+          coverage: scholarship.coverage,
+          applyLink: scholarship.applyLink
+        })
+      });
+      const data = await res.json();
+      if (!res.ok || !data.success || !data.scholarship) {
+        return { success: false, message: data.message || 'Failed to add scholarship.' };
+      }
+      const item = data.scholarship;
+      return {
+        success: true,
+        scholarship: {
+          id: item.id,
+          title: item.title,
+          name: item.title,
+          organization: item.institution,
+          provider: item.institution,
+          logoUrl: '',
+          fundingAmount: item.amount,
+          coverage: item.coverage || undefined,
+          description: item.description,
+          deadline: item.deadline,
+          applyLink: item.applyLink || undefined,
+          link: item.applyLink || undefined
+        }
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: error instanceof Error ? error.message : 'Unable to add scholarship right now.'
+      };
     }
   },
 
@@ -802,7 +940,11 @@ export const apiService = {
     try {
       const res = await fetchWithAuth(`${API_BASE}/events`);
       const data = await res.json();
-      return data.success ? data.events : [];
+      return data.success ? data.events.map((event: any) => ({
+        ...event,
+        startDate: typeof event.startDate === 'string' ? event.startDate.slice(0, 10) : undefined,
+        endDate: typeof event.endDate === 'string' ? event.endDate.slice(0, 10) : undefined
+      })) : [];
     } catch {
       return [];
     }
@@ -816,7 +958,14 @@ export const apiService = {
         body: JSON.stringify(eventData)
       });
       const data = await res.json();
-      return data.success ? data.event : null;
+      if (!res.ok || !data.success || !data.event) {
+        throw new Error(data.message || 'Could not publish this event. Please try again.');
+      }
+      return {
+        ...data.event,
+        startDate: typeof data.event.startDate === 'string' ? data.event.startDate.slice(0, 10) : undefined,
+        endDate: typeof data.event.endDate === 'string' ? data.event.endDate.slice(0, 10) : undefined
+      };
     } catch {
       return null;
     }

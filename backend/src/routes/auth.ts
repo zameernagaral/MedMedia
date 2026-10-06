@@ -12,7 +12,12 @@ import { verificationBadgeTitle } from '../utils/verification';
 const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 20,
-  message: 'Too many auth requests from this IP, please try again later.'
+  handler: (_req, res) => {
+    res.status(429).json({
+      success: false,
+      message: 'Too many authentication attempts from this IP. Please wait 15 minutes and try again.'
+    });
+  }
 });
 
 
@@ -211,8 +216,25 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
         email: newUser.email,
         avatarUrl: newUser.avatarUrl,
         role: newUser.role,
+        isPrivate: newUser.isPrivate,
         verificationStatus: newUser.verificationStatus,
-        stats: { postsCount: 0, followersCount: 0, followingCount: 0 }
+        badgeTitle: verificationBadgeTitle(newUser.role, newUser.verificationStatus),
+        bio: newUser.bio,
+        doctorDetails: newUser.doctorProfile ? {
+          specialization: newUser.doctorProfile.specialization,
+          hospitalAffiliation: newUser.doctorProfile.hospitalAffiliation,
+          yearsExperience: newUser.doctorProfile.yearsExperience
+        } : undefined,
+        studentDetails: newUser.studentProfile ? {
+          discipline: newUser.studentProfile.discipline,
+          collegeName: newUser.studentProfile.collegeName,
+          academicYear: newUser.studentProfile.academicYear
+        } : undefined,
+        stats: {
+          postsCount: 0,
+          followersCount: 0,
+          followingCount: 0
+        }
       }
     });
   } catch (error) {
