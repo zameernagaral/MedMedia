@@ -16,6 +16,7 @@ const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   CORS_ORIGINS: z.string().default(isProduction ? '' : 'http://localhost:3000,http://127.0.0.1:3000'),
   CLOUDINARY_URL: z.string().optional(),
+  PUBLIC_SITE_URL: z.string().url().optional(),
   SENTRY_DSN: z.string().optional(),
   USE_REDIS: z.enum(['true', 'false']).default('false').transform(value => value === 'true'),
   REDIS_URL: z.string().url().optional(),
@@ -29,6 +30,9 @@ const envSchema = z.object({
       path: ['REDIS_URL'],
       message: 'Set REDIS_URL or REDIS_HOST when USE_REDIS=true in production'
     });
+  }
+  if (isProduction && values.PUBLIC_SITE_URL && new URL(values.PUBLIC_SITE_URL).protocol !== 'https:') {
+    ctx.addIssue({ code: z.ZodIssueCode.custom, path: ['PUBLIC_SITE_URL'], message: 'PUBLIC_SITE_URL must use HTTPS in production' });
   }
 });
 

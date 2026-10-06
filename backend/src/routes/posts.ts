@@ -27,15 +27,31 @@ const createPostSchema = z.object({
 
 const createCommentSchema = z.object({
   content: z.string().trim().min(1).max(2000),
-  parentId: z.string().optional()
+  parentId: z.string().uuid().optional()
 });
+
+const feedQuerySchema = z.object({
+  page: z.coerce.number().int().min(1).max(100000).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+  type: z.string().trim().min(1).max(50).optional(),
+  tag: z.string().trim().min(1).max(100).optional()
+}).strict();
+
+async function canViewPost(postId: string, viewerId?: string): Promise<boolean | null> {
+  const post = await prisma.post.findUnique({
+    where: { id: postId },
+    select: { userId: true, user: { select: { isPrivate: true } } }
+  });
+  if (!post) return null;
+  if (!post.user.isPrivate || post.userId === viewerId) return true;
+  if (!viewerId) return false;
+  return Boolean(await prisma.follow.findUnique({ where: { followerId_followingId: { followerId: viewerId, followingId: post.userId } } }));
+}
 
 // GET /api/posts - Home Feed
 router.get('/', optionalAuth, async (req: Request, res: Response) => {
   try {
-    const { type, tag, page = '1', limit = '10' } = req.query;
-    const pageNum = parseInt(page as string);
-    const limitNum = parseInt(limit as string);
+    const { type, tag, page: pageNum, limit: limitNum } = feedQuerySchema.parse(req.query);
     const skip = (pageNum - 1) * limitNum;
 
     let where: any = {};
@@ -63,7 +79,10 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       orderBy: { createdAt: 'desc' },
       include: {
         user: { include: { doctorProfile: true, studentProfile: true } },
-        ...(currentUserId ? { bookmarks: { where: { userId: currentUserId }, select: { id: true } } } : {})
+        ...(currentUserId ? {
+          bookmarks: { where: { userId: currentUserId }, select: { id: true } },
+          likes: { where: { userId: currentUserId }, select: { id: true } }
+        } : {})
       }
     });
 
@@ -85,13 +104,14 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       commentsCount: p.commentsCount,
       savesCount: p.savesCount,
       sharesCount: p.sharesCount,
-      isLiked: false,
+      isLiked: currentUserId ? p.likes.length > 0 : false,
       isSaved: currentUserId ? p.bookmarks.length > 0 : false,
       createdAt: p.createdAt.toISOString()
     }));
 
     res.json({ success: true, count: posts.length, totalCount: postsCount, currentPage: pageNum, totalPages: Math.ceil(postsCount / limitNum), posts });
   } catch (error) {
+    if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
     res.status(500).json({ success: false, message: 'Server Error' });
   }
 });
@@ -147,19 +167,36 @@ router.post('/', requireAuth, async (req: Request, res: Response) => {
 router.post('/:id/like', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    const userId = (req as any).user.userId as string;
+    const canView = await canViewPost(id, userId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'You cannot interact with this private post' });
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    const updated = await prisma.post.update({ where: { id }, data: { likesCount: { increment: 1 } } });
-    await createNotification({ recipientId: post.userId, actorId: (req as any).user.userId, type: 'LIKE', message: 'liked your post', entityId: id });
-    res.json({ success: true, isLiked: true, likesCount: updated.likesCount });
-  } catch (e) { res.status(500).json({ success: false }); }
+    const result = await prisma.$transaction(async tx => {
+      const existing = await tx.postLike.findUnique({ where: { userId_postId: { userId, postId: id } } });
+      if (existing) {
+        await tx.postLike.delete({ where: { id: existing.id } });
+        const updated = await tx.post.update({ where: { id }, data: { likesCount: { decrement: 1 } } });
+        return { isLiked: false, likesCount: Math.max(0, updated.likesCount) };
+      }
+      await tx.postLike.create({ data: { userId, postId: id } });
+      const updated = await tx.post.update({ where: { id }, data: { likesCount: { increment: 1 } } });
+      return { isLiked: true, likesCount: updated.likesCount };
+    });
+    if (result.isLiked && post.userId !== userId) {
+      await createNotification({ recipientId: post.userId, actorId: userId, type: 'LIKE', message: 'liked your post', entityId: id });
+    }
+    res.json({ success: true, ...result });
+  } catch (e) { res.status(500).json({ success: false, message: 'Failed to update post like' }); }
 });
 
-router.get('/:id/comments', async (req: Request, res: Response) => {
+router.get('/:id/comments', optionalAuth, async (req: Request, res: Response) => {
   try {
     const postId = req.params.id as string;
-    const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true } });
-    if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    const canView = await canViewPost(postId, (req as any).user?.userId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'This post is private' });
     const comments = await prisma.comment.findMany({
       where: { postId },
       include: { author: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } } },
@@ -182,6 +219,9 @@ router.post('/:id/comments', requireAuth, async (req: Request, res: Response) =>
     const postId = req.params.id as string;
     const authorId = (req as any).user.userId as string;
     const data = createCommentSchema.parse(req.body);
+    const canView = await canViewPost(postId, authorId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'You cannot comment on this private post' });
     const post = await prisma.post.findUnique({ where: { id: postId }, select: { id: true, userId: true } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
     if (data.parentId && !(await prisma.comment.findFirst({ where: { id: data.parentId, postId } }))) {
@@ -224,6 +264,9 @@ router.post('/:id/save', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
     const userId = (req as any).user.userId as string;
+    const canView = await canViewPost(id, userId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'You cannot save this private post' });
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
     const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
@@ -242,6 +285,9 @@ router.post('/:id/bookmark', requireAuth, async (req: Request, res: Response) =>
   try {
     const userId = (req as any).user.userId as string;
     const id = req.params.id as string;
+    const canView = await canViewPost(id, userId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'You cannot save this private post' });
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
     const existing = await prisma.bookmark.findUnique({ where: { userId_postId: { userId, postId: id } } });
@@ -271,15 +317,22 @@ router.delete('/:id/bookmark', requireAuth, async (req: Request, res: Response) 
 });
 
 // POST /api/posts/:id/share — increment share count and return shareable URL
-router.post('/:id/share', async (req: Request, res: Response) => {
+router.post('/:id/share', requireAuth, async (req: Request, res: Response) => {
   try {
     const id = req.params.id as string;
+    const userId = (req as any).user.userId as string;
     if (!z.string().uuid().safeParse(id).success) {
       return res.status(400).json({ success: false, message: 'Invalid post id' });
     }
+    const canView = await canViewPost(id, userId);
+    if (canView === null) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (!canView) return res.status(403).json({ success: false, message: 'You cannot share this private post' });
     const post = await prisma.post.findUnique({ where: { id } });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
-    const updated = await prisma.post.update({ where: { id }, data: { sharesCount: { increment: 1 } } });
+    const updated = await prisma.$transaction(async tx => {
+      await tx.postShare.create({ data: { userId, postId: id } });
+      return tx.post.update({ where: { id }, data: { sharesCount: { increment: 1 } } });
+    });
     res.json({ success: true, sharesCount: updated.sharesCount, shareUrl: `/#post-${id}` });
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to track share' }); }
 });
@@ -300,33 +353,36 @@ router.delete('/:id', requireAuth, async (req: Request, res: Response) => {
 });
 
 // Middleware to record a unique view per authenticated user
-router.get('/:id', async (req: Request, res: Response) => {
+router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
     const postId = req.params.id as string;
+    const viewerId = (req as any).user?.userId as string | undefined;
     const post = await prisma.post.findUnique({
       where: { id: postId },
       include: { user: { include: { doctorProfile: true, studentProfile: true } } }
     });
     if (!post) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (post.user.isPrivate && post.userId !== viewerId) {
+      const followsAuthor = viewerId ? await prisma.follow.findUnique({
+        where: { followerId_followingId: { followerId: viewerId, followingId: post.userId } }
+      }) : null;
+      if (!followsAuthor) return res.status(403).json({ success: false, message: 'This post is private' });
+    }
 
-    // Record view if user is authenticated
-    const authHeader = req.headers.authorization;
-    let token: string | undefined;
-    if (authHeader && authHeader.startsWith('Bearer ')) token = authHeader.split(' ')[1];
-    if (!token && req.cookies?.token) token = req.cookies.token;
-    if (token) {
-      try {
-        const decoded: any = require('jsonwebtoken').verify(token, process.env.JWT_SECRET);
-        const userId = decoded.userId;
-        // Upsert a view record (unique per user‑post)
-        await prisma.postView.upsert({
-          where: { userId_postId: { userId, postId } },
-          create: { userId, postId },
-          update: { viewedAt: new Date() }
-        });
-        // Increment counter safely
-        await prisma.post.update({ where: { id: postId }, data: { viewsCount: { increment: 1 } } });
-      } catch (_) { /* ignore invalid token */ }
+    let viewsCount = post.viewsCount;
+    if (viewerId) {
+      const existingView = await prisma.postView.findUnique({ where: { userId_postId: { userId: viewerId, postId } } });
+      if (!existingView) {
+        try {
+          const updatedPost = await prisma.$transaction(async tx => {
+            await tx.postView.create({ data: { userId: viewerId, postId } });
+            return tx.post.update({ where: { id: postId }, data: { viewsCount: { increment: 1 } } });
+          });
+          viewsCount = updatedPost.viewsCount;
+        } catch (error) {
+          if ((error as { code?: string }).code !== 'P2002') throw error;
+        }
+      }
     }
 
     const response = {
@@ -342,7 +398,7 @@ router.get('/:id', async (req: Request, res: Response) => {
       commentsCount: post.commentsCount,
       savesCount: post.savesCount,
       sharesCount: post.sharesCount,
-      viewsCount: post.viewsCount,
+      viewsCount,
       createdAt: post.createdAt.toISOString()
     };
     res.json({ success: true, post: response });
@@ -363,10 +419,10 @@ router.get('/:id/insights', requireAuth, async (req: Request, res: Response) => 
     }
     // Gather related data
     const views = await prisma.postView.findMany({ where: { postId }, select: { userId: true, viewedAt: true } });
-    const likes = await prisma.post.findMany({ where: { id: postId }, select: { likesCount: true } }); // placeholder – real likes table not defined yet
+    const likes = await prisma.postLike.findMany({ where: { postId }, select: { userId: true } });
     const comments = await prisma.comment.findMany({ where: { postId }, select: { authorId: true, createdAt: true } });
     const saves = await prisma.bookmark.findMany({ where: { postId }, select: { userId: true } });
-    const shares = await prisma.post.findMany({ where: { id: postId }, select: { sharesCount: true } }); // placeholder
+    const shares = await prisma.postShare.findMany({ where: { postId }, select: { userId: true } });
     res.json({
       success: true,
       insights: {
@@ -376,10 +432,10 @@ router.get('/:id/insights', requireAuth, async (req: Request, res: Response) => 
         totalSaves: post.savesCount,
         totalShares: post.sharesCount,
         viewers: views.map(v => v.userId),
-        likers: [], // would come from a Likes table if it existed
+        likers: likes.map(like => like.userId),
         commenters: comments.map(c => c.authorId),
         savers: saves.map(s => s.userId),
-        sharers: [] // would come from a Shares table if it existed
+        sharers: shares.map(share => share.userId)
       }
     });
   } catch (e) {

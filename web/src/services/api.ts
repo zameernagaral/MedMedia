@@ -16,9 +16,7 @@ import {
   NotificationItem, 
   SupportTicket 
 } from '../types';
-const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:5001/api'
-  : '/api';
+export const API_BASE = (import.meta.env.VITE_API_URL || '/api').replace(/\/$/, '');
 
 const fetchWithAuth = (url: string, options: RequestInit = {}) => {
   return fetch(url, { ...options, credentials: 'include' });
@@ -131,6 +129,13 @@ export const apiService = {
     } catch {
       return [];
     }
+  },
+
+  async getFollowingIds(): Promise<string[]> {
+    const res = await fetchWithAuth(`${API_BASE}/users/me/following`);
+    const data = await res.json();
+    if (!res.ok || !Array.isArray(data.followingIds)) throw new Error(data.message || 'Failed to load following list');
+    return data.followingIds;
   },
 
   // 4. REGISTER NEW USER
@@ -655,6 +660,28 @@ export const apiService = {
 
   async getCourses(): Promise<CourseItem[]> {
     return (await fetchOpportunityCatalog()).courses;
+  },
+
+  async getResources(): Promise<any[]> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/resources`);
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data.resources) ? data.resources : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async upvoteResource(resourceId: string): Promise<{ isUpvoted: boolean; upvotesCount: number } | null> {
+    try {
+      const res = await fetchWithAuth(`${API_BASE}/resources/${resourceId}/upvote`, { method: 'POST' });
+      const data = await res.json();
+      if (!res.ok || typeof data.isUpvoted !== 'boolean') return null;
+      return { isUpvoted: data.isUpvoted, upvotesCount: data.upvotesCount };
+    } catch {
+      return null;
+    }
   },
 
   // ==========================================

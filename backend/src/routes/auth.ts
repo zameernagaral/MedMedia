@@ -56,36 +56,38 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
       return res.status(400).json({ success: false, message: "Identifier and password required" });
     }
 
-    const user = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email: identifier.toLowerCase() },
-          { username: identifier },
-          { phoneNumber: identifier }
-        ]
-      },
-      include: {
-        doctorProfile: true,
-        studentProfile: true
-      }
-    });
+    let user: any;
+    try {
+      user = await prisma.user.findFirst({
+        where: {
+          OR: [
+            { email: identifier.toLowerCase() },
+            { username: identifier },
+            { phoneNumber: identifier }
+          ]
+        },
+        include: {
+          doctorProfile: true,
+          studentProfile: true
+        }
+      });
 
-    if (!user?.passwordHash) {
-      await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+      if (!user?.passwordHash) await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+    } catch {
+      return res.status(503).json({ success: false, message: 'Authentication service is temporarily unavailable' });
+    }
+
+    if (!user?.passwordHash || !(await bcrypt.compare(password, user.passwordHash))) {
       return res.status(401).json({ success: false, message: "Invalid credentials." });
     }
 
-    const isMatch = await bcrypt.compare(password, user.passwordHash);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, message: "Invalid credentials." });
-    }
-
-    const token = jwt.sign({ userId: user.id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: user.id, role: user.role, tv: user.authVersion }, JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('token', token, { 
       httpOnly: true, 
       secure: process.env.NODE_ENV === 'production', 
       sameSite: 'lax',
+      path: '/',
       maxAge: 7 * 24 * 60 * 60 * 1000 
     });
 
@@ -104,8 +106,7 @@ router.post('/login', authLimiter, async (req: Request, res: Response) => {
         doctorDetails: user.doctorProfile ? {
           specialization: user.doctorProfile.specialization,
           hospitalAffiliation: user.doctorProfile.hospitalAffiliation,
-          yearsExperience: user.doctorProfile.yearsExperience,
-          medicalCouncilRegNumber: user.doctorProfile.medicalCouncilRegNumber
+          yearsExperience: user.doctorProfile.yearsExperience
         } : undefined,
         studentDetails: user.studentProfile ? {
           discipline: user.studentProfile.discipline,
@@ -145,7 +146,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     });
 
     if (existingUser) {
-      return res.status(400).json({ success: false, message: "Email or username already exists" });
+      return res.status(409).json({ success: false, message: "Email, username, or phone number already exists" });
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
@@ -189,7 +190,7 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
       }
     });
 
-    const token = jwt.sign({ userId: newUser.id, role: newUser.role }, JWT_SECRET, { expiresIn: '7d' });
+    const token = jwt.sign({ userId: newUser.id, role: newUser.role, tv: newUser.authVersion }, JWT_SECRET, { expiresIn: '7d' });
 
     res.cookie('token', token, {
       httpOnly: true, 
@@ -215,6 +216,9 @@ router.post('/register', authLimiter, async (req: Request, res: Response) => {
     });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: error.issues });
+    if ((error as { code?: string }).code === 'P2002') {
+      return res.status(409).json({ success: false, message: 'Email, username, or phone number already exists' });
+    }
     console.error('[Auth API] Registration failed');
     res.status(500).json({ success: false, message: "Server error during registration" });
   }
@@ -226,7 +230,21 @@ router.post('/google', async (req: Request, res: Response) => {
 });
 
 // POST /api/auth/logout
-router.post('/logout', (req: Request, res: Response) => {
+router.post('/logout', async (req: Request, res: Response) => {
+  let token = req.cookies?.token;
+  if (!token && req.headers.authorization?.startsWith('Bearer ')) token = req.headers.authorization.split(' ')[1];
+  if (token) {
+    try {
+      const decoded = jwt.verify(token, JWT_SECRET, { algorithms: ['HS256'] });
+      if (typeof decoded !== 'string' && typeof decoded.userId === 'string') {
+        await prisma.user.update({ where: { id: decoded.userId }, data: { authVersion: { increment: 1 } } });
+      }
+    } catch (error) {
+      if (!(error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError)) {
+        return res.status(503).json({ success: false, message: 'Could not invalidate the current session' });
+      }
+    }
+  }
   res.clearCookie('token', {
     httpOnly: true,
     secure: env.NODE_ENV === 'production',
@@ -249,11 +267,15 @@ router.get('/me', async (req: Request, res: Response) => {
     if (typeof decoded === 'string' || typeof decoded.userId !== 'string') {
       return res.status(401).json({ success: false, message: 'Invalid or expired token' });
     }
+
     const user = await prisma.user.findUnique({
       where: { id: decoded.userId },
       include: { doctorProfile: true, studentProfile: true }
     });
+
     if (!user) return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    const tokenVersion = typeof decoded.tv === 'number' ? decoded.tv : 0;
+    if (tokenVersion !== user.authVersion) return res.status(401).json({ success: false, message: 'Invalid or expired token' });
 
     res.json({
       success: true,
@@ -273,7 +295,6 @@ router.get('/me', async (req: Request, res: Response) => {
           specialization: user.doctorProfile.specialization,
           hospitalAffiliation: user.doctorProfile.hospitalAffiliation,
           yearsExperience: user.doctorProfile.yearsExperience,
-          medicalCouncilRegNumber: user.doctorProfile.medicalCouncilRegNumber,
           qualifications: (() => { try { return JSON.parse(user.doctorProfile!.qualifications); } catch { return []; } })()
         } : undefined,
         studentDetails: user.studentProfile ? {
@@ -290,7 +311,10 @@ router.get('/me', async (req: Request, res: Response) => {
       }
     });
   } catch (error) {
-    res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    if (error instanceof jwt.JsonWebTokenError || error instanceof jwt.TokenExpiredError) {
+      return res.status(401).json({ success: false, message: 'Invalid or expired token' });
+    }
+    res.status(503).json({ success: false, message: 'Authentication service is temporarily unavailable' });
   }
 });
 

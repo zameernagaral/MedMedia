@@ -9,4 +9,10 @@ describe('Healthcheck Endpoint', () => {
     expect(response.body).toHaveProperty('status', 'online');
     expect(response.body).toHaveProperty('service', 'MedMedia Healthcare API');
   });
+
+  it('also exposes the platform health path', async () => {
+    const response = await request(app).get('/health');
+    expect(response.status).toBe(200);
+    expect(response.body).toHaveProperty('status', 'online');
+  });
 });

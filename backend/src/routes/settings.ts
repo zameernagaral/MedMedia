@@ -124,7 +124,7 @@ router.put('/password', requireAuth, async (req: Request, res: Response) => {
     }
 
     const newHash = await bcrypt.hash(newPassword, 12);
-    await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash } });
+    await prisma.user.update({ where: { id: userId }, data: { passwordHash: newHash, authVersion: { increment: 1 } } });
 
     // Invalidate all other sessions
     await prisma.deviceSession.updateMany({

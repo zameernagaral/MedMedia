@@ -2,8 +2,19 @@ import { Router, Request, Response } from 'express';
 import { z } from 'zod';
 import prisma from '../data/prismaClient';
 import { requireAuth } from '../middleware/authMiddleware';
+import { requireRole } from '../middleware/role';
 const router = Router();
-router.get('/metrics', (req: Request, res: Response) => { res.json({ success: true, metrics: {} }); });
+router.get('/metrics', requireAuth, requireRole('ADMIN'), async (req: Request, res: Response) => {
+	try {
+		const [users, posts, clips, jobs, events, resources] = await Promise.all([
+			prisma.user.count(), prisma.post.count(), prisma.medclip.count(),
+			prisma.job.count(), prisma.medicalEvent.count(), prisma.resource.count()
+		]);
+		res.json({ success: true, metrics: { users, posts, clips, jobs, events, resources } });
+	} catch {
+		res.status(500).json({ success: false, message: 'Failed to load admin metrics' });
+	}
+});
 
 const ticketSchema = z.object({
 	type: z.enum(['SUPPORT', 'REPORT']).default('SUPPORT'),

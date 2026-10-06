@@ -70,7 +70,10 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       where, skip, take: pageSize, orderBy: { createdAt: 'desc' },
       include: {
         user: { select: { id: true, fullName: true, username: true, avatarUrl: true, role: true, verificationStatus: true } },
-        ...(viewerId ? { bookmarks: { where: { userId: viewerId }, select: { id: true } } } : {})
+        ...(viewerId ? {
+          bookmarks: { where: { userId: viewerId }, select: { id: true } },
+          likes: { where: { userId: viewerId }, select: { id: true } }
+        } : {})
       }
     });
 
@@ -81,6 +84,7 @@ router.get('/', optionalAuth, async (req: Request, res: Response) => {
       clinicalCategory: c.clinicalCategory, tags: JSON.parse(c.tags || '[]'),
       likesCount: c.likesCount, commentsCount: c.commentsCount, savesCount: c.savesCount,
       isSaved: viewerId ? c.bookmarks.length > 0 : false,
+      isLiked: viewerId ? c.likes.length > 0 : false,
       createdAt: c.createdAt.toISOString()
     }));
     res.json({ success: true, count: clips.length, clips });
@@ -117,8 +121,19 @@ router.post('/:id/action', requireAuth, async (req: Request, res: Response) => {
     const id = req.params.id as string;
 
     if (action === 'like') {
-      const updated = await prisma.medclip.update({ where: { id }, data: { likesCount: { increment: 1 } } });
-      return res.json({ success: true, likesCount: updated.likesCount });
+      const userId = (req as any).user.userId as string;
+      const result = await prisma.$transaction(async tx => {
+        const existing = await tx.clipLike.findUnique({ where: { userId_clipId: { userId, clipId: id } } });
+        if (existing) {
+          await tx.clipLike.delete({ where: { id: existing.id } });
+          const updated = await tx.medclip.update({ where: { id }, data: { likesCount: { decrement: 1 } } });
+          return { isLiked: false, likesCount: Math.max(0, updated.likesCount) };
+        }
+        await tx.clipLike.create({ data: { userId, clipId: id } });
+        const updated = await tx.medclip.update({ where: { id }, data: { likesCount: { increment: 1 } } });
+        return { isLiked: true, likesCount: updated.likesCount };
+      });
+      return res.json({ success: true, ...result });
     }
 
     const userId = (req as any).user.userId as string;

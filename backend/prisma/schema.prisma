@@ -18,6 +18,7 @@ model User {
   avatarUrl          String?
   role               String   @default("STUDENT")
   verificationStatus String   @default("PENDING")
+  authVersion        Int      @default(0)
   bio                String?
   createdAt          DateTime @default(now())
   updatedAt          DateTime @updatedAt
@@ -41,12 +42,17 @@ model User {
   following            Follow[]                  @relation("Following")
   followers            Follow[]                  @relation("Followers")
   bookmarks            Bookmark[]
+  postLikes            PostLike[]
+  postShares           PostShare[]
   clipBookmarks        ClipBookmark[]
+  clipLikes            ClipLike[]
   notifications        Notification[]            @relation("NotificationRecipient")
   sentNotifications    Notification[]            @relation("NotificationActor")
   conversations        ConversationParticipant[]
   sentMessages         Message[]
   postViews            PostView[]                @relation("UserPostViews")
+  resources            Resource[]
+  resourceVotes        ResourceVote[]
   projectMessagesSent  ProjectMessage[]          @relation("UserProjectMessages")
 }
 
@@ -108,6 +114,8 @@ model Post {
   viewsCount    Int        @default(0)
   createdAt     DateTime   @default(now())
   bookmarks     Bookmark[]
+  likes         PostLike[]
+  shares        PostShare[]
   comments      Comment[]
   postViews     PostView[] @relation("PostPostViews")
 }
@@ -127,6 +135,31 @@ model Comment {
 
   @@index([postId, createdAt])
   @@index([parentId])
+}
+
+model PostLike {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model PostShare {
+  id        String   @id @default(uuid())
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
 }
 
 model Follow {
@@ -225,6 +258,20 @@ model Medclip {
   savesCount       Int      @default(0)
   createdAt        DateTime @default(now())
   bookmarks        ClipBookmark[]
+  likes            ClipLike[]
+}
+
+model ClipLike {
+  id        String   @id @default(uuid())
+  userId    String
+  clipId    String
+  createdAt DateTime @default(now())
+
+  user User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  clip Medclip @relation(fields: [clipId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, clipId])
+  @@index([clipId])
 }
 
 model ClipBookmark {
@@ -369,6 +416,40 @@ model MedicalEvent {
   linkUrl     String?
   attendees   Int      @default(0)
   createdAt   DateTime @default(now())
+}
+
+model Resource {
+  id            String        @id @default(uuid())
+  authorId      String?
+  author        User?         @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  title         String
+  authorRole    String?
+  specialty     String
+  category      String
+  description   String        @db.Text
+  pageCount     Int           @default(0)
+  fileSize      String        @default("")
+  downloadUrl   String
+  keyPearls     String        @db.Text
+  aiSummary     String?       @db.Text
+  publishedDate String
+  createdAt     DateTime      @default(now())
+  votes         ResourceVote[]
+
+  @@index([category, specialty])
+  @@index([createdAt])
+}
+
+model ResourceVote {
+  id         String   @id @default(uuid())
+  userId     String
+  resourceId String
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resource   Resource @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, resourceId])
+  @@index([resourceId])
 }
 
 model SupportTicket {

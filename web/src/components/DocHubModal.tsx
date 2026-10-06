@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { 
   BookOpen, 
   X, 
@@ -41,6 +41,7 @@ interface DocHubModalProps {
   currentUser: UserProfile;
   onClose: () => void;
   onDownloadDoc?: (doc: MedicalDocItem) => void;
+  onToggleUpvote?: (resourceId: string) => Promise<{ isUpvoted: boolean; upvotesCount: number } | null>;
 }
 
 export const DocHubModal: React.FC<DocHubModalProps> = ({
@@ -48,7 +49,8 @@ export const DocHubModal: React.FC<DocHubModalProps> = ({
   doc,
   currentUser,
   onClose,
-  onDownloadDoc
+  onDownloadDoc,
+  onToggleUpvote
 }) => {
   const [upvotes, setUpvotes] = useState(doc?.upvotesCount || 0);
   const [hasUpvoted, setHasUpvoted] = useState(doc?.isUpvoted || false);
@@ -56,30 +58,29 @@ export const DocHubModal: React.FC<DocHubModalProps> = ({
   const [showAiSummary, setShowAiSummary] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
+  useEffect(() => {
+    setUpvotes(doc?.upvotesCount || 0);
+    setHasUpvoted(doc?.isUpvoted || false);
+    setIsSaved(doc?.isSaved || false);
+  }, [doc]);
+
   if (!isOpen || !doc) return null;
 
-  const handleToggleUpvote = () => {
-    if (hasUpvoted) {
-      setUpvotes(prev => prev - 1);
-      setHasUpvoted(false);
+  const handleToggleUpvote = async () => {
+    if (!onToggleUpvote || !doc) return;
+    const result = await onToggleUpvote(doc.id);
+    if (result) {
+      setUpvotes(result.upvotesCount);
+      setHasUpvoted(result.isUpvoted);
     } else {
-      setUpvotes(prev => prev + 1);
-      setHasUpvoted(true);
+      setToast('Unable to update your vote. Please sign in and try again.');
+      setTimeout(() => setToast(null), 3000);
     }
   };
 
   const handleDownload = () => {
-    // Create a simulated downloadable file blob or trigger download
-    const element = document.createElement('a');
-    const fileContent = `=== MEDMEDIA DOCHUB CLINICAL DOCUMENT ===\nTitle: ${doc.title}\nAuthor: ${doc.author}\nSpecialty: ${doc.specialty}\nPublished: ${doc.publishedDate}\n\nKEY CLINICAL PEARLS:\n${doc.keyPearls.map((p, i) => `${i+1}. ${p}`).join('\n')}\n\nAI CLINICAL SUMMARY:\n${doc.aiSummary || 'Available in MedMedia DocHub'}`;
-    const file = new Blob([fileContent], { type: 'text/plain' });
-    element.href = URL.createObjectURL(file);
-    element.download = `${doc.title.toLowerCase().replace(/[^a-z0-9]/g, '_')}_medmedia.txt`;
-    document.body.appendChild(element);
-    element.click();
-    document.body.removeChild(element);
-
-    setToast("Document downloaded successfully to device!");
+    window.open(doc.downloadUrl, '_blank', 'noopener,noreferrer');
+    setToast("Opening the resource link.");
     setTimeout(() => setToast(null), 3000);
 
     if (onDownloadDoc) onDownloadDoc(doc);

@@ -1,9 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { UserProfile } from '../types';
-
-const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:5001/api'
-  : '/api';
+import { API_BASE } from '../services/api';
 
 interface AuthContextType {
   user: UserProfile | null;

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { API_BASE } from '../services/api';
 import { 
   X, 
   Send, 
@@ -133,7 +134,6 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
   useEffect(() => {
     if (!isOpen || !currentUser?.id) return;
     setIsLoadingConvs(true);
-    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
     fetch(`${API_BASE}/conversations`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
@@ -170,7 +170,6 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
 
   // Load messages for a conversation when selected
   const loadConversationMessages = (convId: string) => {
-    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
     fetch(`${API_BASE}/conversations/${convId}/messages`, { credentials: 'include' })
       .then(r => r.json())
       .then(data => {
@@ -192,7 +191,6 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     setIsLoadingConvs(true);
     setConversationError('');
     try {
-      const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
       const response = await fetch(`${API_BASE}/conversations`, {
         method: 'POST',
         credentials: 'include',
@@ -283,7 +281,6 @@ export const ClinicalChatDrawer: React.FC<ClinicalChatDrawerProps> = ({
     if (!inputText.trim() || !activeConversation) return;
 
     const userMsgText = inputText.trim();
-    const API_BASE = window.location.hostname === 'localhost' ? 'http://localhost:5001/api' : '/api';
     const response = await fetch(`${API_BASE}/conversations/${activeConversation.id}/messages`, {
       method: 'POST',
       credentials: 'include',

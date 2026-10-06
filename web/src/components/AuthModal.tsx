@@ -17,10 +17,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { UserProfile, UserRole, StudentDiscipline } from '../types';
-import { apiService } from '../services/api';
-const API_BASE = typeof window !== 'undefined' && window.location.hostname === 'localhost'
-  ? 'http://localhost:5001/api'
-  : '/api';
+import { API_BASE, apiService } from '../services/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -53,12 +50,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [dob, setDob] = useState('');
   
-  // Medical Verification Credentials
+  // Verification documents are not uploaded or reviewed in this flow yet.
+  const credentialUploadAvailable = false;
   const [specialization, setSpecialization] = useState('Cardiology');
   const [medicalRegNumber, setMedicalRegNumber] = useState('');
   const [collegeName, setCollegeName] = useState('');
   const [academicYear, setAcademicYear] = useState('4');
-  const [fileUploaded, setFileUploaded] = useState(false);
   const [isPrivate, setIsPrivate] = useState(false);
   
   // Step 2 Theme Choice
@@ -94,15 +91,17 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSignupStep(3);
   };
 
-  // Complete Signup (with or without first post) - Saves to local laptop database
+  // Complete signup through the backend. Verification remains pending until an actual review flow exists.
   const handleFinalSignUp = async (skipPost: boolean) => {
     if (password.length < 8) {
       setStatusMessage('Password must be at least 8 characters long.');
       return;
     }
-    setStatusMessage("Saving verified account to your laptop database...");
-
-    const hasCred = fileUploaded || Boolean(medicalRegNumber.trim());
+    if (!emailOrPhone.includes('@')) {
+      setStatusMessage('Email registration is available. Phone and OTP registration are not implemented yet.');
+      return;
+    }
+    setStatusMessage('Creating your account...');
     const usernameBase = (fullName.trim() || (selectedRole === 'DOCTOR' ? specialization : selectedDiscipline))
       .toLowerCase()
       .replace(/[^a-z0-9]+/g, '_')
@@ -110,38 +109,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     const userData = {
       fullName: fullName.trim() || (selectedRole === 'DOCTOR' ? "Dr. Healthcare Clinician" : "Medical Scholar"),
       username: `${usernameBase}_${Date.now().toString(36)}`,
-      email: emailOrPhone.includes('@') ? emailOrPhone : `${emailOrPhone.replace(/\D/g, '')}@medmedia.health`,
-      phoneNumber: emailOrPhone.includes('@') ? undefined : emailOrPhone,
+      email: emailOrPhone.trim(),
       password,
-      dob,
       role: selectedRole,
-      verificationStatus: hasCred ? 'VERIFIED' : 'UNVERIFIED',
+      verificationStatus: 'PENDING',
       badgeTitle: selectedRole === 'DOCTOR'
-        ? (hasCred ? `Verified ${specialization} Specialist` : `${specialization} Specialist`)
-        : (hasCred ? `Verified ${selectedDiscipline.replace('_', ' ')}` : selectedDiscipline.replace('_', ' ')),
-      bio: selectedRole === 'DOCTOR'
-        ? `Clinical specialist in ${specialization}. DOB: ${dob || 'Confidential'}.`
-        : `${selectedDiscipline.replace('_', ' ')} candidate at ${collegeName || 'Medical College'}. DOB: ${dob || 'Confidential'}.`,
+        ? `${specialization} Specialist`
+        : selectedDiscipline.replace('_', ' '),
       isPrivate: isPrivate,
-      medicalCouncilCredentialUrl: selectedRole === 'DOCTOR' && hasCred ? 'https://example.com/medical_council_cert.pdf' : undefined,
-      studentIdCredentialUrl: selectedRole === 'STUDENT' && hasCred ? 'https://example.com/student_id_proof.pdf' : undefined,
       doctorDetails: selectedRole === 'DOCTOR' ? {
         specialization,
-        qualifications: ["MBBS", "MD / DNB"],
-        hospitalAffiliation: "State Medical Center",
-        location: "Central Healthcare Campus",
-        yearsExperience: 4,
-        clinicalInterests: [specialization, "Clinical Case Review"],
-        researchPublications: ["Clinical Outcome Evaluation in Tertiary Care"],
-        medicalCouncilRegNumber: medicalRegNumber || (hasCred ? "MCI-REG-2026" : "")
+        medicalCouncilRegNumber: medicalRegNumber.trim()
       } : undefined,
       studentDetails: selectedRole === 'STUDENT' ? {
         discipline: selectedDiscipline,
-        collegeName: collegeName || "State Medical College & Research Institute",
-        academicYear: Number(academicYear) || 1,
-        interests: ["Clinical Rounds", "Diagnostics", "Pharmacology"],
-        futureSpecialty: "Internal Medicine / Surgery",
-        researchInterests: ["Evidence-Based Clinical Audits"]
+        ...(collegeName.trim() ? { collegeName: collegeName.trim() } : {}),
+        academicYear: Number(academicYear) || 1
       } : undefined
     };
 
@@ -162,7 +145,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       setStatusMessage("Please enter your Phone/Email and Password.");
       return;
     }
-    setStatusMessage("Authenticating with local database...");
+    setStatusMessage("Signing in...");
 
     try {
       const user = await apiService.loginUser(emailOrPhone, password);
@@ -474,32 +457,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {/* Auto-join Community Notice */}
                       <div className="p-2 bg-sky-100/70 dark:bg-sky-900/40 rounded-xl text-[11px] text-sky-800 dark:text-sky-200 flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400 flex-shrink-0" />
-                        <span>Will automatically join the <strong>{specialization}</strong> peer community upon signup (10,000 capacity).</span>
+                        <span>Community membership can be explored after your account is created.</span>
                       </div>
 
-                      {/* Optional Credential Upload - Grants Blue Tick */}
+                      {/* Optional Credential Upload - Verification requires review */}
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                           <span>Medical Council Credential (Optional):</span>
                           <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-sky-600 inline" />
-                            Grants Blue Tick
+                            Verification requires review
                           </span>
                         </label>
                         <div
-                          onClick={() => setFileUploaded(!fileUploaded)}
+                          onClick={() => setStatusMessage('Credential upload is not available yet. Account verification remains pending.')}
                           className={`p-3 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
-                            fileUploaded 
+                            credentialUploadAvailable
                               ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
                               : 'border-sky-300 dark:border-sky-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-sky-500'
                           }`}
                         >
                           <Upload className="w-4 h-4 mx-auto mb-1 text-sky-600 dark:text-sky-400" />
                           <p className="text-xs font-bold">
-                            {fileUploaded ? "âœ“ Medical Council Document Attached (Blue Tick Verified)" : "Upload Medical Council Certificate / License (PDF/JPG)"}
+                            Credential upload is not available in this form.
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
+                            Credential upload is not available in this form.
                           </p>
                         </div>
                       </div>
@@ -540,32 +523,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       {/* Auto-join Cohort Community Notice */}
                       <div className="p-2 bg-emerald-100/70 dark:bg-emerald-900/40 rounded-xl text-[11px] text-emerald-800 dark:text-emerald-200 flex items-center gap-1.5">
                         <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
-                        <span>Will automatically join the matched Student Cohort community upon signup.</span>
+                        <span>Community membership can be explored after your account is created.</span>
                       </div>
 
-                      {/* Optional Student ID Upload - Grants Blue Tick */}
+                      {/* Optional Student ID Upload - Verification requires review */}
                       <div className="space-y-1.5">
                         <label className="text-[11px] font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
                           <span>Student ID Proof (Optional):</span>
                           <span className="text-[10px] text-sky-600 dark:text-sky-400 font-bold flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-sky-600 inline" />
-                            Grants Blue Tick
+                            Verification requires review
                           </span>
                         </label>
                         <div
-                          onClick={() => setFileUploaded(!fileUploaded)}
+                          onClick={() => setStatusMessage('Credential upload is not available yet. Account verification remains pending.')}
                           className={`p-3 border-2 border-dashed rounded-xl text-center cursor-pointer transition ${
-                            fileUploaded 
+                            credentialUploadAvailable
                               ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300' 
                               : 'border-emerald-300 dark:border-emerald-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:border-emerald-500'
                           }`}
                         >
                           <Upload className="w-4 h-4 mx-auto mb-1 text-emerald-600 dark:text-emerald-400" />
                           <p className="text-xs font-bold">
-                            {fileUploaded ? "âœ“ Student ID Attached (Blue Tick Verified)" : "Upload Student ID Card / College Slip"}
+                            Credential upload is not available in this form.
                           </p>
                           <p className="text-[10px] text-slate-400 mt-0.5">
-                            {fileUploaded ? "Verified badge will appear next to your name." : "Optional. If uploaded, grants instant blue tick badge."}
+                            Credential upload is not available in this form.
                           </p>
                         </div>
                       </div>
@@ -581,7 +564,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                       <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-0.5">
                         {isPrivate 
                           ? 'Only approved medical colleagues can see your posts and details.' 
-                          : 'Your clinical posts are discoverable across the verified peer feed.'}
+                          : 'Your public posts can be discovered by other users.'}
                       </p>
                     </div>
                     <button

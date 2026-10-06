@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import { HeartPulse, Mail, Lock } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -14,13 +14,11 @@ export const Login: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await axios.post('http://localhost:5001/api/auth/login', { identifier: email, password }, { withCredentials: true });
-      if (res.data.success) {
-        login(res.data.token, res.data.user);
-        navigate('/');
-      }
+      const user = await apiService.loginUser(email, password);
+      login('', user);
+      navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Login failed');
+      setError(err.message || 'Login failed');
     }
   };
 
@@ -69,6 +67,12 @@ export const Login: React.FC = () => {
               Create new account
             </Link>
           </div>
+          <nav aria-label="Legal and company information" className="mt-6 flex justify-center gap-4 text-xs text-slate-500">
+            <Link to="/about" className="hover:underline">About</Link>
+            <Link to="/privacy" className="hover:underline">Privacy</Link>
+            <Link to="/terms" className="hover:underline">Terms</Link>
+            <Link to="/contact" className="hover:underline">Contact</Link>
+          </nav>
         </div>
       </div>
     </div>

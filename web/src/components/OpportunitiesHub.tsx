@@ -200,6 +200,7 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
       setCourses(data.courses);
       setScholarships(data.scholarships);
     });
+    apiService.getResources().then(setMedicalDocs);
   }, []);
 
   // Filtered Communities with Search
@@ -1535,6 +1536,11 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                {medicalDocs.length === 0 && (
+                  <div className="col-span-full rounded-2xl border border-dashed border-slate-300 dark:border-slate-700 p-8 text-center text-sm text-slate-500">
+                    No medical resources have been published yet.
+                  </div>
+                )}
                 {medicalDocs.map((doc) => (
                   <div
                     key={doc.id}
@@ -2310,6 +2316,14 @@ export const OpportunitiesHub: React.FC<OpportunitiesHubProps> = ({
         doc={selectedDoc}
         currentUser={currentUser}
         onClose={() => setSelectedDoc(null)}
+        onToggleUpvote={async (resourceId) => {
+          const result = await apiService.upvoteResource(resourceId);
+          if (result) {
+            setMedicalDocs(items => items.map(item => item.id === resourceId ? { ...item, ...result } : item));
+            setSelectedDoc(item => item?.id === resourceId ? { ...item, ...result } : item);
+          }
+          return result;
+        }}
         onDownloadDoc={(d) => showToast(`Downloaded ${d.title} (${d.fileSize})`)}
       />
 

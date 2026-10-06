@@ -12,6 +12,7 @@ import { EditProfileModal } from './components/EditProfileModal';
 import { Routes, Route } from 'react-router-dom';
 import { Login } from './pages/Login';
 import { Register } from './pages/Register';
+import { NotFoundPage, PublicInfoPage } from './pages/PublicInfoPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
 import { CreatePostModal } from './components/CreatePostModal';
@@ -79,13 +80,7 @@ const MainApp: React.FC = () => {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [events, setEvents] = useState<MedicalEvent[]>([]);
   const [opportunities, setOpportunities] = useState<OpportunityItem[]>([]);
-  // Track IDs of users that the current user follows (persisted in localStorage)
-  const [followingIds, setFollowingIds] = useState<Set<string>>(() => {
-    try {
-      const stored = localStorage.getItem(`medmedia_following_${user?.id || 'guest'}`);
-      return stored ? new Set(JSON.parse(stored)) : new Set<string>();
-    } catch { return new Set<string>(); }
-  });
+  const [followingIds, setFollowingIds] = useState<Set<string>>(new Set());
   const [sessions, setSessions] = useState<DeviceSession[]>([]);
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadNotifCount, setUnreadNotifCount] = useState(0);
@@ -145,6 +140,9 @@ const MainApp: React.FC = () => {
     apiService.getSuggestedConnections().then((suggestions) => {
       setSuggestedConnections(suggestions || []);
     });
+    apiService.getFollowingIds().then(ids => setFollowingIds(new Set(ids))).catch(error => {
+      console.error('[MedMedia] Failed to load following list:', error);
+    });
 
     // 7. Fetch unread messages count
     apiService.getUnreadMessagesCount().then((count) => {
@@ -174,16 +172,26 @@ const MainApp: React.FC = () => {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const handleDeletePost = async (postId: string) => {
+    const deleted = await apiService.deletePost(postId);
+    if (!deleted) {
+      setToastMessage('Could not delete this post. Please try again.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
     setPosts(prev => prev.filter(p => p.id !== postId));
-    await apiService.deletePost(postId);
-    setToastMessage("Clinical post deleted successfully.");
+    setToastMessage('Clinical post deleted successfully.');
     setTimeout(() => setToastMessage(null), 3000);
   };
 
   const handleDeleteStory = async (storyId: string) => {
+    const deleted = await apiService.deleteStory(storyId);
+    if (!deleted) {
+      setToastMessage('Could not delete this story. Please try again.');
+      setTimeout(() => setToastMessage(null), 3000);
+      return;
+    }
     setStories(prev => prev.filter(s => s.id !== storyId));
-    await apiService.deleteStory(storyId);
-    setToastMessage("Story deleted successfully.");
+    setToastMessage('Story deleted successfully.');
     setTimeout(() => setToastMessage(null), 3000);
   };
 
@@ -196,7 +204,6 @@ const MainApp: React.FC = () => {
         await apiService.followUser(targetUserId);
         setFollowingIds(prev => { const next = new Set(prev); next.add(targetUserId); return next; });
       }
-      localStorage.setItem(`medmedia_following_${currentUser.id}`, JSON.stringify([...followingIds]));
       // Refresh suggestions after follow action
       apiService.getSuggestedConnections().then(s => setSuggestedConnections(s || []));
     } catch (error) {
@@ -1011,9 +1018,7 @@ const MainApp: React.FC = () => {
               setUser({ ...currentUser, ...updated });
               setToastMessage("Profile updated successfully!");
             } else {
-              // Optimistic local update as fallback
-              setUser({ ...currentUser, ...updates } as any);
-              setToastMessage("Profile updated (offline mode).");
+              throw new Error('Profile changes could not be saved. Check your connection and try again.');
             }
             setTimeout(() => setToastMessage(null), 3000);
           }}
@@ -1037,11 +1042,16 @@ export const App: React.FC = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
-      <Route path="/*" element={
+      <Route path="/about" element={<PublicInfoPage page="about" />} />
+      <Route path="/privacy" element={<PublicInfoPage page="privacy" />} />
+      <Route path="/terms" element={<PublicInfoPage page="terms" />} />
+      <Route path="/contact" element={<PublicInfoPage page="contact" />} />
+      <Route path="/" element={
         <ProtectedRoute>
           <MainApp />
         </ProtectedRoute>
       } />
+      <Route path="*" element={<NotFoundPage />} />
     </Routes>
   );
 };

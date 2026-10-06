@@ -1,7 +1,6 @@
 import path from 'path';
 import fs from 'fs';
 import * as Sentry from '@sentry/node';
-import { nodeProfilingIntegration } from '@sentry/profiling-node';
 import pinoHttp from 'pino-http';
 import express from 'express';
 import cors from 'cors';
@@ -30,14 +29,12 @@ import conversationsRoutes from './routes/conversations';
 
 Sentry.init({
   dsn: process.env.SENTRY_DSN || '',
-  integrations: [
-    nodeProfilingIntegration(),
-  ],
   tracesSampleRate: 1.0,
 });
 
 const app = express();
 app.disable('x-powered-by'); // hide Express signature
+if (env.NODE_ENV === 'production') app.set('trust proxy', 1);
 const PORT = env.PORT;
 
 // Resolve candidate dist paths for web frontend
@@ -48,12 +45,30 @@ const candidateDistPaths = [
 ];
 const frontendDist = candidateDistPaths.find(p => fs.existsSync(p));
 
+const publicSeoPaths = ['/', '/about', '/privacy', '/terms', '/contact'];
+const publicSiteUrl = env.PUBLIC_SITE_URL?.replace(/\/+$/, '');
+app.get('/robots.txt', (_req, res) => {
+  const sitemapLine = publicSiteUrl ? `Sitemap: ${publicSiteUrl}/sitemap.xml\n` : '';
+  res.type('text/plain').send(`User-agent: *\nAllow: /\nDisallow: /api/\nDisallow: /settings\nDisallow: /messages\n${sitemapLine}`);
+});
+app.get('/sitemap.xml', (_req, res) => {
+  if (!publicSiteUrl) {
+    return res.status(503).type('text/plain').send('Set PUBLIC_SITE_URL to enable the production sitemap.');
+  }
+  const urls = publicSeoPaths.map(route => `  <url><loc>${new URL(route, `${publicSiteUrl}/`).toString()}</loc></url>`).join('\n');
+  res.type('application/xml').send(`<?xml version="1.0" encoding="UTF-8"?>\n<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n${urls}\n</urlset>`);
+});
+
 import cookieParser from 'cookie-parser';
 
 // Middleware (support larger payloads for device image uploads)
-const corsOrigins = env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean);
+const corsOrigins = new Set(env.CORS_ORIGINS.split(',').map(origin => origin.trim()).filter(Boolean));
 app.use(cors({
-  origin: corsOrigins.length ? corsOrigins : false,
+  origin: (origin, callback) => {
+    // Native clients and server-to-server calls do not send Origin headers.
+    if (!origin || corsOrigins.has(origin)) return callback(null, true);
+    return callback(null, false);
+  },
   credentials: true
 }));
 app.use(express.json({ limit: '10mb' }));
@@ -80,7 +95,7 @@ app.use(helmet({
   }
 }));
 app.use(pinoHttp({
-  redact: ['req.headers.authorization', 'req.headers.cookie'],
+  redact: ['req.headers.authorization', 'req.headers.cookie', 'res.headers.set-cookie'],
   genReqId: (req) => req.headers['x-request-id'] || crypto.randomUUID(),
   transport: process.env.NODE_ENV === 'development' ? { target: 'pino-pretty' } : undefined
 }));
@@ -128,14 +143,16 @@ app.use('/api/', globalLimiter);
 
 
 // Healthcheck
-app.get('/api/health', (req, res) => {
+const healthcheck = (req: express.Request, res: express.Response) => {
   res.json({
     status: 'online',
     service: 'MedMedia Healthcare API',
     timestamp: new Date().toISOString(),
     version: '1.0.0'
   });
-});
+};
+app.get('/health', healthcheck);
+app.get('/api/health', healthcheck);
 
 // Readiness endpoint – checks DB and Redis connectivity
 app.get('/api/ready', async (req, res) => {
@@ -144,7 +161,10 @@ app.get('/api/ready', async (req, res) => {
     if (useRedis) await redisClient.ping();
     res.json({ ready: true });
   } catch (err) {
-    console.error('[Readiness] check failed:', err);
+    const code = typeof err === 'object' && err !== null && 'code' in err
+      ? String((err as { code: unknown }).code).slice(0, 40)
+      : 'UNKNOWN';
+    console.error(`[Readiness] dependency check failed (${code})`);
     res.status(503).json({ ready: false });
   }
 });
@@ -187,8 +207,9 @@ Sentry.setupExpressErrorHandler(app);
 // Centralized error handling middleware
 app.use((err: any, req: any, res: any, next: any) => {
   const status = err.status || 500;
-  const code = err.code || 'INTERNAL_ERROR';
-  const message = err.message || 'An unexpected error occurred';
+  const isServerError = status >= 500;
+  const code = isServerError ? 'INTERNAL_ERROR' : (err.code || 'REQUEST_ERROR');
+  const message = isServerError ? 'An unexpected error occurred' : (err.message || 'Invalid request');
   res.status(status).json({ success: false, error: { code, message } });
 });
 
@@ -199,7 +220,7 @@ app.use((req, res) => {
 
 if (process.env.NODE_ENV !== 'test') {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`[MedMedia] Backend Server listening at http://localhost:${PORT}`);
+    console.log(`[MedMedia] Backend Server listening on port ${PORT}`);
   });
 }
 

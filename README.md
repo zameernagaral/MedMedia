@@ -19,7 +19,7 @@ medical/
 │   ├── src/
 │   │   ├── routes/              # auth, posts, clips, opportunities, users, search
 │   │   ├── data/mockDb.ts       # Realistic clinical seed data
-│   │   └── server.ts            # Express server (Port 5000)
+│   │   └── server.ts            # Express server (Port 5001)
 │   └── package.json
 │
 ├── web/                         # Responsive Web Platform (React 19 + TypeScript + Tailwind)
@@ -39,11 +39,11 @@ medical/
 │   │   └── main.tsx
 │   └── package.json
 │
-└── mobile/                      # True Native Mobile App (React Native / Expo Prebuild)
+└── mobile/                      # Expo / React Native prototype (not store-ready)
     ├── src/
     │   └── screens/             # HomeScreen, MedclipsScreen, OpportunitiesScreen, SearchScreen, ProfileScreen, AuthScreen
-    ├── app.json                 # Google Play Store config (package: com.medmedia.app, permissions)
-    ├── README.md                # Play Store .aab / .apk compilation guide
+    ├── app.json                 # Expo app configuration (package: com.medmedia.app)
+    ├── README.md                # Mobile implementation status and prototype build guide
     └── package.json
 ```
 
@@ -51,24 +51,27 @@ medical/
 
 ## 🚀 Quick Start Guide
 
-### 1. Backend Server (Port 5000)
+### 1. Backend Server (Port 5001)
 ```powershell
-cd backend
-npm.cmd install
-npm.cmd start
+Copy-Item backend/.env.example backend/.env
+# Set DATABASE_URL to a reachable MySQL database and JWT_SECRET to a random
+# value of at least 32 characters in backend/.env.
+npm.cmd --prefix backend install
+npm.cmd --prefix backend run db:generate
+npm.cmd --prefix backend run db:migrate:dev
+npm.cmd --prefix backend run dev
 ```
-Healthcheck: `http://localhost:5000/api/health`
-Posts API: `http://localhost:5000/api/posts`
+Healthcheck: `http://localhost:5001/health` (database readiness: `/api/ready`)
+Posts API: `http://localhost:5001/api/posts`
 
 ### 2. Web Application (Port 3000)
 ```powershell
-cd web
-npm.cmd install
-npm.cmd run dev
+npm.cmd --prefix web install
+npm.cmd --prefix web run dev
 ```
 Preview production build:
 ```powershell
-npm.cmd run preview -- --port 3000 --host
+npm.cmd --prefix web run preview -- --port 3000 --host
 ```
 Open in browser: `http://localhost:3000/`
 
@@ -88,14 +91,20 @@ Troubleshooting: a startup failure before listening usually indicates missing/in
 
 For local backend setup, copy `backend/.env.example` to `backend/.env`, configure a reachable MySQL database, and use private local-only credentials. Never commit `.env` files.
 
-### 3. Native Android Mobile App (Play Store Ready)
+Backend configuration: `DATABASE_URL` (MySQL), `JWT_SECRET` (at least 32 characters), `NODE_ENV`, `PORT`, `CORS_ORIGINS`, `USE_REDIS`, and `PUBLIC_SITE_URL` after the public HTTPS domain is set. Set `CLOUDINARY_URL` to enable persistent media uploads; `REDIS_URL` or `REDIS_HOST` is needed only when `USE_REDIS=true`. Web `VITE_API_URL` is optional; the default `/api` is served by the backend in production and proxied by Vite in development. Native builds use `EXPO_PUBLIC_API_URL` with the backend URL including `/api`; mobile authentication and store release are not ready yet.
+
+For a fresh MySQL database, run `npm.cmd --prefix backend run db:generate` and then `npm.cmd --prefix backend run db:migrate:dev`. Production deployment uses `prisma migrate deploy` at container startup. Never run `prisma db push --force-reset` against a database containing data.
+
+The checked-in MySQL baseline migration is intended for a fresh database. If a production database already contains MedMedia tables or data but does not have this migration history, stop and review the migration baseline before deploying; do not mark migrations applied or reset the database blindly.
+
+### 3. Native Mobile Prototype (Not Store Ready)
 ```powershell
 cd mobile
 npm.cmd install
 npm.cmd start
 ```
 - **Live Preview**: Scan the QR code using the **Expo Go** app on your Android device.
-- **Google Play Store Build**:
+- **Development artifact only** (a successful build is not release approval):
   ```powershell
   # Generate native Android project with AndroidManifest.xml & Gradle
   npx.cmd expo prebuild
@@ -110,7 +119,7 @@ npm.cmd start
 
 | Slide | Requirement | Implementation |
 |---|---|---|
-| **Slide 1 & 2** | Playstore download, Sign in / Log in, Phone/email, Google login, Password recovery, Device/session management | Complete auth module (`AuthModal.tsx`, `AuthScreen.tsx`, `/api/auth/login`, `/api/auth/sessions`) |
+| **Slide 1 & 2** | Sign in / registration and account verification | Web email/password auth connects to the backend. Google, OTP, recovery and credential review are incomplete. Mobile auth is UI-only; see `mobile/README.md`. |
 | **Slide 3** | Doctor Profile & Verification: Name, Specialization, Photo, Qualifications, Hospital, Location, Experience, Interests, Research, Follow/connect, Posts | Doctor portfolio (`ProfileView.tsx`, `ProfileScreen.tsx`, `/api/users/:id`), verification badge |
 | **Slide 4** | Student Profile & Verification: MBBS, Nursing, B.Pharm, D.Pharm, Lab practitioner, College, Year, Future specialty, Device mgmt, Help center | Student portfolio (`ProfileView.tsx`, `ProfileScreen.tsx`), Help center FAQ, session revocation |
 | **Slide 5** | Home page: Create (+), Medmedia, Notification, Message, StoriesBar, Feed (Text, tweets, Images, Links, Discussions - No reels), Bottom Bar (5 tabs) | `TopNav.tsx`, `StoriesBar.tsx`, `PostCard.tsx`, `BottomNav.tsx` with diagnostic case poll |

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
 import { useAuth } from '../context/AuthContext';
+import { apiService } from '../services/api';
 import { HeartPulse, Mail, Lock, User } from 'lucide-react';
 
 export const Register: React.FC = () => {
@@ -21,17 +21,12 @@ export const Register: React.FC = () => {
       return;
     }
     try {
-      const res = await axios.post('http://localhost:5001/api/auth/register', { 
-        email, password, fullName, username, role 
-      }, { withCredentials: true });
-      
-      if (res.data.success) {
-          localStorage.setItem('medmedia_theme_prompt_pending', 'true');
-        login(res.data.token, res.data.user);
-        navigate('/');
-      }
+      const user = await apiService.registerUser({ email, password, fullName, username, role });
+      localStorage.setItem('medmedia_theme_prompt_pending', 'true');
+      login('', user);
+      navigate('/');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Registration failed');
+      setError(err.message || 'Registration failed');
     }
   };
 
@@ -85,6 +80,12 @@ export const Register: React.FC = () => {
               Already have an account? Sign in
             </Link>
           </div>
+          <nav aria-label="Legal and company information" className="mt-6 flex justify-center gap-4 text-xs text-slate-500">
+            <Link to="/about" className="hover:underline">About</Link>
+            <Link to="/privacy" className="hover:underline">Privacy</Link>
+            <Link to="/terms" className="hover:underline">Terms</Link>
+            <Link to="/contact" className="hover:underline">Contact</Link>
+          </nav>
         </div>
       </div>
     </div>

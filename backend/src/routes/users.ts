@@ -7,14 +7,38 @@ import { createNotification } from '../services/notificationService';
 
 const router = Router();
 
+function safeJsonArray(value: string): string[] {
+  try {
+    const parsed: unknown = JSON.parse(value);
+    return Array.isArray(parsed) ? parsed.filter((item): item is string => typeof item === 'string') : [];
+  } catch {
+    return [];
+  }
+}
+
 const updateUserSchema = z.object({
-  fullName: z.string().optional(),
-  bio: z.string().optional(),
-  coverPhotoUrl: z.string().url().optional(),
-  avatarUrl: z.string().url().optional(),
-  doctorDetails: z.any().optional(),
-  studentDetails: z.any().optional()
-});
+  fullName: z.string().trim().min(1).max(120).optional(),
+  bio: z.string().trim().max(500).nullable().optional(),
+  coverPhotoUrl: z.string().url().nullable().optional(),
+  avatarUrl: z.string().url().nullable().optional(),
+  doctorDetails: z.object({
+    specialization: z.string().trim().max(120).optional(),
+    hospitalAffiliation: z.string().trim().max(160).optional(),
+    location: z.string().trim().max(160).optional(),
+    yearsExperience: z.number().int().min(0).max(80).optional(),
+    qualifications: z.array(z.string().max(120)).max(30).optional(),
+    clinicalInterests: z.array(z.string().max(120)).max(50).optional(),
+    researchPublications: z.array(z.string().max(500)).max(100).optional()
+  }).strict().optional(),
+  studentDetails: z.object({
+    discipline: z.enum(['MEDICAL_STUDENT', 'NURSING', 'B_PHARM', 'D_PHARM', 'LAB_PRACTITIONER']).optional(),
+    collegeName: z.string().trim().max(160).optional(),
+    academicYear: z.number().int().min(1).max(20).optional(),
+    interests: z.array(z.string().max(120)).max(50).optional(),
+    futureSpecialty: z.string().trim().max(160).optional(),
+    researchInterests: z.array(z.string().max(500)).max(100).optional()
+  }).strict().optional()
+}).strict();
 
 router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
   try {
@@ -50,7 +74,23 @@ router.get('/:id', optionalAuth, async (req: Request, res: Response) => {
       user: {
         id: user.id, fullName: user.fullName, username: user.username, avatarUrl: user.avatarUrl,
         role: user.role, bio: user.bio, isPrivate: user.isPrivate, verificationStatus: user.verificationStatus,
-        doctorDetails: user.doctorProfile || undefined, studentDetails: user.studentProfile || undefined,
+        doctorDetails: user.doctorProfile ? {
+          specialization: user.doctorProfile.specialization,
+          qualifications: safeJsonArray(user.doctorProfile.qualifications),
+          hospitalAffiliation: user.doctorProfile.hospitalAffiliation,
+          location: user.doctorProfile.location,
+          yearsExperience: user.doctorProfile.yearsExperience,
+          clinicalInterests: safeJsonArray(user.doctorProfile.clinicalInterests),
+          researchPublications: safeJsonArray(user.doctorProfile.researchPublications)
+        } : undefined,
+        studentDetails: user.studentProfile ? {
+          discipline: user.studentProfile.discipline,
+          collegeName: user.studentProfile.collegeName,
+          academicYear: user.studentProfile.academicYear,
+          interests: safeJsonArray(user.studentProfile.interests),
+          futureSpecialty: user.studentProfile.futureSpecialty,
+          researchInterests: safeJsonArray(user.studentProfile.researchInterests)
+        } : undefined,
         stats: {
           postsCount: user._count.posts,
           followersCount: user._count.followers,
@@ -72,24 +112,105 @@ router.put('/:id', requireAuth, async (req: Request, res: Response) => {
     }
 
     const data = updateUserSchema.parse(req.body);
-    const updatedUser = await prisma.user.update({
-      where: { id },
-      data: { fullName: data.fullName, bio: data.bio, avatarUrl: data.avatarUrl },
-      select: {
-        id: true,
-        fullName: true,
-        username: true,
-        email: true,
-        avatarUrl: true,
-        bio: true,
-        role: true,
-        verificationStatus: true,
-        isPrivate: true,
-        coverPhotoUrl: true
+    const updatedUser = await prisma.$transaction(async tx => {
+      await tx.user.update({
+        where: { id },
+        data: {
+          ...(data.fullName !== undefined ? { fullName: data.fullName } : {}),
+          ...(data.bio !== undefined ? { bio: data.bio } : {}),
+          ...(data.avatarUrl !== undefined ? { avatarUrl: data.avatarUrl } : {}),
+          ...(data.coverPhotoUrl !== undefined ? { coverPhotoUrl: data.coverPhotoUrl } : {})
+        }
+      });
+
+      if (data.doctorDetails) {
+        const details = data.doctorDetails;
+        const profileData = {
+          ...(details.specialization !== undefined ? { specialization: details.specialization } : {}),
+          ...(details.hospitalAffiliation !== undefined ? { hospitalAffiliation: details.hospitalAffiliation } : {}),
+          ...(details.location !== undefined ? { location: details.location } : {}),
+          ...(details.yearsExperience !== undefined ? { yearsExperience: details.yearsExperience } : {}),
+          ...(details.qualifications !== undefined ? { qualifications: JSON.stringify(details.qualifications) } : {}),
+          ...(details.clinicalInterests !== undefined ? { clinicalInterests: JSON.stringify(details.clinicalInterests) } : {}),
+          ...(details.researchPublications !== undefined ? { researchPublications: JSON.stringify(details.researchPublications) } : {})
+        };
+        await tx.doctorProfile.upsert({
+          where: { userId: id },
+          update: profileData,
+          create: {
+            userId: id,
+            specialization: details.specialization || 'General Medicine',
+            hospitalAffiliation: details.hospitalAffiliation || 'Hospital',
+            location: details.location || 'Unknown',
+            yearsExperience: details.yearsExperience || 0,
+            qualifications: JSON.stringify(details.qualifications || []),
+            clinicalInterests: JSON.stringify(details.clinicalInterests || []),
+            researchPublications: JSON.stringify(details.researchPublications || []),
+            medicalCouncilRegNumber: 'PENDING'
+          }
+        });
       }
+
+      if (data.studentDetails) {
+        const details = data.studentDetails;
+        const profileData = {
+          ...(details.discipline !== undefined ? { discipline: details.discipline } : {}),
+          ...(details.collegeName !== undefined ? { collegeName: details.collegeName } : {}),
+          ...(details.academicYear !== undefined ? { academicYear: details.academicYear } : {}),
+          ...(details.interests !== undefined ? { interests: JSON.stringify(details.interests) } : {}),
+          ...(details.futureSpecialty !== undefined ? { futureSpecialty: details.futureSpecialty } : {}),
+          ...(details.researchInterests !== undefined ? { researchInterests: JSON.stringify(details.researchInterests) } : {})
+        };
+        await tx.studentProfile.upsert({
+          where: { userId: id },
+          update: profileData,
+          create: {
+            userId: id,
+            discipline: details.discipline || 'MEDICAL_STUDENT',
+            collegeName: details.collegeName || 'Medical College',
+            academicYear: details.academicYear || 1,
+            interests: JSON.stringify(details.interests || []),
+            futureSpecialty: details.futureSpecialty,
+            researchInterests: JSON.stringify(details.researchInterests || [])
+          }
+        });
+      }
+
+      return tx.user.findUnique({
+        where: { id },
+        include: { doctorProfile: true, studentProfile: true }
+      });
     });
 
-    res.json({ success: true, user: updatedUser });
+    res.json({ success: true, user: updatedUser && {
+      id: updatedUser.id,
+      fullName: updatedUser.fullName,
+      username: updatedUser.username,
+      email: updatedUser.email,
+      avatarUrl: updatedUser.avatarUrl,
+      coverPhotoUrl: updatedUser.coverPhotoUrl,
+      bio: updatedUser.bio,
+      role: updatedUser.role,
+      verificationStatus: updatedUser.verificationStatus,
+      isPrivate: updatedUser.isPrivate,
+      doctorDetails: updatedUser.doctorProfile ? {
+        specialization: updatedUser.doctorProfile.specialization,
+        hospitalAffiliation: updatedUser.doctorProfile.hospitalAffiliation,
+        location: updatedUser.doctorProfile.location,
+        yearsExperience: updatedUser.doctorProfile.yearsExperience,
+        qualifications: safeJsonArray(updatedUser.doctorProfile.qualifications),
+        clinicalInterests: safeJsonArray(updatedUser.doctorProfile.clinicalInterests),
+        researchPublications: safeJsonArray(updatedUser.doctorProfile.researchPublications)
+      } : undefined,
+      studentDetails: updatedUser.studentProfile ? {
+        discipline: updatedUser.studentProfile.discipline,
+        collegeName: updatedUser.studentProfile.collegeName,
+        academicYear: updatedUser.studentProfile.academicYear,
+        interests: safeJsonArray(updatedUser.studentProfile.interests),
+        futureSpecialty: updatedUser.studentProfile.futureSpecialty,
+        researchInterests: safeJsonArray(updatedUser.studentProfile.researchInterests)
+      } : undefined
+    } });
   } catch (error) {
     if (error instanceof z.ZodError) return res.status(400).json({ success: false, errors: (error as any).errors });
     res.status(500).json({ success: false });
@@ -139,7 +260,7 @@ router.get('/', async (req: Request, res: Response) => {
   try {
     const { role } = req.query;
     const users = await prisma.user.findMany({
-      where: role ? { role: role as string } : {},
+      where: { isPrivate: false, ...(role ? { role: role as string } : {}) },
       include: {
         doctorProfile: true,
         studentProfile: true,
@@ -165,7 +286,6 @@ router.get('/', async (req: Request, res: Response) => {
           specialization: u.doctorProfile.specialization,
           hospitalAffiliation: u.doctorProfile.hospitalAffiliation,
           yearsExperience: u.doctorProfile.yearsExperience,
-          medicalCouncilRegNumber: u.doctorProfile.medicalCouncilRegNumber,
           qualifications: (() => { try { return JSON.parse(u.doctorProfile!.qualifications); } catch { return []; } })()
         } : undefined,
         studentDetails: u.studentProfile ? {
@@ -258,6 +378,19 @@ router.get('/me/suggested', requireAuth, async (req: Request, res: Response) => 
       }))
     });
   } catch (error) { res.status(500).json({ success: false, message: 'Failed to fetch suggestions' }); }
+});
+
+router.get('/me/following', requireAuth, async (req: Request, res: Response) => {
+  try {
+    const userId = (req as any).user.userId as string;
+    const follows = await prisma.follow.findMany({
+      where: { followerId: userId },
+      select: { followingId: true }
+    });
+    res.json({ success: true, followingIds: follows.map(follow => follow.followingId) });
+  } catch {
+    res.status(500).json({ success: false, message: 'Failed to fetch following list' });
+  }
 });
 
 // GET /api/users/me/unread-messages — count unread messages across all conversations
